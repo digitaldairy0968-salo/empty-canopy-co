@@ -75,7 +75,7 @@ interface DairyContextType {
   announcements: Announcement[];
   addAnnouncement: (message: string) => Promise<void>;
   deleteAnnouncement: (id: string) => Promise<void>;
-  updateDairy: (name: string, code: string) => Promise<boolean>;
+  updateDairy: (name: string) => Promise<boolean>;
   loading: boolean;
   isOnline: boolean;
   refreshData: () => Promise<void>;
@@ -663,22 +663,12 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await fetchData();
   };
 
-  const updateDairy = async (name: string, code: string) => {
+  const updateDairy = async (name: string) => {
     if (!user?.dairyId) return false;
-
-    // Check if code already exists for another dairy
-    const { data: existingDairy } = await supabase
-      .from('dairies')
-      .select('id')
-      .eq('code', code)
-      .neq('id', user.dairyId)
-      .maybeSingle();
-
-    if (existingDairy) return false;
 
     const { error } = await supabase
       .from('dairies')
-      .update({ name, code })
+      .update({ name })
       .eq('id', user.dairyId);
 
     if (error) {
