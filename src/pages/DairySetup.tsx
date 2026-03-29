@@ -219,7 +219,6 @@ const DairySetup: React.FC = () => {
               </div>
             )}
 
-            {/* Only show code input for suppliers */}
             {!isOwner && (
               <div className="relative">
                 <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -227,7 +226,10 @@ const DairySetup: React.FC = () => {
                   type="text"
                   placeholder="12 अंकों का कोड / 12-digit code *"
                   value={dairyCode}
-                  onChange={e => setDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  onChange={e => {
+                    setDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12));
+                    setJoinError('');
+                  }}
                   className="dairy-input pl-12 tracking-wider text-lg"
                   maxLength={12}
                   required
@@ -236,6 +238,12 @@ const DairySetup: React.FC = () => {
                   {dairyCode.length}/12
                 </span>
               </div>
+            )}
+
+            {joinError && !isOwner && (
+              <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                {joinError}
+              </p>
             )}
 
             {isOwner && (
