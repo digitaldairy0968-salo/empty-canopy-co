@@ -168,7 +168,7 @@ const DairySetup: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold">{t('appName')}</h1>
         <p className="text-primary-foreground/80 mt-1">
-          {isOwner ? 'अपनी डेयरी बनाएं / Create your Dairy' : 'डेयरी खोजें / Find Dairy'}
+          {isOwner ? 'अपनी डेयरी बनाएं / Create your Dairy' : 'डेयरी कोड डालें / Enter Dairy Code'}
         </p>
       </div>
 
