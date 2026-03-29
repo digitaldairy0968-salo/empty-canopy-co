@@ -197,7 +197,7 @@ export const useVoiceEntry = ({
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
-  const restartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const restartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isListeningRef = useRef(false);
 
   // When speech recognition returns a value-only final result (e.g. "6.5"),

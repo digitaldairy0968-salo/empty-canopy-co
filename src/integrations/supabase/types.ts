@@ -146,6 +146,67 @@ export type Database = {
           },
         ]
       }
+      entry_edit_requests: {
+        Row: {
+          changes: Json
+          created_at: string
+          dairy_id: string
+          entry_id: string
+          id: string
+          reason: string | null
+          requested_by: string | null
+          responded_at: string | null
+          status: string
+          supplier_id: string
+        }
+        Insert: {
+          changes?: Json
+          created_at?: string
+          dairy_id: string
+          entry_id: string
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string
+          supplier_id: string
+        }
+        Update: {
+          changes?: Json
+          created_at?: string
+          dairy_id?: string
+          entry_id?: string
+          id?: string
+          reason?: string | null
+          requested_by?: string | null
+          responded_at?: string | null
+          status?: string
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entry_edit_requests_dairy_id_fkey"
+            columns: ["dairy_id"]
+            isOneToOne: false
+            referencedRelation: "dairies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_edit_requests_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "milk_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entry_edit_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fat_snf_rate_settings: {
         Row: {
           base_fat_rate: number | null
@@ -329,6 +390,63 @@ export type Database = {
             columns: ["dairy_id"]
             isOneToOne: true
             referencedRelation: "dairies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_history: {
+        Row: {
+          amount_added: number | null
+          amount_paid: number | null
+          balance_after: number | null
+          confirmed_at: string | null
+          created_at: string
+          dairy_id: string
+          id: string
+          notes: string | null
+          supplier_confirmed: boolean | null
+          supplier_id: string
+          transaction_date: string
+        }
+        Insert: {
+          amount_added?: number | null
+          amount_paid?: number | null
+          balance_after?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          dairy_id: string
+          id?: string
+          notes?: string | null
+          supplier_confirmed?: boolean | null
+          supplier_id: string
+          transaction_date?: string
+        }
+        Update: {
+          amount_added?: number | null
+          amount_paid?: number | null
+          balance_after?: number | null
+          confirmed_at?: string | null
+          created_at?: string
+          dairy_id?: string
+          id?: string
+          notes?: string | null
+          supplier_confirmed?: boolean | null
+          supplier_id?: string
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_history_dairy_id_fkey"
+            columns: ["dairy_id"]
+            isOneToOne: false
+            referencedRelation: "dairies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
