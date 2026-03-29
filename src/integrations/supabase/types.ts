@@ -456,6 +456,8 @@ export type Database = {
           confirmed_at: string | null
           created_at: string
           dairy_id: string
+          date_range_end: string | null
+          date_range_start: string | null
           id: string
           notes: string | null
           supplier_confirmed: boolean | null
@@ -469,6 +471,8 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           dairy_id: string
+          date_range_end?: string | null
+          date_range_start?: string | null
           id?: string
           notes?: string | null
           supplier_confirmed?: boolean | null
@@ -482,6 +486,8 @@ export type Database = {
           confirmed_at?: string | null
           created_at?: string
           dairy_id?: string
+          date_range_end?: string | null
+          date_range_start?: string | null
           id?: string
           notes?: string | null
           supplier_confirmed?: boolean | null
