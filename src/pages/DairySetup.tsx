@@ -16,8 +16,6 @@ const DairySetup: React.FC = () => {
   const navigate = useNavigate();
 
   const [dairyName, setDairyName] = useState('');
-  // For suppliers: they need to enter a 12-digit code
-  // For owners: code is NOT shown (will be null, admin controls code generation)
   const [dairyCode, setDairyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -127,7 +125,7 @@ const DairySetup: React.FC = () => {
           return;
         }
 
-        const success = await joinDairy(dairyName, dairyCode);
+        const success = await joinDairy(dairyCode);
         if (success) {
           toast({ title: t('success'), description: 'डेयरी से जुड़ गए! / Joined dairy!' });
           navigate('/supplier-dashboard');
@@ -170,7 +168,7 @@ const DairySetup: React.FC = () => {
         </div>
         <h1 className="text-2xl font-bold">{t('appName')}</h1>
         <p className="text-primary-foreground/80 mt-1">
-          {isOwner ? 'अपनी डेयरी बनाएं / Create your Dairy' : 'डेयरी खोजें / Find Dairy'}
+          {isOwner ? 'अपनी डेयरी बनाएं / Create your Dairy' : 'डेयरी कोड डालें / Enter Dairy Code'}
         </p>
       </div>
 
@@ -186,12 +184,12 @@ const DairySetup: React.FC = () => {
               )}
             </div>
             <h2 className="text-xl font-bold">
-              {isOwner ? 'डेयरी का नाम दर्ज करें' : 'डेयरी खोजें'}
+              {isOwner ? 'डेयरी का नाम दर्ज करें' : 'डेयरी से जुड़ें'}
             </h2>
             <p className="text-muted-foreground text-sm mt-2">
               {isOwner
                 ? 'अपनी डेयरी के लिए एक नाम दें'
-                : 'डेयरी का 12 अंकों का कोड डालें'}
+                : 'डेयरी मालिक से मिला 12 अंकों का कोड डालें'}
             </p>
             {!isOwner && (
               <p className="text-amber-600 text-xs mt-2 bg-amber-50 p-2 rounded">
@@ -203,17 +201,19 @@ const DairySetup: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder={isOwner ? "डेयरी का नाम / Dairy Name *" : "डेयरी का नाम / Dairy Name"}
-                value={dairyName}
-                onChange={e => setDairyName(e.target.value)}
-                className="dairy-input pl-12"
-                required={isOwner}
-              />
-            </div>
+            {isOwner && (
+              <div className="relative">
+                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="डेयरी का नाम / Dairy Name *"
+                  value={dairyName}
+                  onChange={e => setDairyName(e.target.value)}
+                  className="dairy-input pl-12"
+                  required
+                />
+              </div>
+            )}
 
             {/* Only show code input for suppliers */}
             {!isOwner && (
@@ -224,7 +224,7 @@ const DairySetup: React.FC = () => {
                   placeholder="12 अंकों का कोड / 12-digit code *"
                   value={dairyCode}
                   onChange={e => setDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                  className="dairy-input pl-12 tracking-wider"
+                  className="dairy-input pl-12 tracking-wider text-lg"
                   maxLength={12}
                   required
                 />
@@ -249,7 +249,7 @@ const DairySetup: React.FC = () => {
               type="submit"
               variant="dairy"
               className="w-full"
-              disabled={isLoading || (!isOwner && dairyCode.length !== 12) || !dairyName.trim()}
+              disabled={isLoading || (isOwner ? !dairyName.trim() : dairyCode.length !== 12)}
             >
               {isLoading ? '...' : isOwner ? 'डेयरी बनाएं / Create Dairy' : 'डेयरी में जुड़ें / Join Dairy'}
             </Button>
