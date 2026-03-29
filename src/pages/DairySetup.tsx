@@ -18,6 +18,7 @@ const DairySetup: React.FC = () => {
   const [dairyName, setDairyName] = useState('');
   const [dairyCode, setDairyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   const isOwner = user?.role === 'owner';
 
@@ -125,14 +126,17 @@ const DairySetup: React.FC = () => {
           return;
         }
 
-        const success = await joinDairy(dairyCode);
-        if (success) {
+        setJoinError('');
+        const result = await joinDairy(dairyCode);
+        if (result === true) {
           toast({ title: t('success'), description: 'डेयरी से जुड़ गए! / Joined dairy!' });
           navigate('/supplier-dashboard');
         } else {
+          const errorMsg = typeof result === 'string' ? result : 'डेयरी नहीं मिली / Dairy not found';
+          setJoinError(errorMsg);
           toast({
             title: t('error'),
-            description: 'डेयरी नहीं मिली या आपका फोन नंबर अभी तक डेयरी में नहीं जोड़ा गया। पहले मालिक से संपर्क करें। / Dairy not found or your phone is not added yet. Contact the owner first.',
+            description: errorMsg,
             variant: 'destructive',
           });
         }
@@ -215,7 +219,6 @@ const DairySetup: React.FC = () => {
               </div>
             )}
 
-            {/* Only show code input for suppliers */}
             {!isOwner && (
               <div className="relative">
                 <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -223,7 +226,10 @@ const DairySetup: React.FC = () => {
                   type="text"
                   placeholder="12 अंकों का कोड / 12-digit code *"
                   value={dairyCode}
-                  onChange={e => setDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                  onChange={e => {
+                    setDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12));
+                    setJoinError('');
+                  }}
                   className="dairy-input pl-12 tracking-wider text-lg"
                   maxLength={12}
                   required
@@ -232,6 +238,12 @@ const DairySetup: React.FC = () => {
                   {dairyCode.length}/12
                 </span>
               </div>
+            )}
+
+            {joinError && !isOwner && (
+              <p className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+                {joinError}
+              </p>
             )}
 
             {isOwner && (
