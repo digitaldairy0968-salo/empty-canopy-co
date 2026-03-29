@@ -18,6 +18,7 @@ const DairySetup: React.FC = () => {
   const [dairyName, setDairyName] = useState('');
   const [dairyCode, setDairyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   const isOwner = user?.role === 'owner';
 
