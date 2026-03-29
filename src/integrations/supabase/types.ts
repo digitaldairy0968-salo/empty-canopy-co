@@ -903,6 +903,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      link_supplier_to_dairy_by_code: {
+        Args: { _dairy_code: string }
+        Returns: {
+          error_code: string
+          linked: boolean
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "owner" | "supplier"

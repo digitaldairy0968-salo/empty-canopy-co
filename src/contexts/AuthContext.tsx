@@ -668,78 +668,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (!authUser || user?.role !== 'supplier') return 'अमान्य उपयोगकर्ता / Invalid user';
 
     try {
-      // Find the dairy by code using secure RPC
-      const { data: foundDairyArray, error: findError } = await supabase
-        .rpc('get_dairy_by_code', { dairy_code: dairyCode });
+      // Use SECURITY DEFINER RPC that bypasses RLS to find dairy + match phone + link supplier
+      const { data: rpcResult, error: rpcError } = await supabase
+        .rpc('link_supplier_to_dairy_by_code' as any, { _dairy_code: dairyCode });
 
-      if (findError) {
-        console.error('Error finding dairy:', findError);
-        return 'डेयरी खोजने में त्रुटि / Error finding dairy';
+      if (rpcError) {
+        console.error('Error in link_supplier_to_dairy_by_code:', rpcError);
+        return 'डेयरी से जुड़ने में त्रुटि / Error joining dairy';
       }
 
-      const foundDairy = foundDairyArray && foundDairyArray.length > 0 ? foundDairyArray[0] : null;
+      // RPC returns TABLE(linked boolean, error_code text) — array of rows
+      const result = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+      const linked = result?.linked;
+      const errorCode = result?.error_code;
 
-      if (!foundDairy) {
-        console.log('Dairy not found for code:', dairyCode);
-        return 'यह डेयरी कोड गलत है। कृपया सही 12 अंकों का कोड डालें। / Invalid dairy code. Please enter the correct 12-digit code.';
-      }
-
-      const userPhone = user?.phone || '';
-      console.log('Found dairy:', foundDairy.name, 'Checking phone:', userPhone);
-
-      // First check if supplier already linked to this user
-      const { data: alreadyLinked } = await supabase
-        .from('suppliers')
-        .select('id')
-        .eq('dairy_id', foundDairy.id)
-        .eq('user_id', authUser.id)
-        .maybeSingle();
-
-      if (alreadyLinked) {
-        // Already linked, just refresh and navigate
+      if (linked === true) {
+        // Successfully linked! Refresh profile to get dairy info
         await fetchUserProfile(authUser.id, authUser.email, authUser.user_metadata);
         return true;
       }
 
-      // Check if supplier exists in this dairy by phone (any user_id state)
-      const last10 = userPhone.length >= 10 ? userPhone.slice(-10) : userPhone;
-      
-      const { data: allSuppliers } = await supabase
-        .from('suppliers')
-        .select('id, phone, user_id')
-        .eq('dairy_id', foundDairy.id);
-
-      let supplierRecord = allSuppliers?.find(s => s.phone === userPhone) || null;
-      
-      // Also try matching last 10 digits (handle +91 prefix variations)
-      if (!supplierRecord && last10.length === 10 && allSuppliers) {
-        supplierRecord = allSuppliers.find(s => s.phone.slice(-10) === last10) || null;
+      // Handle specific error codes with user-friendly messages
+      if (errorCode === 'invalid_code') {
+        return 'यह डेयरी कोड गलत है। कृपया सही 12 अंकों का कोड डालें। / Invalid dairy code. Please enter the correct 12-digit code.';
+      }
+      if (errorCode === 'phone_not_found') {
+        return `आपका फोन नंबर इस डेयरी में नहीं मिला। पहले मालिक से अपना नंबर जुड़वाएं। / Your phone number is not found in this dairy. Ask the owner to add your number first.`;
+      }
+      if (errorCode === 'already_linked_other') {
+        return 'यह नंबर पहले से किसी और अकाउंट से जुड़ा है। / This number is already linked to another account.';
+      }
+      if (errorCode === 'phone_missing') {
+        return 'आपके अकाउंट में फोन नंबर नहीं है। / Phone number missing in your account.';
+      }
+      if (errorCode === 'not_supplier') {
+        return 'आपका अकाउंट सप्लायर नहीं है। / Your account is not a supplier.';
       }
 
-      if (!supplierRecord) {
-        return `आपका फोन नंबर (${userPhone}) इस डेयरी "${foundDairy.name}" में नहीं मिला। पहले मालिक से अपना नंबर जुड़वाएं। / Your phone (${userPhone}) is not found in dairy "${foundDairy.name}". Ask the owner to add your number first.`;
-      }
-
-      // If already linked to another user, show error
-      if (supplierRecord.user_id && supplierRecord.user_id !== authUser.id) {
-        return `यह नंबर पहले से किसी और अकाउंट से जुड़ा है। / This number is already linked to another account.`;
-      }
-
-      // Link supplier record to user (or re-link if same user)
-      const { error: updateError } = await supabase
-        .from('suppliers')
-        .update({ user_id: authUser.id })
-        .eq('id', supplierRecord.id);
-
-      if (updateError) {
-        console.error('Error linking supplier:', updateError);
-        return 'लिंक करने में त्रुटि / Error linking account';
-      }
-
-      // Refresh profile to get dairy info
-      await fetchUserProfile(authUser.id, authUser.email, authUser.user_metadata);
-
-      return true;
+      return 'कुछ गलत हो गया / Something went wrong';
     } catch (error) {
       console.error('Error in joinDairy:', error);
       return 'कुछ गलत हो गया / Something went wrong';
