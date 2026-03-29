@@ -701,34 +701,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return true;
       }
 
-      // Check if supplier is pre-added by owner (by phone) - try with user_id null
-      let { data: supplierRecord } = await supabase
+      // Check if supplier exists in this dairy by phone (any user_id state)
+      const last10 = userPhone.length >= 10 ? userPhone.slice(-10) : userPhone;
+      
+      const { data: allSuppliers } = await supabase
         .from('suppliers')
-        .select('id, phone')
-        .eq('dairy_id', foundDairy.id)
-        .eq('phone', userPhone)
-        .is('user_id', null)
-        .maybeSingle();
+        .select('id, phone, user_id')
+        .eq('dairy_id', foundDairy.id);
 
-      // Also try matching with last 10 digits (handle +91 prefix variations)
-      if (!supplierRecord && userPhone.length >= 10) {
-        const last10 = userPhone.slice(-10);
-        const { data: phoneVariant } = await supabase
-          .from('suppliers')
-          .select('id, phone')
-          .eq('dairy_id', foundDairy.id)
-          .is('user_id', null);
-        
-        if (phoneVariant) {
-          supplierRecord = phoneVariant.find(s => s.phone.slice(-10) === last10) || null;
-        }
+      let supplierRecord = allSuppliers?.find(s => s.phone === userPhone) || null;
+      
+      // Also try matching last 10 digits (handle +91 prefix variations)
+      if (!supplierRecord && last10.length === 10 && allSuppliers) {
+        supplierRecord = allSuppliers.find(s => s.phone.slice(-10) === last10) || null;
       }
 
       if (!supplierRecord) {
         return `आपका फोन नंबर (${userPhone}) इस डेयरी "${foundDairy.name}" में नहीं मिला। पहले मालिक से अपना नंबर जुड़वाएं। / Your phone (${userPhone}) is not found in dairy "${foundDairy.name}". Ask the owner to add your number first.`;
       }
 
-      // Link supplier record to user
+      // If already linked to another user, show error
+      if (supplierRecord.user_id && supplierRecord.user_id !== authUser.id) {
+        return `यह नंबर पहले से किसी और अकाउंट से जुड़ा है। / This number is already linked to another account.`;
+      }
+
+      // Link supplier record to user (or re-link if same user)
       const { error: updateError } = await supabase
         .from('suppliers')
         .update({ user_id: authUser.id })
