@@ -16,8 +16,6 @@ const DairySetup: React.FC = () => {
   const navigate = useNavigate();
 
   const [dairyName, setDairyName] = useState('');
-  // For suppliers: they need to enter a 12-digit code
-  // For owners: code is NOT shown (will be null, admin controls code generation)
   const [dairyCode, setDairyCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 

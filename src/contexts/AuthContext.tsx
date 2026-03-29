@@ -41,7 +41,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string, phone: string, role: UserRole, referralCode?: string) => Promise<{ success: boolean; error?: string }>;
   setupDairy: (dairyName: string, dairyCode: string) => Promise<boolean>;
-  joinDairy: (dairyName: string, dairyCode: string) => Promise<boolean>;
+  joinDairy: (dairyCode: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setHasSeenOnboarding: () => void;
@@ -664,7 +664,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const joinDairy = async (dairyName: string, dairyCode: string): Promise<boolean> => {
+  const joinDairy = async (dairyCode: string): Promise<boolean> => {
     if (!authUser || user?.role !== 'supplier') return false;
 
     try {
