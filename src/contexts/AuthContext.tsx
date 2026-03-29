@@ -664,8 +664,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const joinDairy = async (dairyCode: string): Promise<boolean> => {
-    if (!authUser || user?.role !== 'supplier') return false;
+  const joinDairy = async (dairyCode: string): Promise<boolean | string> => {
+    if (!authUser || user?.role !== 'supplier') return 'अमान्य उपयोगकर्ता / Invalid user';
 
     try {
       // Find the dairy by code using secure RPC
@@ -674,28 +674,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (findError) {
         console.error('Error finding dairy:', findError);
-        return false;
+        return 'डेयरी खोजने में त्रुटि / Error finding dairy';
       }
 
       const foundDairy = foundDairyArray && foundDairyArray.length > 0 ? foundDairyArray[0] : null;
 
       if (!foundDairy) {
-        console.log('Dairy not found');
-        return false;
+        console.log('Dairy not found for code:', dairyCode);
+        return 'यह डेयरी कोड गलत है। कृपया सही 12 अंकों का कोड डालें। / Invalid dairy code. Please enter the correct 12-digit code.';
       }
 
-      // Check if supplier is pre-added by owner (by phone)
-      const { data: supplierRecord } = await supabase
+      const userPhone = user?.phone || '';
+      console.log('Found dairy:', foundDairy.name, 'Checking phone:', userPhone);
+
+      // First check if supplier already linked to this user
+      const { data: alreadyLinked } = await supabase
+        .from('suppliers')
+        .select('id')
+        .eq('dairy_id', foundDairy.id)
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      if (alreadyLinked) {
+        // Already linked, just refresh and navigate
+        await fetchUserProfile(authUser.id, authUser.email, authUser.user_metadata);
+        return true;
+      }
+
+      // Check if supplier is pre-added by owner (by phone) - try with user_id null
+      let { data: supplierRecord } = await supabase
         .from('suppliers')
         .select('id, phone')
         .eq('dairy_id', foundDairy.id)
-        .eq('phone', user?.phone || '')
+        .eq('phone', userPhone)
         .is('user_id', null)
         .maybeSingle();
 
+      // Also try matching with last 10 digits (handle +91 prefix variations)
+      if (!supplierRecord && userPhone.length >= 10) {
+        const last10 = userPhone.slice(-10);
+        const { data: phoneVariant } = await supabase
+          .from('suppliers')
+          .select('id, phone')
+          .eq('dairy_id', foundDairy.id)
+          .is('user_id', null);
+        
+        if (phoneVariant) {
+          supplierRecord = phoneVariant.find(s => s.phone.slice(-10) === last10) || null;
+        }
+      }
+
       if (!supplierRecord) {
-        console.log('Supplier not pre-added to dairy or already linked');
-        return false;
+        return `आपका फोन नंबर (${userPhone}) इस डेयरी "${foundDairy.name}" में नहीं मिला। पहले मालिक से अपना नंबर जुड़वाएं। / Your phone (${userPhone}) is not found in dairy "${foundDairy.name}". Ask the owner to add your number first.`;
       }
 
       // Link supplier record to user
@@ -706,7 +736,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       if (updateError) {
         console.error('Error linking supplier:', updateError);
-        return false;
+        return 'लिंक करने में त्रुटि / Error linking account';
       }
 
       // Refresh profile to get dairy info
@@ -715,7 +745,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     } catch (error) {
       console.error('Error in joinDairy:', error);
-      return false;
+      return 'कुछ गलत हो गया / Something went wrong';
     }
   };
 
