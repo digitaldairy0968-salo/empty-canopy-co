@@ -320,6 +320,60 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          dairy_id: string
+          id: string
+          is_read: boolean
+          message: string | null
+          metadata: Json | null
+          supplier_id: string
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          dairy_id: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          metadata?: Json | null
+          supplier_id: string
+          title: string
+          type?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          dairy_id?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          metadata?: Json | null
+          supplier_id?: string
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_dairy_id_fkey"
+            columns: ["dairy_id"]
+            isOneToOne: false
+            referencedRelation: "dairies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_settings: {
         Row: {
           auto_print_enabled: boolean | null
@@ -557,6 +611,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          referred_user_id: string
+          referrer_user_id: string
+          reward_days: number | null
+          rewarded_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_user_id: string
+          referrer_user_id: string
+          reward_days?: number | null
+          rewarded_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_user_id?: string
+          referrer_user_id?: string
+          reward_days?: number | null
+          rewarded_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       subscription_settings: {
         Row: {
