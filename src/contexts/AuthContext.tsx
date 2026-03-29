@@ -41,7 +41,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string, phone: string, role: UserRole, referralCode?: string) => Promise<{ success: boolean; error?: string }>;
   setupDairy: (dairyName: string, dairyCode: string) => Promise<boolean>;
-  joinDairy: (dairyCode: string) => Promise<boolean>;
+  joinDairy: (dairyCode: string) => Promise<boolean | string>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setHasSeenOnboarding: () => void;
