@@ -95,60 +95,18 @@ const SupplierSettings: React.FC = () => {
 
   const handleApproveEdit = async (requestId: string) => {
     try {
-      const request = editRequests.find(r => r.id === requestId);
-      if (!request) return;
-
-      const changes = request.changes;
-      const updateData: Record<string, any> = {};
-      
-      // The entry_id points to a specific milk_entries row (which is per shift)
-      // Map the shift-specific keys to the actual column names
-      if (changes.morningMilk !== undefined) updateData.quantity = changes.morningMilk;
-      if (changes.morningFat !== undefined) updateData.fat = changes.morningFat;
-      if (changes.morningSNF !== undefined) updateData.snf = changes.morningSNF;
-      if (changes.morningLR !== undefined) updateData.lr = changes.morningLR;
-      if (changes.eveningMilk !== undefined) updateData.quantity = changes.eveningMilk;
-      if (changes.eveningFat !== undefined) updateData.fat = changes.eveningFat;
-      if (changes.eveningSNF !== undefined) updateData.snf = changes.eveningSNF;
-      if (changes.eveningLR !== undefined) updateData.lr = changes.eveningLR;
-      if (changes.quantity !== undefined) updateData.quantity = changes.quantity;
-      if (changes.fat !== undefined) updateData.fat = changes.fat;
-      if (changes.snf !== undefined) updateData.snf = changes.snf;
-      if (changes.lr !== undefined) updateData.lr = changes.lr;
-
-      if (Object.keys(updateData).length > 0) {
-        // First delete the old entry, then insert a new one with updated values
-        // This ensures the entry is properly replaced
-        const { data: oldEntry, error: fetchError } = await supabase
-          .from('milk_entries')
-          .select('*')
-          .eq('id', request.entry_id)
-          .single();
-
-        if (fetchError || !oldEntry) {
-          console.error('Error fetching old entry:', fetchError);
-          toast({ title: t('error'), description: language === 'hi' ? 'एंट्री नहीं मिली' : 'Entry not found', variant: 'destructive' });
-          return;
-        }
-
-        // Update the entry directly
-        const { error: updateError } = await supabase
-          .from('milk_entries')
-          .update(updateData)
-          .eq('id', request.entry_id);
-        
-        if (updateError) {
-          console.error('Error updating milk entry:', updateError);
-          toast({ title: t('error'), description: language === 'hi' ? 'एंट्री अपडेट नहीं हो पाई' : 'Failed to update entry', variant: 'destructive' });
-          return;
-        }
-      }
-
-      // Mark request as approved
-      await supabase
+      // Just update status to 'approved' — the DB trigger (apply_approved_edit_request)
+      // automatically applies the changes to milk_entries
+      const { error } = await supabase
         .from('entry_edit_requests')
-        .update({ status: 'approved', responded_at: new Date().toISOString() })
+        .update({ status: 'approved' })
         .eq('id', requestId);
+
+      if (error) {
+        console.error('Error approving edit:', error);
+        toast({ title: t('error'), description: language === 'hi' ? 'एंट्री अपडेट नहीं हो पाई' : 'Failed to update entry', variant: 'destructive' });
+        return;
+      }
 
       setEditRequests(prev => prev.filter(r => r.id !== requestId));
       
