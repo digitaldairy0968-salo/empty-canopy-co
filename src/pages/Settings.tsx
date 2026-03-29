@@ -460,7 +460,7 @@ const Settings: React.FC = () => {
   // Edit dairy dialog state
   const [showEditDairy, setShowEditDairy] = useState(false);
   const [editDairyName, setEditDairyName] = useState('');
-  const [editDairyCode, setEditDairyCode] = useState('');
+  
   const [isSavingDairy, setIsSavingDairy] = useState(false);
   
   // Customer calculation visibility state
@@ -533,7 +533,6 @@ const Settings: React.FC = () => {
 
   const handleOpenEditDairy = () => {
     setEditDairyName(user?.dairyName || '');
-    setEditDairyCode(user?.dairyCode || '');
     setShowEditDairy(true);
   };
 
@@ -547,18 +546,9 @@ const Settings: React.FC = () => {
       return;
     }
 
-    if (!/^\d{12}$/.test(editDairyCode)) {
-      toast({ 
-        title: t('error'), 
-        description: language === 'hi' ? 'कोड 12 अंकों का होना चाहिए' : 'Code must be 12 digits', 
-        variant: 'destructive' 
-      });
-      return;
-    }
-
     setIsSavingDairy(true);
     try {
-      const success = await updateDairy(editDairyName.trim(), editDairyCode);
+      const success = await updateDairy(editDairyName.trim());
       if (success) {
         await refreshProfile();
         toast({ 
@@ -615,9 +605,6 @@ const Settings: React.FC = () => {
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <p className="font-semibold text-lg">{user.dairyName}</p>
-                  <p className="text-sm text-muted-foreground font-mono">
-                    {language === 'hi' ? 'कोड:' : 'Code:'} {user.dairyCode}
-                  </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleOpenEditDairy} className="rounded-xl">
                   <Edit3 className="h-4 w-4 mr-1" />
@@ -1078,13 +1065,6 @@ const Settings: React.FC = () => {
             <div>
               <label className="block text-sm font-medium mb-2">{t('dairyName')}</label>
               <Input type="text" value={editDairyName} onChange={e => setEditDairyName(e.target.value)} className="dairy-input" placeholder={language === 'hi' ? 'डेयरी का नाम' : 'Dairy Name'} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">{t('dairyCode')}</label>
-              <Input type="text" value={editDairyCode} onChange={e => setEditDairyCode(e.target.value.replace(/\D/g, '').slice(0, 12))} className="dairy-input font-mono text-center tracking-widest" placeholder="123456789012" maxLength={12} />
-              <p className="text-xs text-muted-foreground mt-1">
-                {language === 'hi' ? `${editDairyCode.length}/12 अंक` : `${editDairyCode.length}/12 digits`}
-              </p>
             </div>
           </div>
           <DialogFooter className="gap-2">
