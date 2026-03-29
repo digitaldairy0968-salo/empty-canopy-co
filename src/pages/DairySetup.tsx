@@ -126,14 +126,17 @@ const DairySetup: React.FC = () => {
           return;
         }
 
-        const success = await joinDairy(dairyCode);
-        if (success) {
+        setJoinError('');
+        const result = await joinDairy(dairyCode);
+        if (result === true) {
           toast({ title: t('success'), description: 'डेयरी से जुड़ गए! / Joined dairy!' });
           navigate('/supplier-dashboard');
         } else {
+          const errorMsg = typeof result === 'string' ? result : 'डेयरी नहीं मिली / Dairy not found';
+          setJoinError(errorMsg);
           toast({
             title: t('error'),
-            description: 'डेयरी नहीं मिली या आपका फोन नंबर अभी तक डेयरी में नहीं जोड़ा गया। पहले मालिक से संपर्क करें। / Dairy not found or your phone is not added yet. Contact the owner first.',
+            description: errorMsg,
             variant: 'destructive',
           });
         }
