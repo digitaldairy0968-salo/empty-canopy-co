@@ -646,13 +646,23 @@ const MilkEntry: React.FC = () => {
           snfCount++;
         }
         
-        // Calculate per-entry amount for FAT/SNF system
-        if (useFatSnfSystem && fat > 0 && snf > 0) {
+        if (reportSupplier.animalType === 'buyer') {
+          const price = entry.morningPrice;
+          if (price !== null && price !== undefined && price > 0) {
+            totalAmount += price;
+          } else {
+            totalAmount += milk * (rateSettings.literRate || 50);
+          }
+        } else if (useFatSnfSystem && fat > 0 && snf > 0) {
           const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
           totalAmount += result.totalAmount;
         } else if (fat > 0) {
           totalAmount += fat * milk * reportRate;
         }
+      } else if ((reportShiftFilter === 'both' || reportShiftFilter === 'morning') && 
+                 reportSupplier.animalType === 'buyer' &&
+                 entry.morningPrice !== null && entry.morningPrice !== undefined && entry.morningPrice > 0) {
+        totalAmount += entry.morningPrice;
       }
       
       // Evening
@@ -673,13 +683,23 @@ const MilkEntry: React.FC = () => {
           snfCount++;
         }
         
-        // Calculate per-entry amount for FAT/SNF system
-        if (useFatSnfSystem && fat > 0 && snf > 0) {
+        if (reportSupplier.animalType === 'buyer') {
+          const price = entry.eveningPrice;
+          if (price !== null && price !== undefined && price > 0) {
+            totalAmount += price;
+          } else {
+            totalAmount += milk * (rateSettings.literRate || 50);
+          }
+        } else if (useFatSnfSystem && fat > 0 && snf > 0) {
           const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
           totalAmount += result.totalAmount;
         } else if (fat > 0) {
           totalAmount += fat * milk * reportRate;
         }
+      } else if ((reportShiftFilter === 'both' || reportShiftFilter === 'evening') && 
+                 reportSupplier.animalType === 'buyer' &&
+                 entry.eveningPrice !== null && entry.eveningPrice !== undefined && entry.eveningPrice > 0) {
+        totalAmount += entry.eveningPrice;
       }
     });
 
