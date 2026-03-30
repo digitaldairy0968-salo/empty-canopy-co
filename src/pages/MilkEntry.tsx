@@ -540,6 +540,7 @@ const MilkEntry: React.FC = () => {
             setFatValue('');
             setSnfValue('');
             setLrValue('');
+            setBuyerPrice('');
             selectNextEntrySupplier();
             setIsLoading(false);
             return;
@@ -586,6 +587,7 @@ const MilkEntry: React.FC = () => {
       setFatValue('');
       setSnfValue('');
       setLrValue('');
+      setBuyerPrice('');
 
       // Direct print - skip receipt dialog, send to printer if connected
       if (ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled) {
