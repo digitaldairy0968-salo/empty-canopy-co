@@ -198,10 +198,12 @@ const SupplierCard: React.FC = () => {
         morningFat: entryType === 'morning' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.morningFat ?? null),
         morningSNF: entryType === 'morning' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.morningSNF ?? null),
         morningLR: entryType === 'morning' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.morningLR ?? null),
+        morningPrice: existingEntry?.morningPrice ?? null,
         eveningMilk: entryType === 'evening' ? parseFloat(milkQty) : (existingEntry?.eveningMilk ?? null),
         eveningFat: entryType === 'evening' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.eveningFat ?? null),
         eveningSNF: entryType === 'evening' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.eveningSNF ?? null),
         eveningLR: entryType === 'evening' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.eveningLR ?? null),
+        eveningPrice: existingEntry?.eveningPrice ?? null,
       };
 
       addMilkEntry(supplier.id, newEntry);

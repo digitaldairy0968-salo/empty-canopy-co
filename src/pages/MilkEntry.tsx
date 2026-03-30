@@ -63,6 +63,7 @@ const MilkEntry: React.FC = () => {
   const [fatValue, setFatValue] = useState('');
   const [snfValue, setSnfValue] = useState('');
   const [lrValue, setLrValue] = useState('');
+  const [buyerPrice, setBuyerPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Voice entry settings
