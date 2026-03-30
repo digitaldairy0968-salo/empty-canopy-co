@@ -9,10 +9,12 @@ export interface MilkEntry {
   morningFat: number | null;
   morningSNF: number | null;
   morningLR: number | null;
+  morningPrice: number | null;
   eveningMilk: number | null;
   eveningFat: number | null;
   eveningSNF: number | null;
   eveningLR: number | null;
+  eveningPrice: number | null;
 }
 
 export interface Supplier {
@@ -223,10 +225,12 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               morningFat: null,
               morningSNF: null,
               morningLR: null,
+              morningPrice: null,
               eveningMilk: null,
               eveningFat: null,
               eveningSNF: null,
               eveningLR: null,
+              eveningPrice: null,
             };
           }
           if (e.time_of_day === 'morning') {
@@ -234,11 +238,13 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             entriesByDate[date].morningFat = e.fat;
             entriesByDate[date].morningSNF = e.snf;
             entriesByDate[date].morningLR = e.lr;
+            entriesByDate[date].morningPrice = (e as any).price;
           } else {
             entriesByDate[date].eveningMilk = e.quantity;
             entriesByDate[date].eveningFat = e.fat;
             entriesByDate[date].eveningSNF = e.snf;
             entriesByDate[date].eveningLR = e.lr;
+            entriesByDate[date].eveningPrice = (e as any).price;
           }
         });
 
@@ -420,7 +426,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     const entries = [];
 
-    if (entry.morningMilk !== null || entry.morningFat !== null) {
+    if (entry.morningMilk !== null || entry.morningFat !== null || entry.morningPrice !== null) {
       entries.push({
         supplier_id: supplierId,
         dairy_id: user.dairyId,
@@ -430,10 +436,11 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         fat: entry.morningFat,
         snf: entry.morningSNF,
         lr: entry.morningLR,
+        price: entry.morningPrice,
       });
     }
 
-    if (entry.eveningMilk !== null || entry.eveningFat !== null) {
+    if (entry.eveningMilk !== null || entry.eveningFat !== null || entry.eveningPrice !== null) {
       entries.push({
         supplier_id: supplierId,
         dairy_id: user.dairyId,
@@ -443,6 +450,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         fat: entry.eveningFat,
         snf: entry.eveningSNF,
         lr: entry.eveningLR,
+        price: entry.eveningPrice,
       });
     }
 

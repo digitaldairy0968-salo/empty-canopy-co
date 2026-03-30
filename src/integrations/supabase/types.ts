@@ -271,6 +271,7 @@ export type Database = {
           fat: number | null
           id: string
           lr: number | null
+          price: number | null
           quantity: number | null
           snf: number | null
           supplier_id: string
@@ -284,6 +285,7 @@ export type Database = {
           fat?: number | null
           id?: string
           lr?: number | null
+          price?: number | null
           quantity?: number | null
           snf?: number | null
           supplier_id: string
@@ -297,6 +299,7 @@ export type Database = {
           fat?: number | null
           id?: string
           lr?: number | null
+          price?: number | null
           quantity?: number | null
           snf?: number | null
           supplier_id?: string

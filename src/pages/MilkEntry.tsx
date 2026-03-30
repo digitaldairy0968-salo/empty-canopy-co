@@ -63,6 +63,7 @@ const MilkEntry: React.FC = () => {
   const [fatValue, setFatValue] = useState('');
   const [snfValue, setSnfValue] = useState('');
   const [lrValue, setLrValue] = useState('');
+  const [buyerPrice, setBuyerPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Voice entry settings
@@ -440,9 +441,18 @@ const MilkEntry: React.FC = () => {
       return;
     }
 
-    if (!milkQty || parseFloat(milkQty) <= 0) {
-      toast({ title: t('error'), description: 'कृपया दूध की मात्रा दर्ज करें / Please enter milk quantity', variant: 'destructive' });
-      return;
+    // For buyers, either milk or price must be provided
+    const isBuyerSupplier = isBuyer(selectedSupplier);
+    if (isBuyerSupplier) {
+      if ((!milkQty || parseFloat(milkQty) <= 0) && (!buyerPrice || parseFloat(buyerPrice) <= 0)) {
+        toast({ title: t('error'), description: 'कृपया दूध की मात्रा या रकम दर्ज करें / Please enter milk quantity or price', variant: 'destructive' });
+        return;
+      }
+    } else {
+      if (!milkQty || parseFloat(milkQty) <= 0) {
+        toast({ title: t('error'), description: 'कृपया दूध की मात्रा दर्ज करें / Please enter milk quantity', variant: 'destructive' });
+        return;
+      }
     }
 
     // Validation for FAT/SNF system
@@ -530,6 +540,7 @@ const MilkEntry: React.FC = () => {
             setFatValue('');
             setSnfValue('');
             setLrValue('');
+            setBuyerPrice('');
             selectNextEntrySupplier();
             setIsLoading(false);
             return;
@@ -537,16 +548,21 @@ const MilkEntry: React.FC = () => {
         }
       }
 
+      const parsedMilk = milkQty ? parseFloat(milkQty) : null;
+      const parsedPrice = buyerPrice ? parseFloat(buyerPrice) : null;
+      
       const newEntry: MilkEntryType = {
         date: today,
-        morningMilk: shift === 'morning' ? parseFloat(milkQty) : (existingEntry?.morningMilk ?? null),
+        morningMilk: shift === 'morning' ? (parsedMilk && parsedMilk > 0 ? parsedMilk : null) : (existingEntry?.morningMilk ?? null),
         morningFat: shift === 'morning' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.morningFat ?? null),
         morningSNF: shift === 'morning' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.morningSNF ?? null),
         morningLR: shift === 'morning' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.morningLR ?? null),
-        eveningMilk: shift === 'evening' ? parseFloat(milkQty) : (existingEntry?.eveningMilk ?? null),
+        morningPrice: shift === 'morning' ? (parsedPrice && parsedPrice > 0 ? parsedPrice : null) : (existingEntry?.morningPrice ?? null),
+        eveningMilk: shift === 'evening' ? (parsedMilk && parsedMilk > 0 ? parsedMilk : null) : (existingEntry?.eveningMilk ?? null),
         eveningFat: shift === 'evening' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.eveningFat ?? null),
         eveningSNF: shift === 'evening' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.eveningSNF ?? null),
         eveningLR: shift === 'evening' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.eveningLR ?? null),
+        eveningPrice: shift === 'evening' ? (parsedPrice && parsedPrice > 0 ? parsedPrice : null) : (existingEntry?.eveningPrice ?? null),
       };
 
       await addMilkEntry(selectedSupplier.id, newEntry);
@@ -571,6 +587,7 @@ const MilkEntry: React.FC = () => {
       setFatValue('');
       setSnfValue('');
       setLrValue('');
+      setBuyerPrice('');
 
       // Direct print - skip receipt dialog, send to printer if connected
       if (ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled) {
@@ -629,13 +646,23 @@ const MilkEntry: React.FC = () => {
           snfCount++;
         }
         
-        // Calculate per-entry amount for FAT/SNF system
-        if (useFatSnfSystem && fat > 0 && snf > 0) {
+        if (reportSupplier.animalType === 'buyer') {
+          const price = entry.morningPrice;
+          if (price !== null && price !== undefined && price > 0) {
+            totalAmount += price;
+          } else {
+            totalAmount += milk * (rateSettings.literRate || 50);
+          }
+        } else if (useFatSnfSystem && fat > 0 && snf > 0) {
           const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
           totalAmount += result.totalAmount;
         } else if (fat > 0) {
           totalAmount += fat * milk * reportRate;
         }
+      } else if ((reportShiftFilter === 'both' || reportShiftFilter === 'morning') && 
+                 reportSupplier.animalType === 'buyer' &&
+                 entry.morningPrice !== null && entry.morningPrice !== undefined && entry.morningPrice > 0) {
+        totalAmount += entry.morningPrice;
       }
       
       // Evening
@@ -656,13 +683,23 @@ const MilkEntry: React.FC = () => {
           snfCount++;
         }
         
-        // Calculate per-entry amount for FAT/SNF system
-        if (useFatSnfSystem && fat > 0 && snf > 0) {
+        if (reportSupplier.animalType === 'buyer') {
+          const price = entry.eveningPrice;
+          if (price !== null && price !== undefined && price > 0) {
+            totalAmount += price;
+          } else {
+            totalAmount += milk * (rateSettings.literRate || 50);
+          }
+        } else if (useFatSnfSystem && fat > 0 && snf > 0) {
           const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
           totalAmount += result.totalAmount;
         } else if (fat > 0) {
           totalAmount += fat * milk * reportRate;
         }
+      } else if ((reportShiftFilter === 'both' || reportShiftFilter === 'evening') && 
+                 reportSupplier.animalType === 'buyer' &&
+                 entry.eveningPrice !== null && entry.eveningPrice !== undefined && entry.eveningPrice > 0) {
+        totalAmount += entry.eveningPrice;
       }
     });
 
@@ -858,8 +895,8 @@ const MilkEntry: React.FC = () => {
             </div>
           )}
 
-          {/* Milk & Fat on top, SNF & LR on bottom - 2x2 grid (hide fat fields for buyers) */}
-          <div className={cn("grid gap-2 mb-3", isBuyer(selectedSupplier) ? "grid-cols-1" : "grid-cols-2")}>
+          {/* Milk & Fat on top, SNF & LR on bottom - 2x2 grid (buyers get milk + price) */}
+          <div className={cn("grid gap-2 mb-3", isBuyer(selectedSupplier) ? "grid-cols-2" : "grid-cols-2")}>
             <div className="space-y-0.5">
               <label className={cn(
                 "text-[10px] font-medium block text-center",
@@ -882,6 +919,21 @@ const MilkEntry: React.FC = () => {
                 )}
               />
             </div>
+            {isBuyer(selectedSupplier) && (
+              <div className="space-y-0.5">
+                <label className="text-[10px] font-medium block text-center text-muted-foreground">
+                  {language === 'hi' ? 'रकम (₹)' : 'Price (₹)'}
+                </label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={buyerPrice}
+                  onChange={e => setBuyerPrice(e.target.value)}
+                  className="h-11 text-lg font-bold text-center rounded-lg border-2 border-primary/30 focus:border-primary bg-background"
+                />
+              </div>
+            )}
             {!isBuyer(selectedSupplier) && (
               <>
                 <div className="space-y-0.5">
@@ -955,10 +1007,11 @@ const MilkEntry: React.FC = () => {
           </div>
 
           {/* Amount Preview - Compact inline (different calculation for buyers) */}
-          {milkQty && (isBuyer(selectedSupplier) || fatValue) && (() => {
+          {(milkQty || buyerPrice) && (isBuyer(selectedSupplier) || fatValue) && (() => {
             const milk = parseFloat(milkQty) || 0;
             const fat = parseFloat(fatValue) || 0;
             const snf = parseFloat(snfValue) || 0;
+            const priceEntered = parseFloat(buyerPrice) || 0;
             
             // Use FAT/SNF system if enabled and SNF value is provided
             const useFatSnfSystem = fatSnfSettings.isEnabled && !isBuyer(selectedSupplier) && snf > 0;
@@ -968,7 +1021,12 @@ const MilkEntry: React.FC = () => {
             let warning: string | undefined;
             
             if (isBuyer(selectedSupplier)) {
-              calculatedAmount = milk * (rateSettings.literRate || 50);
+              // If price is entered directly, use that; otherwise calculate from liter rate
+              if (priceEntered > 0) {
+                calculatedAmount = priceEntered;
+              } else if (milk > 0) {
+                calculatedAmount = milk * (rateSettings.literRate || 50);
+              }
             } else if (useFatSnfSystem) {
               const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
               calculatedAmount = result.totalAmount;
@@ -981,7 +1039,7 @@ const MilkEntry: React.FC = () => {
             return (
               <div className="mb-3 p-2 bg-gradient-to-r from-secondary to-secondary/60 rounded-xl animate-fade-in">
                 {warning && (
-                  <div className="flex items-center gap-1 text-amber-600 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-destructive text-xs mb-1">
                     <AlertTriangle className="h-3 w-3" />
                     <span>{warning}</span>
                   </div>
@@ -990,7 +1048,10 @@ const MilkEntry: React.FC = () => {
                   {isBuyer(selectedSupplier) ? (
                     <>
                       <p className="text-xs text-muted-foreground">
-                        {milkQty}L × ₹{rateSettings.literRate || 50}/L
+                        {priceEntered > 0 
+                          ? (language === 'hi' ? 'सीधी रकम' : 'Direct price')
+                          : `${milkQty}L × ₹${rateSettings.literRate || 50}/L`
+                        }
                       </p>
                       <p className="text-2xl font-bold text-foreground">
                         ₹{calculatedAmount.toFixed(0)}
@@ -1024,7 +1085,7 @@ const MilkEntry: React.FC = () => {
           {/* Save Button */}
           <Button
             onClick={handleSaveEntry}
-            disabled={isLoading || !selectedSupplier || !milkQty}
+            disabled={isLoading || !selectedSupplier || (!milkQty && !buyerPrice)}
             className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg transition-all duration-200 active:scale-[0.98] mb-2"
           >
             {isLoading ? (

@@ -8,6 +8,8 @@ interface MilkEntry {
   eveningMilk: number | null;
   eveningFat: number | null;
   eveningSNF: number | null;
+  morningPrice: number | null;
+  eveningPrice: number | null;
 }
 
 interface CalculationParams {
@@ -72,8 +74,18 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
           dailyTotalAmount += entry.morningMilk * entryRate;
         }
       } else if (animalType === 'buyer') {
-        dailyTotalAmount += entry.morningMilk * literRate;
+        // For buyers: use price if available, else liter rate
+        const price = entry.morningPrice;
+        if (price !== null && price !== undefined && price > 0) {
+          dailyTotalAmount += price;
+        } else {
+          dailyTotalAmount += entry.morningMilk * literRate;
+        }
       }
+    } else if ((shiftFilter === 'both' || shiftFilter === 'morning') && animalType === 'buyer' &&
+               entry.morningPrice !== null && entry.morningPrice !== undefined && entry.morningPrice > 0) {
+      // Buyer entry with only price, no milk
+      dailyTotalAmount += entry.morningPrice;
     }
 
     // Evening
@@ -91,8 +103,17 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
           dailyTotalAmount += entry.eveningMilk * entryRate;
         }
       } else if (animalType === 'buyer') {
-        dailyTotalAmount += entry.eveningMilk * literRate;
+        const price = entry.eveningPrice;
+        if (price !== null && price !== undefined && price > 0) {
+          dailyTotalAmount += price;
+        } else {
+          dailyTotalAmount += entry.eveningMilk * literRate;
+        }
       }
+    } else if ((shiftFilter === 'both' || shiftFilter === 'evening') && animalType === 'buyer' &&
+               entry.eveningPrice !== null && entry.eveningPrice !== undefined && entry.eveningPrice > 0) {
+      // Buyer entry with only price, no milk
+      dailyTotalAmount += entry.eveningPrice;
     }
   });
 
