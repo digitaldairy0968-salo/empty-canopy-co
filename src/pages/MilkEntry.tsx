@@ -441,9 +441,18 @@ const MilkEntry: React.FC = () => {
       return;
     }
 
-    if (!milkQty || parseFloat(milkQty) <= 0) {
-      toast({ title: t('error'), description: 'कृपया दूध की मात्रा दर्ज करें / Please enter milk quantity', variant: 'destructive' });
-      return;
+    // For buyers, either milk or price must be provided
+    const isBuyerSupplier = isBuyer(selectedSupplier);
+    if (isBuyerSupplier) {
+      if ((!milkQty || parseFloat(milkQty) <= 0) && (!buyerPrice || parseFloat(buyerPrice) <= 0)) {
+        toast({ title: t('error'), description: 'कृपया दूध की मात्रा या रकम दर्ज करें / Please enter milk quantity or price', variant: 'destructive' });
+        return;
+      }
+    } else {
+      if (!milkQty || parseFloat(milkQty) <= 0) {
+        toast({ title: t('error'), description: 'कृपया दूध की मात्रा दर्ज करें / Please enter milk quantity', variant: 'destructive' });
+        return;
+      }
     }
 
     // Validation for FAT/SNF system
