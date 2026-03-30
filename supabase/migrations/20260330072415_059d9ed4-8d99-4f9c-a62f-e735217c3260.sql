@@ -1,0 +1,1 @@
+ALTER TABLE public.milk_entries ADD COLUMN IF NOT EXISTS price numeric DEFAULT NULL;
