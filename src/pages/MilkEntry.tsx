@@ -547,16 +547,21 @@ const MilkEntry: React.FC = () => {
         }
       }
 
+      const parsedMilk = milkQty ? parseFloat(milkQty) : null;
+      const parsedPrice = buyerPrice ? parseFloat(buyerPrice) : null;
+      
       const newEntry: MilkEntryType = {
         date: today,
-        morningMilk: shift === 'morning' ? parseFloat(milkQty) : (existingEntry?.morningMilk ?? null),
+        morningMilk: shift === 'morning' ? (parsedMilk && parsedMilk > 0 ? parsedMilk : null) : (existingEntry?.morningMilk ?? null),
         morningFat: shift === 'morning' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.morningFat ?? null),
         morningSNF: shift === 'morning' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.morningSNF ?? null),
         morningLR: shift === 'morning' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.morningLR ?? null),
-        eveningMilk: shift === 'evening' ? parseFloat(milkQty) : (existingEntry?.eveningMilk ?? null),
+        morningPrice: shift === 'morning' ? (parsedPrice && parsedPrice > 0 ? parsedPrice : null) : (existingEntry?.morningPrice ?? null),
+        eveningMilk: shift === 'evening' ? (parsedMilk && parsedMilk > 0 ? parsedMilk : null) : (existingEntry?.eveningMilk ?? null),
         eveningFat: shift === 'evening' ? (fatValue ? parseFloat(fatValue) : null) : (existingEntry?.eveningFat ?? null),
         eveningSNF: shift === 'evening' ? (snfValue ? parseFloat(snfValue) : null) : (existingEntry?.eveningSNF ?? null),
         eveningLR: shift === 'evening' ? (lrValue ? parseFloat(lrValue) : null) : (existingEntry?.eveningLR ?? null),
+        eveningPrice: shift === 'evening' ? (parsedPrice && parsedPrice > 0 ? parsedPrice : null) : (existingEntry?.eveningPrice ?? null),
       };
 
       await addMilkEntry(selectedSupplier.id, newEntry);
