@@ -301,7 +301,8 @@ const HisaabReport: React.FC = () => {
       endDate: endStr,
       shiftFilter: reportShiftFilter,
       rate: reportRate,
-      calculationMethod,
+      // Buyers always use daily_total regardless of owner settings
+      calculationMethod: reportSupplier.animalType === 'buyer' ? 'daily_total' : calculationMethod,
       fatSnfSettings: fatSnfSettings,
       animalType: reportSupplier.animalType,
       literRate: rateSettings.literRate || 50,
