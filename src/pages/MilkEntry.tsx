@@ -875,8 +875,8 @@ const MilkEntry: React.FC = () => {
             </div>
           )}
 
-          {/* Milk & Fat on top, SNF & LR on bottom - 2x2 grid (hide fat fields for buyers) */}
-          <div className={cn("grid gap-2 mb-3", isBuyer(selectedSupplier) ? "grid-cols-1" : "grid-cols-2")}>
+          {/* Milk & Fat on top, SNF & LR on bottom - 2x2 grid (buyers get milk + price) */}
+          <div className={cn("grid gap-2 mb-3", isBuyer(selectedSupplier) ? "grid-cols-2" : "grid-cols-2")}>
             <div className="space-y-0.5">
               <label className={cn(
                 "text-[10px] font-medium block text-center",
