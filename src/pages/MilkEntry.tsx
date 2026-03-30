@@ -899,6 +899,21 @@ const MilkEntry: React.FC = () => {
                 )}
               />
             </div>
+            {isBuyer(selectedSupplier) && (
+              <div className="space-y-0.5">
+                <label className="text-[10px] font-medium block text-center text-muted-foreground">
+                  {language === 'hi' ? 'रकम (₹)' : 'Price (₹)'}
+                </label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  placeholder="0"
+                  value={buyerPrice}
+                  onChange={e => setBuyerPrice(e.target.value)}
+                  className="h-11 text-lg font-bold text-center rounded-lg border-2 border-primary/30 focus:border-primary bg-background"
+                />
+              </div>
+            )}
             {!isBuyer(selectedSupplier) && (
               <>
                 <div className="space-y-0.5">
