@@ -987,10 +987,11 @@ const MilkEntry: React.FC = () => {
           </div>
 
           {/* Amount Preview - Compact inline (different calculation for buyers) */}
-          {milkQty && (isBuyer(selectedSupplier) || fatValue) && (() => {
+          {(milkQty || buyerPrice) && (isBuyer(selectedSupplier) || fatValue) && (() => {
             const milk = parseFloat(milkQty) || 0;
             const fat = parseFloat(fatValue) || 0;
             const snf = parseFloat(snfValue) || 0;
+            const priceEntered = parseFloat(buyerPrice) || 0;
             
             // Use FAT/SNF system if enabled and SNF value is provided
             const useFatSnfSystem = fatSnfSettings.isEnabled && !isBuyer(selectedSupplier) && snf > 0;
@@ -1000,7 +1001,12 @@ const MilkEntry: React.FC = () => {
             let warning: string | undefined;
             
             if (isBuyer(selectedSupplier)) {
-              calculatedAmount = milk * (rateSettings.literRate || 50);
+              // If price is entered directly, use that; otherwise calculate from liter rate
+              if (priceEntered > 0) {
+                calculatedAmount = priceEntered;
+              } else if (milk > 0) {
+                calculatedAmount = milk * (rateSettings.literRate || 50);
+              }
             } else if (useFatSnfSystem) {
               const result = calculateFatSnfEntry(fatSnfSettings, milk, fat, snf);
               calculatedAmount = result.totalAmount;
@@ -1013,7 +1019,7 @@ const MilkEntry: React.FC = () => {
             return (
               <div className="mb-3 p-2 bg-gradient-to-r from-secondary to-secondary/60 rounded-xl animate-fade-in">
                 {warning && (
-                  <div className="flex items-center gap-1 text-amber-600 text-xs mb-1">
+                  <div className="flex items-center gap-1 text-destructive text-xs mb-1">
                     <AlertTriangle className="h-3 w-3" />
                     <span>{warning}</span>
                   </div>
@@ -1022,7 +1028,10 @@ const MilkEntry: React.FC = () => {
                   {isBuyer(selectedSupplier) ? (
                     <>
                       <p className="text-xs text-muted-foreground">
-                        {milkQty}L × ₹{rateSettings.literRate || 50}/L
+                        {priceEntered > 0 
+                          ? (language === 'hi' ? 'सीधी रकम' : 'Direct price')
+                          : `${milkQty}L × ₹${rateSettings.literRate || 50}/L`
+                        }
                       </p>
                       <p className="text-2xl font-bold text-foreground">
                         ₹{calculatedAmount.toFixed(0)}
@@ -1056,7 +1065,7 @@ const MilkEntry: React.FC = () => {
           {/* Save Button */}
           <Button
             onClick={handleSaveEntry}
-            disabled={isLoading || !selectedSupplier || !milkQty}
+            disabled={isLoading || !selectedSupplier || (!milkQty && !buyerPrice)}
             className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg transition-all duration-200 active:scale-[0.98] mb-2"
           >
             {isLoading ? (
