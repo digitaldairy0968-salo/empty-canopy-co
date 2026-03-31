@@ -147,8 +147,9 @@ const AdminSubscriptions: React.FC = () => {
         upi_id: upiId,
         admin_phone: adminPhone,
         default_validity_days: parseInt(defaultValidityDays) || 30,
+        demo_days: parseInt(demoDays) || 9,
         updated_at: new Date().toISOString()
-      };
+      } as any;
 
       if (settings?.id) {
         // Update existing
