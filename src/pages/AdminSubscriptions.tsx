@@ -62,6 +62,7 @@ const AdminSubscriptions: React.FC = () => {
   const [validityDays, setValidityDays] = useState('30');
   const [validityPreset, setValidityPreset] = useState('30');
   const [codesCount, setCodesCount] = useState('1');
+  const [demoDays, setDemoDays] = useState('9');
 
   // Payment plans state
   const [plans, setPlans] = useState<any[]>([]);
