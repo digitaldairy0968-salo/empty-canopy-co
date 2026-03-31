@@ -30,6 +30,7 @@ const Auth: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(null);
 
   // Determine initial step based on pending state
   const getInitialStep = (): AuthStep => {
@@ -53,6 +54,21 @@ const Auth: React.FC = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch admin-uploaded auth page image
+  useEffect(() => {
+    const fetchAuthImage = async () => {
+      const { data } = await supabase
+        .from('subscription_settings')
+        .select('auth_page_image_url')
+        .limit(1)
+        .maybeSingle();
+      if ((data as any)?.auth_page_image_url) {
+        setAuthPageImageUrl((data as any).auth_page_image_url);
+      }
+    };
+    fetchAuthImage();
+  }, []);
 
   // Check if this is a password recovery redirect
   useEffect(() => {
