@@ -110,7 +110,7 @@ const SubscriptionInfo: React.FC = () => {
   return (
     <>
       <button
-        onClick={() => setShowPaymentDialog(true)}
+        onClick={() => navigate('/payment-required')}
         className="w-full dairy-card animate-fade-in text-left hover:shadow-lg transition-shadow"
       >
         <div className="flex items-center gap-3">

@@ -332,16 +332,16 @@ const SupplierCard: React.FC = () => {
                   const isToday = date === format(new Date(), 'yyyy-MM-dd');
                   
                   // Calculate morning and evening amounts - use SNF system if enabled
-                  // For buyers: amount = milk × literRate
+                  // For buyers: use direct price if available, else milk × literRate
                   const morningAmount = isBuyer
-                    ? (entry?.morningMilk ? entry.morningMilk * literRate : null)
+                    ? (entry?.morningPrice ? entry.morningPrice : (entry?.morningMilk ? entry.morningMilk * literRate : null))
                     : (entry?.morningMilk && entry?.morningFat 
                       ? (fatSnfSettings.isEnabled && entry?.morningSNF
                         ? entry.morningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.morningSNF, fatSnfSettings.snfDeductionPerPoint, entry.morningFat)
                         : entry.morningMilk * entry.morningFat * rate)
                       : null);
                   const eveningAmount = isBuyer
-                    ? (entry?.eveningMilk ? entry.eveningMilk * literRate : null)
+                    ? (entry?.eveningPrice ? entry.eveningPrice : (entry?.eveningMilk ? entry.eveningMilk * literRate : null))
                     : (entry?.eveningMilk && entry?.eveningFat 
                       ? (fatSnfSettings.isEnabled && entry?.eveningSNF
                         ? entry.eveningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.eveningSNF, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat)
