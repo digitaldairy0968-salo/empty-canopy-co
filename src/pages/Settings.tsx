@@ -32,6 +32,7 @@ type Language = 'hi' | 'gu' | 'en';
 
 // Subscription info component - clickable, shows QR/UPI/WhatsApp
 const SubscriptionInfo: React.FC = () => {
+  const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
