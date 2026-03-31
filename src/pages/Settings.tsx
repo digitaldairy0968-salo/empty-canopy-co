@@ -981,61 +981,9 @@ const Settings: React.FC = () => {
           </SettingsSection>
         )}
 
-        {/* Code Direction & Prefill Settings - Only for Owners */}
+        {/* Code Direction & Prefill Settings - Only for Owners - Requires admin feature */}
         {user?.role === 'owner' && (
-          <SettingsSection
-            icon={<span className="text-lg">🔢</span>}
-            title={language === 'hi' ? 'एंट्री सेटिंग्स' : 'Entry Settings'}
-            delay="160ms"
-          >
-            {/* Code Direction Toggle */}
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
-              <div>
-                <span className="font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'hi' 
-                    ? (ownerSettings.codeDirection === 'forward' ? 'सेव के बाद कोड बढ़ेगा' : 'सेव के बाद कोड घटेगा')
-                    : (ownerSettings.codeDirection === 'forward' ? 'Code increases after save' : 'Code decreases after save')}
-                </p>
-              </div>
-              <div className="flex bg-muted rounded-full p-0.5">
-                <button
-                  onClick={() => updateOwnerSettings({ codeDirection: 'forward' })}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-                >⬆️</button>
-                <button
-                  onClick={() => updateOwnerSettings({ codeDirection: 'reverse' })}
-                  className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-                >⬇️</button>
-              </div>
-            </div>
-
-            {/* Default Prefill Toggle */}
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
-              <div>
-                <span className="font-medium">{language === 'hi' ? 'Already Filled: FAT, SNF, LR' : 'Prefill: FAT, SNF, LR'}</span>
-                <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री में ये वैल्यू ऑटो भरें' : 'Auto-fill these values in entry'}</p>
-              </div>
-              <Switch checked={ownerSettings.prefillEnabled} onCheckedChange={(checked) => updateOwnerSettings({ prefillEnabled: checked })} disabled={savingOwnerSettings} />
-            </div>
-
-            {ownerSettings.prefillEnabled && (
-              <div className="grid grid-cols-3 gap-2 p-3 bg-primary/5 rounded-xl">
-                <div>
-                  <label className="text-[10px] text-muted-foreground block text-center">FAT</label>
-                  <Input type="number" inputMode="decimal" value={ownerSettings.prefillFat ?? ''} onChange={e => updateOwnerSettings({ prefillFat: e.target.value ? parseFloat(e.target.value) : null })} className="h-9 text-center text-sm font-semibold" placeholder="0.0" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground block text-center">SNF</label>
-                  <Input type="number" inputMode="decimal" value={ownerSettings.prefillSnf ?? ''} onChange={e => updateOwnerSettings({ prefillSnf: e.target.value ? parseFloat(e.target.value) : null })} className="h-9 text-center text-sm font-semibold" placeholder="0.0" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-muted-foreground block text-center">LR</label>
-                  <Input type="number" inputMode="decimal" value={ownerSettings.prefillLr ?? ''} onChange={e => updateOwnerSettings({ prefillLr: e.target.value ? parseFloat(e.target.value) : null })} className="h-9 text-center text-sm font-semibold" placeholder="0.0" />
-                </div>
-              </div>
-            )}
-          </SettingsSection>
+          <EntrySettingsSection language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} savingOwnerSettings={savingOwnerSettings} />
         )}
 
         {/* Logout */}
