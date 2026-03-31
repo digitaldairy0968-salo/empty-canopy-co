@@ -17,6 +17,7 @@ interface SubscriptionSettings {
   qr_code_url: string | null;
   admin_phone: string;
   default_validity_days: number;
+  auth_page_image_url: string | null;
 }
 
 interface ActivationCode {
