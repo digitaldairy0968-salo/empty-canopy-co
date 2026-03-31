@@ -94,6 +94,7 @@ const AdminSubscriptions: React.FC = () => {
         const days = settingsData.default_validity_days?.toString() || '30';
         setDefaultValidityDays(days);
         setDefaultValidityPreset(['1', '7', '15', '30', '90', '180', '365'].includes(days) ? days : 'custom');
+        setDemoDays((settingsData as any).demo_days?.toString() || '9');
       }
 
       // Fetch codes
