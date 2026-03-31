@@ -312,6 +312,16 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Subscription Renewal (from owner settings) */}
+        <Route
+          path="/subscription-renewal"
+          element={
+            <OwnerRoute>
+              <PageTransition><SubscriptionRenewal /></PageTransition>
+            </OwnerRoute>
+          }
+        />
         
         {/* Owner Routes */}
         <Route
