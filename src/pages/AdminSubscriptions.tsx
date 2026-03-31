@@ -457,6 +457,52 @@ const AdminSubscriptions: React.FC = () => {
                 {uploading && <p className="text-sm text-muted-foreground">Uploading...</p>}
               </div>
 
+              {/* Auth Page Image Upload */}
+              <div className="space-y-2">
+                <Label>Auth Page Image (above डेयरी प्रबंधक)</Label>
+                <p className="text-xs text-muted-foreground">This image will animate on the role selection page</p>
+                {settings?.auth_page_image_url && (
+                  <img 
+                    src={settings.auth_page_image_url} 
+                    alt="Auth Page Image" 
+                    className="w-24 h-24 border rounded-lg mb-2 object-contain"
+                  />
+                )}
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !settings?.id) return;
+                    setUploading(true);
+                    try {
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `auth-image-${Date.now()}.${fileExt}`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('auth-images')
+                        .upload(fileName, file);
+                      if (uploadError) throw uploadError;
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('auth-images')
+                        .getPublicUrl(fileName);
+                      const { error: updateError } = await supabase
+                        .from('subscription_settings')
+                        .update({ auth_page_image_url: publicUrl } as any)
+                        .eq('id', settings.id);
+                      if (updateError) throw updateError;
+                      toast.success('Auth page image uploaded');
+                      fetchData();
+                    } catch (error) {
+                      console.error('Upload error:', error);
+                      toast.error('Failed to upload');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                  disabled={uploading}
+                />
+              </div>
+
               <Button 
                 onClick={saveSettings} 
                 disabled={saving}
