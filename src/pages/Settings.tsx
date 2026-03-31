@@ -111,7 +111,7 @@ const SubscriptionInfo: React.FC = () => {
   return (
     <>
       <button
-        onClick={() => navigate('/payment-required')}
+        onClick={() => navigate('/subscription-renewal')}
         className="w-full dairy-card animate-fade-in text-left hover:shadow-lg transition-shadow"
       >
         <div className="flex items-center gap-3">

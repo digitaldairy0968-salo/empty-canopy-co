@@ -33,6 +33,7 @@ import AdminSubscriptions from "./pages/AdminSubscriptions";
 import AdminDairyFeatures from "./pages/AdminDairyFeatures";
 import AdminVarieties from "./pages/AdminVarieties";
 import PaymentRequired from "./pages/PaymentRequired";
+import SubscriptionRenewal from "./pages/SubscriptionRenewal";
 import NotFound from "./pages/NotFound";
 import { useState, useEffect } from "react";
 
@@ -309,6 +310,16 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <PageTransition><PaymentRequired /></PageTransition>
             </ProtectedRoute>
+          }
+        />
+
+        {/* Subscription Renewal (from owner settings) */}
+        <Route
+          path="/subscription-renewal"
+          element={
+            <OwnerRoute>
+              <PageTransition><SubscriptionRenewal /></PageTransition>
+            </OwnerRoute>
           }
         />
         

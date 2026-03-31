@@ -18,6 +18,7 @@ interface SubscriptionSettings {
   admin_phone: string;
   default_validity_days: number;
   auth_page_image_url: string | null;
+  demo_days?: number;
 }
 
 interface ActivationCode {
@@ -61,6 +62,7 @@ const AdminSubscriptions: React.FC = () => {
   const [validityDays, setValidityDays] = useState('30');
   const [validityPreset, setValidityPreset] = useState('30');
   const [codesCount, setCodesCount] = useState('1');
+  const [demoDays, setDemoDays] = useState('9');
 
   // Payment plans state
   const [plans, setPlans] = useState<any[]>([]);
@@ -92,6 +94,7 @@ const AdminSubscriptions: React.FC = () => {
         const days = settingsData.default_validity_days?.toString() || '30';
         setDefaultValidityDays(days);
         setDefaultValidityPreset(['1', '7', '15', '30', '90', '180', '365'].includes(days) ? days : 'custom');
+        setDemoDays((settingsData as any).demo_days?.toString() || '9');
       }
 
       // Fetch codes
@@ -144,8 +147,9 @@ const AdminSubscriptions: React.FC = () => {
         upi_id: upiId,
         admin_phone: adminPhone,
         default_validity_days: parseInt(defaultValidityDays) || 30,
+        demo_days: parseInt(demoDays) || 9,
         updated_at: new Date().toISOString()
-      };
+      } as any;
 
       if (settings?.id) {
         // Update existing
@@ -502,6 +506,18 @@ const AdminSubscriptions: React.FC = () => {
                   }}
                   disabled={uploading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Demo Days (Free Trial)</Label>
+                <Input
+                  type="number"
+                  value={demoDays}
+                  onChange={(e) => setDemoDays(e.target.value)}
+                  placeholder="9"
+                  min="1"
+                />
+                <p className="text-xs text-muted-foreground">New users ko kitne din ka free demo milega</p>
               </div>
 
               <Button 

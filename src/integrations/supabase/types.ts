@@ -660,6 +660,7 @@ export type Database = {
           auth_page_image_url: string | null
           created_at: string
           default_validity_days: number | null
+          demo_days: number
           id: string
           monthly_price: number
           qr_code_url: string | null
@@ -671,6 +672,7 @@ export type Database = {
           auth_page_image_url?: string | null
           created_at?: string
           default_validity_days?: number | null
+          demo_days?: number
           id?: string
           monthly_price?: number
           qr_code_url?: string | null
@@ -682,6 +684,7 @@ export type Database = {
           auth_page_image_url?: string | null
           created_at?: string
           default_validity_days?: number | null
+          demo_days?: number
           id?: string
           monthly_price?: number
           qr_code_url?: string | null

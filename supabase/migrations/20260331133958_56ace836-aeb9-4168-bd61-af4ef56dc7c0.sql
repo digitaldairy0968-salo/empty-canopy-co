@@ -1,0 +1,1 @@
+ALTER TABLE public.subscription_settings ADD COLUMN IF NOT EXISTS demo_days integer NOT NULL DEFAULT 9;
