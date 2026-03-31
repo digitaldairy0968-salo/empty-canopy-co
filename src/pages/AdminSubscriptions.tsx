@@ -508,6 +508,18 @@ const AdminSubscriptions: React.FC = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label>Demo Days (Free Trial)</Label>
+                <Input
+                  type="number"
+                  value={demoDays}
+                  onChange={(e) => setDemoDays(e.target.value)}
+                  placeholder="9"
+                  min="1"
+                />
+                <p className="text-xs text-muted-foreground">New users ko kitne din ka free demo milega</p>
+              </div>
+
               <Button 
                 onClick={saveSettings} 
                 disabled={saving}
