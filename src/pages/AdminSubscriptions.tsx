@@ -18,6 +18,7 @@ interface SubscriptionSettings {
   admin_phone: string;
   default_validity_days: number;
   auth_page_image_url: string | null;
+  demo_days?: number;
 }
 
 interface ActivationCode {
