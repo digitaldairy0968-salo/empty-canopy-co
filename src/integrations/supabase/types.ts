@@ -657,6 +657,7 @@ export type Database = {
       subscription_settings: {
         Row: {
           admin_phone: string
+          auth_page_image_url: string | null
           created_at: string
           default_validity_days: number | null
           id: string
@@ -667,6 +668,7 @@ export type Database = {
         }
         Insert: {
           admin_phone?: string
+          auth_page_image_url?: string | null
           created_at?: string
           default_validity_days?: number | null
           id?: string
@@ -677,6 +679,7 @@ export type Database = {
         }
         Update: {
           admin_phone?: string
+          auth_page_image_url?: string | null
           created_at?: string
           default_validity_days?: number | null
           id?: string

@@ -30,6 +30,7 @@ const Auth: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(null);
 
   // Determine initial step based on pending state
   const getInitialStep = (): AuthStep => {
@@ -53,6 +54,21 @@ const Auth: React.FC = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Fetch admin-uploaded auth page image
+  useEffect(() => {
+    const fetchAuthImage = async () => {
+      const { data } = await supabase
+        .from('subscription_settings')
+        .select('auth_page_image_url')
+        .limit(1)
+        .maybeSingle();
+      if ((data as any)?.auth_page_image_url) {
+        setAuthPageImageUrl((data as any).auth_page_image_url);
+      }
+    };
+    fetchAuthImage();
+  }, []);
 
   // Check if this is a password recovery redirect
   useEffect(() => {
@@ -331,11 +347,23 @@ const Auth: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
         <div className="relative pt-6 pb-8 px-4">
           <div className="text-center pt-4">
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
-                <Droplets className="w-8 h-8 text-primary-foreground" />
+            {/* Admin-uploaded animated image above logo */}
+            {authPageImageUrl && (
+              <div className="mb-4 relative mx-auto w-24 h-24">
+                <img 
+                  src={authPageImageUrl} 
+                  alt="Dairy" 
+                  className="w-full h-full object-contain rounded-2xl animate-bounce-gentle"
+                />
               </div>
-            </div>
+            )}
+            {!authPageImageUrl && (
+              <div className="flex justify-center mb-3">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
+                  <Droplets className="w-8 h-8 text-primary-foreground" />
+                </div>
+              </div>
+            )}
             <h1 className="text-2xl font-bold">{t('appName')}</h1>
             <p className="text-muted-foreground mt-1">
               {language === 'hi' ? 'आप कौन हैं?' : language === 'gu' ? 'તમે કોણ છો?' : 'Who are you?'}
