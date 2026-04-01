@@ -478,7 +478,8 @@ const EntrySettingsSection: React.FC<{
   }, [dairyId]);
 
   if (loading) return null;
-  if (!featureEnabled) return null;
+  
+  const isLocked = !featureEnabled;
 
   return (
     <SettingsSection
