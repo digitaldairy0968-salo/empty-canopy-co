@@ -639,9 +639,9 @@ const AdminSubscriptions: React.FC = () => {
                     <SelectValue placeholder="Select validity" />
                   </SelectTrigger>
                   <SelectContent>
-                     <SelectItem value="30">1 Month (30 Days)</SelectItem>
-                     <SelectItem value="180">6 Months (180 Days)</SelectItem>
-                     <SelectItem value="365">1 Year (365 Days)</SelectItem>
+                     <SelectItem value="30">1 Month</SelectItem>
+                     <SelectItem value="180">6 Months</SelectItem>
+                     <SelectItem value="365">1 Year</SelectItem>
                      <SelectItem value="custom">Custom Days</SelectItem>
                   </SelectContent>
                 </Select>
