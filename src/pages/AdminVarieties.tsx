@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -226,11 +227,23 @@ const AdminVarieties: React.FC = () => {
 
               {/* Quick add plan */}
               {selectedVariety === v.id ? (
-                <div className="grid grid-cols-3 gap-2">
-                  <Input value={planName} onChange={e => setPlanName(e.target.value)} placeholder="Plan name" className="text-sm" />
-                  <Input type="number" value={planPrice} onChange={e => setPlanPrice(e.target.value)} placeholder="₹ Price" className="text-sm" />
-                  <div className="flex gap-1">
-                    <Input type="number" value={planDays} onChange={e => setPlanDays(e.target.value)} placeholder="Days" className="text-sm" />
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input value={planName} onChange={e => setPlanName(e.target.value)} placeholder="Plan name" className="text-sm" />
+                    <Input type="number" value={planPrice} onChange={e => setPlanPrice(e.target.value)} placeholder="₹ Price" className="text-sm" />
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={planDays} onValueChange={setPlanDays}>
+                      <SelectTrigger className="text-sm h-9">
+                        <SelectValue placeholder="Validity" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="30">1 Month</SelectItem>
+                        <SelectItem value="180">6 Months</SelectItem>
+                        <SelectItem value="365">1 Year</SelectItem>
+                        <SelectItem value="36500">Permanently</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button size="sm" onClick={addPlan} disabled={savingPlan}>
                       <Plus className="h-3 w-3" />
                     </Button>

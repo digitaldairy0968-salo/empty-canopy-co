@@ -639,14 +639,10 @@ const AdminSubscriptions: React.FC = () => {
                     <SelectValue placeholder="Select validity" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">1 Day</SelectItem>
-                    <SelectItem value="7">7 Days (1 Week)</SelectItem>
-                    <SelectItem value="15">15 Days</SelectItem>
-                    <SelectItem value="30">30 Days (1 Month)</SelectItem>
-                    <SelectItem value="90">90 Days (3 Months)</SelectItem>
-                    <SelectItem value="180">180 Days (6 Months)</SelectItem>
-                    <SelectItem value="365">365 Days (1 Year)</SelectItem>
-                    <SelectItem value="custom">Custom Days</SelectItem>
+                     <SelectItem value="30">1 Month (30 Days)</SelectItem>
+                     <SelectItem value="180">6 Months (180 Days)</SelectItem>
+                     <SelectItem value="365">1 Year (365 Days)</SelectItem>
+                     <SelectItem value="custom">Custom Days</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -791,19 +787,19 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 1)}
+                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
                         >
                           <Clock className="h-3 w-3" />
-                          +1 Day
+                          +1 Month
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
+                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 180)}
                         >
                           <Clock className="h-3 w-3" />
-                          +30 Days
+                          +6 Months
                         </Button>
                         <Button
                           variant="outline"
