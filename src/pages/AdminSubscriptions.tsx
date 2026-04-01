@@ -341,6 +341,30 @@ const AdminSubscriptions: React.FC = () => {
     }
   };
 
+  const extendSubscriptionByMonths = async (dairyId: string, dairyName: string, months: number) => {
+    try {
+      const sub = subscriptions.find(s => s.dairy_id === dairyId);
+      const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
+      const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
+      newExpiry.setMonth(newExpiry.getMonth() + months);
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          expires_at: newExpiry.toISOString()
+        })
+        .eq('dairy_id', dairyId);
+
+      if (error) throw error;
+      toast.success(`${dairyName} extended by ${months} month(s)`);
+      fetchData();
+    } catch (error) {
+      console.error('Error extending subscription:', error);
+      toast.error('Failed to extend subscription');
+    }
+  };
+
   const extendSubscription = async (dairyId: string, dairyName: string, days: number) => {
     try {
       const sub = subscriptions.find(s => s.dairy_id === dairyId);
@@ -350,10 +374,7 @@ const AdminSubscriptions: React.FC = () => {
 
       const { error } = await supabase
         .from('subscriptions')
-        .update({
-          status: 'active',
-          expires_at: newExpiry.toISOString()
-        })
+        .update({ status: 'active', expires_at: newExpiry.toISOString() })
         .eq('dairy_id', dairyId);
 
       if (error) throw error;
@@ -639,9 +660,9 @@ const AdminSubscriptions: React.FC = () => {
                     <SelectValue placeholder="Select validity" />
                   </SelectTrigger>
                   <SelectContent>
-                     <SelectItem value="30">1 Month (30 Days)</SelectItem>
-                     <SelectItem value="180">6 Months (180 Days)</SelectItem>
-                     <SelectItem value="365">1 Year (365 Days)</SelectItem>
+                     <SelectItem value="30">1 Month</SelectItem>
+                     <SelectItem value="180">6 Months</SelectItem>
+                     <SelectItem value="365">1 Year</SelectItem>
                      <SelectItem value="custom">Custom Days</SelectItem>
                   </SelectContent>
                 </Select>
@@ -787,7 +808,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 1)}
                         >
                           <Clock className="h-3 w-3" />
                           +1 Month
@@ -796,7 +817,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 180)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 6)}
                         >
                           <Clock className="h-3 w-3" />
                           +6 Months
@@ -805,7 +826,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 365)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 12)}
                         >
                           <Clock className="h-3 w-3" />
                           +1 Year
