@@ -18,6 +18,7 @@ export interface OwnerSettings {
   prefillFat: number | null;
   prefillSnf: number | null;
   prefillLr: number | null;
+  predictMilkEnabled: boolean;
 }
 
 const defaultSettings: OwnerSettings = {
@@ -36,6 +37,7 @@ const defaultSettings: OwnerSettings = {
   prefillFat: null,
   prefillSnf: null,
   prefillLr: null,
+  predictMilkEnabled: true,
 };
 
 export function useOwnerSettings() {
@@ -77,6 +79,7 @@ export function useOwnerSettings() {
             prefillFat: (data as any).prefill_fat ?? null,
             prefillSnf: (data as any).prefill_snf ?? null,
             prefillLr: (data as any).prefill_lr ?? null,
+            predictMilkEnabled: (data as any).predict_milk_enabled ?? true,
           });
         }
       } catch (error) {
@@ -110,6 +113,7 @@ export function useOwnerSettings() {
       if (updates.prefillFat !== undefined) dbUpdates.prefill_fat = updates.prefillFat;
       if (updates.prefillSnf !== undefined) dbUpdates.prefill_snf = updates.prefillSnf;
       if (updates.prefillLr !== undefined) dbUpdates.prefill_lr = updates.prefillLr;
+      if (updates.predictMilkEnabled !== undefined) dbUpdates.predict_milk_enabled = updates.predictMilkEnabled;
 
       const { error } = await supabase
         .from('owner_settings')

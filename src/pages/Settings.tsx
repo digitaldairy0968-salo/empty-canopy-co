@@ -478,16 +478,27 @@ const EntrySettingsSection: React.FC<{
   }, [dairyId]);
 
   if (loading) return null;
-  if (!featureEnabled) return null;
+  
+  const isLocked = !featureEnabled;
 
   return (
     <SettingsSection
       icon={<span className="text-lg">🔢</span>}
       title={language === 'hi' ? 'एंट्री सेटिंग्स (एडवांस)' : 'Entry Settings (Advanced)'}
+      subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है' : '🔒 Locked by admin') : undefined}
       delay="160ms"
     >
+      {/* Predict Milk Toggle */}
+      <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
+        <div>
+          <span className="font-medium">{language === 'hi' ? 'दूध भविष्यवाणी (Predict Milk)' : 'Predict Milk'}</span>
+          <p className="text-xs text-muted-foreground">{language === 'hi' ? 'पिछली 2 बार समान दूध हो तो ऑटो भरें' : 'Auto-fill if last 2 entries have same quantity'}</p>
+        </div>
+        <Switch checked={ownerSettings.predictMilkEnabled ?? true} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
+      </div>
+
       {/* Code Direction Toggle */}
-      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
+      <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
           <span className="font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
           <p className="text-xs text-muted-foreground">
@@ -498,26 +509,26 @@ const EntrySettingsSection: React.FC<{
         </div>
         <div className="flex bg-muted rounded-full p-0.5">
           <button
-            onClick={() => updateOwnerSettings({ codeDirection: 'forward' })}
+            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'forward' })}
             className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
           >⬆️</button>
           <button
-            onClick={() => updateOwnerSettings({ codeDirection: 'reverse' })}
+            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'reverse' })}
             className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
           >⬇️</button>
         </div>
       </div>
 
       {/* Default Prefill Toggle */}
-      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
+      <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
           <span className="font-medium">{language === 'hi' ? 'Already Filled: FAT, SNF, LR' : 'Prefill: FAT, SNF, LR'}</span>
           <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री में ये वैल्यू ऑटो भरें' : 'Auto-fill these values in entry'}</p>
         </div>
-        <Switch checked={ownerSettings.prefillEnabled} onCheckedChange={(checked) => updateOwnerSettings({ prefillEnabled: checked })} disabled={savingOwnerSettings} />
+        <Switch checked={ownerSettings.prefillEnabled} onCheckedChange={(checked) => updateOwnerSettings({ prefillEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
       </div>
 
-      {ownerSettings.prefillEnabled && (
+      {ownerSettings.prefillEnabled && !isLocked && (
         <div className="grid grid-cols-3 gap-2 p-3 bg-primary/5 rounded-xl">
           <div>
             <label className="text-[10px] text-muted-foreground block text-center">FAT</label>
@@ -532,6 +543,12 @@ const EntrySettingsSection: React.FC<{
             <Input type="number" inputMode="decimal" value={ownerSettings.prefillLr ?? ''} onChange={e => updateOwnerSettings({ prefillLr: e.target.value ? parseFloat(e.target.value) : null })} className="h-9 text-center text-sm font-semibold" placeholder="0.0" />
           </div>
         </div>
+      )}
+
+      {isLocked && (
+        <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg mt-2">
+          {language === 'hi' ? '🔒 यह फीचर एडमिन द्वारा लॉक है। एडमिन से संपर्क करें।' : '🔒 This feature is locked by admin. Contact admin.'}
+        </p>
       )}
     </SettingsSection>
   );

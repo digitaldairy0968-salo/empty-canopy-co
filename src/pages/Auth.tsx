@@ -463,11 +463,22 @@ const Auth: React.FC = () => {
         </button>
         
         <div className="text-center pt-8">
-          <div className="flex justify-center mb-3">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-              <Droplets className="w-8 h-8 text-primary-foreground" />
+          {/* Admin-uploaded auth image on login/signup too */}
+          {authPageImageUrl ? (
+            <div className="mb-3 relative mx-auto w-20 h-20">
+              <img 
+                src={authPageImageUrl} 
+                alt="Dairy" 
+                className="w-full h-full object-contain rounded-2xl animate-bounce-gentle"
+              />
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center mb-3">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Droplets className="w-8 h-8 text-primary-foreground" />
+              </div>
+            </div>
+          )}
           <h1 className="text-2xl font-bold">{t('appName')}</h1>
           <div className="flex items-center justify-center gap-2 mt-2">
             <span className="text-xl">{role === 'owner' ? '👨‍🌾' : '🐄'}</span>
