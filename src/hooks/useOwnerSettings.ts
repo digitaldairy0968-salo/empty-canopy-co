@@ -113,6 +113,7 @@ export function useOwnerSettings() {
       if (updates.prefillFat !== undefined) dbUpdates.prefill_fat = updates.prefillFat;
       if (updates.prefillSnf !== undefined) dbUpdates.prefill_snf = updates.prefillSnf;
       if (updates.prefillLr !== undefined) dbUpdates.prefill_lr = updates.prefillLr;
+      if (updates.predictMilkEnabled !== undefined) dbUpdates.predict_milk_enabled = updates.predictMilkEnabled;
 
       const { error } = await supabase
         .from('owner_settings')
