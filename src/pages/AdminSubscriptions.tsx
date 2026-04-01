@@ -787,7 +787,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 1)}
                         >
                           <Clock className="h-3 w-3" />
                           +1 Month
@@ -796,7 +796,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 180)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 6)}
                         >
                           <Clock className="h-3 w-3" />
                           +6 Months
@@ -805,7 +805,7 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 365)}
+                          onClick={() => extendSubscriptionByMonths(sub.dairy_id, sub.dairy_name || '', 12)}
                         >
                           <Clock className="h-3 w-3" />
                           +1 Year
