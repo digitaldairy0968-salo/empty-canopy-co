@@ -18,6 +18,7 @@ export interface OwnerSettings {
   prefillFat: number | null;
   prefillSnf: number | null;
   prefillLr: number | null;
+  predictMilkEnabled: boolean;
 }
 
 const defaultSettings: OwnerSettings = {
