@@ -39,10 +39,21 @@ const DairySetup: React.FC = () => {
             onboarding_completed: true,
           } as any, { onConflict: 'dairy_id' });
         
+        // Also save the initial rates from RateSetup
+        const initialFatRate = localStorage.getItem('initial_fat_rate');
+        const initialLiterRate = localStorage.getItem('initial_liter_rate');
+        
         await supabase
           .from('rate_settings')
-          .update({ calculation_method: pendingSettings.calculationSystem ?? 'avg_fat' } as any)
+          .update({ 
+            calculation_method: pendingSettings.calculationSystem ?? 'avg_fat',
+            rate_value: initialFatRate ? parseFloat(initialFatRate) : 8,
+            liter_rate: initialLiterRate ? parseFloat(initialLiterRate) : 50,
+          } as any)
           .eq('dairy_id', dairyId);
+        
+        localStorage.removeItem('initial_fat_rate');
+        localStorage.removeItem('initial_liter_rate');
         
         localStorage.removeItem('pending_owner_settings');
       }
