@@ -787,19 +787,19 @@ const AdminSubscriptions: React.FC = () => {
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 1)}
+                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
                         >
                           <Clock className="h-3 w-3" />
-                          +1 Day
+                          +1 Month
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           className="text-xs gap-1"
-                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 30)}
+                          onClick={() => extendSubscription(sub.dairy_id, sub.dairy_name || '', 180)}
                         >
                           <Clock className="h-3 w-3" />
-                          +30 Days
+                          +6 Months
                         </Button>
                         <Button
                           variant="outline"
