@@ -365,6 +365,27 @@ const AdminSubscriptions: React.FC = () => {
     }
   };
 
+  const extendSubscription = async (dairyId: string, dairyName: string, days: number) => {
+    try {
+      const sub = subscriptions.find(s => s.dairy_id === dairyId);
+      const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
+      const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
+      newExpiry.setDate(newExpiry.getDate() + days);
+
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ status: 'active', expires_at: newExpiry.toISOString() })
+        .eq('dairy_id', dairyId);
+
+      if (error) throw error;
+      toast.success(`${dairyName} extended by ${days} days`);
+      fetchData();
+    } catch (error) {
+      console.error('Error extending subscription:', error);
+      toast.error('Failed to extend subscription');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
