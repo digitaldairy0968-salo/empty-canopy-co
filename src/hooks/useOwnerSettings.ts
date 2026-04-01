@@ -37,6 +37,7 @@ const defaultSettings: OwnerSettings = {
   prefillFat: null,
   prefillSnf: null,
   prefillLr: null,
+  predictMilkEnabled: true,
 };
 
 export function useOwnerSettings() {
