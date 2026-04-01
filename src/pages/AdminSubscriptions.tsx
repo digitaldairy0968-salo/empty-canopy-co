@@ -341,12 +341,12 @@ const AdminSubscriptions: React.FC = () => {
     }
   };
 
-  const extendSubscription = async (dairyId: string, dairyName: string, days: number) => {
+  const extendSubscriptionByMonths = async (dairyId: string, dairyName: string, months: number) => {
     try {
       const sub = subscriptions.find(s => s.dairy_id === dairyId);
       const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
       const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
-      newExpiry.setDate(newExpiry.getDate() + days);
+      newExpiry.setMonth(newExpiry.getMonth() + months);
 
       const { error } = await supabase
         .from('subscriptions')
@@ -357,7 +357,7 @@ const AdminSubscriptions: React.FC = () => {
         .eq('dairy_id', dairyId);
 
       if (error) throw error;
-      toast.success(`${dairyName} extended by ${days} days`);
+      toast.success(`${dairyName} extended by ${months} month(s)`);
       fetchData();
     } catch (error) {
       console.error('Error extending subscription:', error);
