@@ -552,6 +552,77 @@ const EntrySettingsSection: React.FC<{
       )}
     </SettingsSection>
   );
+
+// FAT/SNF Machine Connect - admin feature controlled
+const FatMachineConnect: React.FC<{
+  language: string;
+  dairyId?: string;
+  ownerSettings: any;
+  updateOwnerSettings: (updates: any) => void;
+  toast: any;
+}> = ({ language, dairyId, ownerSettings, updateOwnerSettings, toast }) => {
+  const [featureEnabled, setFeatureEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkFeature = async () => {
+      if (!dairyId) { setLoading(false); return; }
+      const { data } = await supabase
+        .from('dairy_features')
+        .select('is_enabled')
+        .eq('dairy_id', dairyId)
+        .eq('feature_key', 'connect_fat_machine')
+        .maybeSingle();
+      setFeatureEnabled((data as any)?.is_enabled || false);
+      setLoading(false);
+    };
+    checkFeature();
+  }, [dairyId]);
+
+  if (loading) return null;
+  const isLocked = !featureEnabled;
+
+  return (
+    <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl", isLocked && "opacity-50")}>
+      <div className="flex items-center gap-3">
+        <Bluetooth className="h-5 w-5 text-blue-500" />
+        <div>
+          <span className="font-medium">{language === 'hi' ? 'FAT/SNF मशीन' : 'FAT/SNF Machine'}</span>
+          <p className="text-xs text-muted-foreground">
+            {isLocked 
+              ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है' : '🔒 Locked by admin')
+              : (language === 'hi' ? 'ब्लूटूथ से कनेक्ट करें' : 'Connect via Bluetooth')}
+          </p>
+        </div>
+      </div>
+      <Button
+        variant={ownerSettings.bluetoothFatMachineConnected ? "default" : "outline"}
+        size="sm"
+        className="rounded-xl"
+        disabled={isLocked}
+        onClick={async () => {
+          if (isLocked) return;
+          try {
+            if (!(navigator as any).bluetooth) {
+              toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र उपयोग करें।' : 'Use Chrome browser.', variant: 'destructive' });
+              return;
+            }
+            const device = await (navigator as any).bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
+            if (device) {
+              updateOwnerSettings({ bluetoothFatMachineConnected: true });
+              toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!' });
+            }
+          } catch (err: any) {
+            if (err.name !== 'NotFoundError') {
+              toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
+            }
+          }
+        }}
+      >
+        {ownerSettings.bluetoothFatMachineConnected ? (language === 'hi' ? 'कनेक्टेड' : 'Connected') : (language === 'hi' ? 'कनेक्ट करें' : 'Connect')}
+      </Button>
+    </div>
+  );
 };
 
 const Settings: React.FC = () => {
@@ -960,40 +1031,8 @@ const Settings: React.FC = () => {
                 </div>
               )}
 
-              {/* Bluetooth Fat/SNF Machine */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Bluetooth className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <span className="font-medium">{language === 'hi' ? 'FAT/SNF मशीन' : 'FAT/SNF Machine'}</span>
-                    <p className="text-xs text-muted-foreground">{language === 'hi' ? 'ब्लूटूथ से कनेक्ट करें' : 'Connect via Bluetooth'}</p>
-                  </div>
-                </div>
-                <Button
-                  variant={ownerSettings.bluetoothFatMachineConnected ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={async () => {
-                    try {
-                      if (!(navigator as any).bluetooth) {
-                        toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र उपयोग करें।' : 'Use Chrome browser.', variant: 'destructive' });
-                        return;
-                      }
-                      const device = await (navigator as any).bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
-                      if (device) {
-                        updateOwnerSettings({ bluetoothFatMachineConnected: true });
-                        toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!' });
-                      }
-                    } catch (err: any) {
-                      if (err.name !== 'NotFoundError') {
-                        toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
-                      }
-                    }
-                  }}
-                >
-                  {ownerSettings.bluetoothFatMachineConnected ? (language === 'hi' ? 'कनेक्टेड' : 'Connected') : (language === 'hi' ? 'कनेक्ट करें' : 'Connect')}
-                </Button>
-              </div>
+              {/* Bluetooth Fat/SNF Machine - admin feature controlled */}
+              <FatMachineConnect language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
 
               {/* Bluetooth Printer */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">

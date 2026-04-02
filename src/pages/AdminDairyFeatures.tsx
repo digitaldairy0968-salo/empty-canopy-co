@@ -11,8 +11,13 @@ const MASTER_FEATURES = [
   {
     key: 'entry_settings',
     label: 'Entry Settings (Advanced)',
-    description: 'FAT/SNF Machine Connect, Auto-fill Milk, Auto Code Direction, Prefill Settings',
-    subFeatures: ['connect_fat_machine', 'auto_fill_milk', 'auto_code_direction', 'prefill_settings']
+    description: 'Predict Milk, Auto Code Direction, Prefill Settings',
+    subFeatures: ['predict_milk', 'auto_code_direction', 'prefill_settings']
+  },
+  {
+    key: 'connect_fat_machine',
+    label: 'Connect FAT/SNF Machine',
+    description: 'Bluetooth se FAT/SNF machine connect karne ka option',
   },
   {
     key: 'customer_code',
