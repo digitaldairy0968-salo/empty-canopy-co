@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, History, Wallet, ArrowDownCircle, ArrowUpCircle, Save } from 'lucide-react';
+import { Search, Plus, History, Wallet, ArrowDownCircle, ArrowUpCircle, Save, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
