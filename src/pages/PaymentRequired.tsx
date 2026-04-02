@@ -170,6 +170,17 @@ const PaymentRequired: React.FC = () => {
         const { error } = await supabase.from('subscriptions').insert({ dairy_id: user.dairyId, status: 'active', started_at: now.toISOString(), expires_at: expiresAt.toISOString() });
         if (error) throw error;
       }
+
+      // Auto-enable all features for demo users EXCEPT customer_code
+      const demoFeatures = ['entry_settings', 'connect_fat_machine'];
+      for (const featureKey of demoFeatures) {
+        await supabase.from('dairy_features').upsert({
+          dairy_id: user.dairyId,
+          feature_key: featureKey,
+          is_enabled: true,
+        } as any, { onConflict: 'dairy_id,feature_key' });
+      }
+
       localStorage.removeItem('subscription_cache');
       toast.success(language === 'hi' ? `डेमो सक्रिय! ${demoDays} दिन का फ्री एक्सेस।` : `Demo activated! ${demoDays} days free.`);
       await refreshProfile();
