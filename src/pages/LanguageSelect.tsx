@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Droplets } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import farmerImage from '@/assets/farmer-welcome.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 type Language = 'hi' | 'gu' | 'en';
 
@@ -11,6 +11,21 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAuthImage = async () => {
+      const { data } = await supabase
+        .from('subscription_settings')
+        .select('auth_page_image_url')
+        .limit(1)
+        .maybeSingle();
+      if ((data as any)?.auth_page_image_url) {
+        setAuthImageUrl((data as any).auth_page_image_url);
+      }
+    };
+    fetchAuthImage();
+  }, []);
 
   const languages: { code: Language; name: string; nativeName: string; emoji: string }[] = [
     { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', emoji: '🙏' },
@@ -48,14 +63,20 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
           Dairy Manager
         </p>
 
-        {/* Farmer Illustration */}
+        {/* Admin auth image OR fallback */}
         <div className="mt-6 relative mx-auto max-w-[280px]">
           <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-          <img 
-            src={farmerImage} 
-            alt="Happy Farmer" 
-            className="w-full h-auto rounded-3xl shadow-xl animate-fade-in"
-          />
+          {authImageUrl ? (
+            <img 
+              src={authImageUrl} 
+              alt="Dairy" 
+              className="w-full h-auto max-h-[200px] object-contain rounded-3xl shadow-xl animate-fade-in mx-auto"
+            />
+          ) : (
+            <div className="w-full h-[180px] bg-gradient-to-br from-primary/10 to-accent/10 rounded-3xl flex items-center justify-center">
+              <span className="text-6xl">🥛</span>
+            </div>
+          )}
         </div>
       </div>
 
