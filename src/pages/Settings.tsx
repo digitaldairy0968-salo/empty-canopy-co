@@ -962,22 +962,6 @@ const Settings: React.FC = () => {
 
               {/* Bluetooth Fat/SNF Machine - admin feature controlled */}
               <FatMachineConnect language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
-                      }
-                      const device = await (navigator as any).bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
-                      if (device) {
-                        updateOwnerSettings({ bluetoothFatMachineConnected: true });
-                        toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!' });
-                      }
-                    } catch (err: any) {
-                      if (err.name !== 'NotFoundError') {
-                        toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
-                      }
-                    }
-                  }}
-                >
-                  {ownerSettings.bluetoothFatMachineConnected ? (language === 'hi' ? 'कनेक्टेड' : 'Connected') : (language === 'hi' ? 'कनेक्ट करें' : 'Connect')}
-                </Button>
-              </div>
 
               {/* Bluetooth Printer */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
