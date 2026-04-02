@@ -588,7 +588,7 @@ const FatMachineConnect: React.FC<{
       <div className="flex items-center gap-3">
         <Bluetooth className="h-5 w-5 text-blue-500" />
         <div>
-          <span className="font-medium">{language === 'hi' ? 'FAT/SNF मशीन' : 'FAT/SNF Machine'}</span>
+          <span className="font-medium">{language === 'hi' ? 'FAT/SNF मशीन' : 'FAT/SNF Machine'} <span className="text-xs text-primary">⭐ Pro</span></span>
           <p className="text-xs text-muted-foreground">
             {isLocked 
               ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है' : '🔒 Locked by admin')

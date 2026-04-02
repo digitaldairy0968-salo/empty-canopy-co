@@ -471,8 +471,8 @@ const Auth: React.FC = () => {
         
         <div className="text-center pt-8">
           {/* Admin-uploaded auth image on login/signup too */}
-          {authPageImageUrl ? (
-            <div className="mb-3 relative mx-auto w-20 h-20">
+           {authPageImageUrl ? (
+            <div className="mb-3 relative mx-auto w-36 h-36">
               <img 
                 src={authPageImageUrl} 
                 alt="Dairy" 
