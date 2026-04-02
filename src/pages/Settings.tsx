@@ -484,14 +484,14 @@ const EntrySettingsSection: React.FC<{
   return (
     <SettingsSection
       icon={<span className="text-lg">🔢</span>}
-      title={language === 'hi' ? 'एंट्री सेटिंग्स (एडवांस)' : 'Entry Settings (Advanced)'}
-      subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है' : '🔒 Locked by admin') : undefined}
+      title={`${language === 'hi' ? 'एंट्री सेटिंग्स (एडवांस)' : 'Entry Settings (Advanced)'} ${isLocked ? '' : '⭐ Pro'}`}
+      subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है • ⭐ Pro' : '🔒 Locked by admin • ⭐ Pro') : undefined}
       delay="160ms"
     >
       {/* Predict Milk Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
-          <span className="font-medium">{language === 'hi' ? 'दूध भविष्यवाणी (Predict Milk)' : 'Predict Milk'}</span>
+          <span className="font-medium">{language === 'hi' ? 'दूध भविष्यवाणी (Predict Milk)' : 'Predict Milk'} <span className="text-xs text-primary">⭐ Pro</span></span>
           <p className="text-xs text-muted-foreground">{language === 'hi' ? 'पिछली 2 बार समान दूध हो तो ऑटो भरें' : 'Auto-fill if last 2 entries have same quantity'}</p>
         </div>
         <Switch checked={ownerSettings.predictMilkEnabled ?? true} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
@@ -552,6 +552,7 @@ const EntrySettingsSection: React.FC<{
       )}
     </SettingsSection>
   );
+};
 
 // FAT/SNF Machine Connect - admin feature controlled
 const FatMachineConnect: React.FC<{
