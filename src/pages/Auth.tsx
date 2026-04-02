@@ -346,10 +346,17 @@ const Auth: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
         <div className="relative pt-6 pb-8 px-4">
+          {/* Back button to go back to language selection */}
+          <button
+            onClick={() => setStep('language-selection')}
+            className="absolute left-4 top-6 w-11 h-11 rounded-2xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors z-10"
+          >
+            <ArrowLeft className="w-5 h-5 text-foreground" />
+          </button>
           <div className="text-center pt-4">
             {/* Admin-uploaded animated image above logo */}
             {authPageImageUrl && (
-              <div className="mb-4 relative mx-auto w-24 h-24">
+              <div className="mb-4 relative mx-auto w-36 h-36">
                 <img 
                   src={authPageImageUrl} 
                   alt="Dairy" 
