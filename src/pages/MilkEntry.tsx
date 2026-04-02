@@ -295,12 +295,17 @@ const MilkEntry: React.FC = () => {
     return '';
   };
 
-  // Auto-fill milk quantity when supplier or shift changes (only if last 2 entries match)
+  // Auto-fill milk quantity when supplier or shift changes (only if predict milk enabled AND last 2 entries match)
   // Also prefill fat/snf/lr if enabled in owner settings
   useEffect(() => {
     if (selectedSupplier) {
-      const autoQty = getAutoFillQuantity(selectedSupplier, shift);
-      setMilkQty(autoQty);
+      // Only auto-fill milk if predictMilkEnabled (default true)
+      if (ownerSettings.predictMilkEnabled !== false) {
+        const autoQty = getAutoFillQuantity(selectedSupplier, shift);
+        setMilkQty(autoQty);
+      } else {
+        setMilkQty('');
+      }
       
       // Prefill fat/snf/lr from owner settings if enabled
       if (ownerSettings.prefillEnabled) {

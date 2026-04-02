@@ -391,6 +391,7 @@ export type Database = {
           id: string
           milk_buying_basis: string | null
           onboarding_completed: boolean | null
+          predict_milk_enabled: boolean | null
           prefill_enabled: boolean | null
           prefill_fat: number | null
           prefill_lr: number | null
@@ -412,6 +413,7 @@ export type Database = {
           id?: string
           milk_buying_basis?: string | null
           onboarding_completed?: boolean | null
+          predict_milk_enabled?: boolean | null
           prefill_enabled?: boolean | null
           prefill_fat?: number | null
           prefill_lr?: number | null
@@ -433,6 +435,7 @@ export type Database = {
           id?: string
           milk_buying_basis?: string | null
           onboarding_completed?: boolean | null
+          predict_milk_enabled?: boolean | null
           prefill_enabled?: boolean | null
           prefill_fat?: number | null
           prefill_lr?: number | null

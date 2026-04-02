@@ -1,0 +1,1 @@
+ALTER TABLE public.owner_settings ADD COLUMN IF NOT EXISTS predict_milk_enabled boolean DEFAULT true;
