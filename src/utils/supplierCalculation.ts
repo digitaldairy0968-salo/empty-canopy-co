@@ -60,60 +60,64 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
 
   filteredEntries.forEach(entry => {
     // Morning
-    if ((shiftFilter === 'both' || shiftFilter === 'morning') &&
-        entry.morningMilk !== null && entry.morningMilk !== undefined && entry.morningMilk > 0) {
-      totalMilk += entry.morningMilk;
-      if (entry.morningFat !== null && entry.morningFat !== undefined && entry.morningFat > 0) {
-        totalFatSum += entry.morningFat;
-        fatCount++;
-        if (calculationMethod === 'daily_total') {
-          const mSnf = entry.morningSNF || 0;
-          const entryRate = useFatSnfSystem && mSnf > 0
-            ? calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, mSnf, fatSnfSettings.snfDeductionPerPoint, entry.morningFat!)
-            : entry.morningFat! * rate;
-          dailyTotalAmount += entry.morningMilk * entryRate;
+    if ((shiftFilter === 'both' || shiftFilter === 'morning')) {
+      const mMilk = entry.morningMilk ?? 0;
+      const mFat = entry.morningFat ?? 0;
+      const mPrice = entry.morningPrice ?? 0;
+      
+      if (animalType === 'buyer') {
+        // Buyer: price takes priority, then milk * literRate
+        if (mPrice > 0) {
+          dailyTotalAmount += mPrice;
+          totalMilk += mMilk;
+        } else if (mMilk > 0) {
+          dailyTotalAmount += mMilk * literRate;
+          totalMilk += mMilk;
         }
-      } else if (animalType === 'buyer') {
-        // For buyers: use price if available, else liter rate
-        const price = entry.morningPrice;
-        if (price !== null && price !== undefined && price > 0) {
-          dailyTotalAmount += price;
-        } else {
-          dailyTotalAmount += entry.morningMilk * literRate;
+      } else if (mMilk > 0) {
+        totalMilk += mMilk;
+        if (mFat > 0) {
+          totalFatSum += mFat;
+          fatCount++;
+          if (calculationMethod === 'daily_total') {
+            const mSnf = entry.morningSNF || 0;
+            const entryRate = useFatSnfSystem && mSnf > 0
+              ? calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, mSnf, fatSnfSettings.snfDeductionPerPoint, mFat)
+              : mFat * rate;
+            dailyTotalAmount += mMilk * entryRate;
+          }
         }
       }
-    } else if ((shiftFilter === 'both' || shiftFilter === 'morning') && animalType === 'buyer' &&
-               entry.morningPrice !== null && entry.morningPrice !== undefined && entry.morningPrice > 0) {
-      // Buyer entry with only price, no milk
-      dailyTotalAmount += entry.morningPrice;
     }
 
     // Evening
-    if ((shiftFilter === 'both' || shiftFilter === 'evening') &&
-        entry.eveningMilk !== null && entry.eveningMilk !== undefined && entry.eveningMilk > 0) {
-      totalMilk += entry.eveningMilk;
-      if (entry.eveningFat !== null && entry.eveningFat !== undefined && entry.eveningFat > 0) {
-        totalFatSum += entry.eveningFat;
-        fatCount++;
-        if (calculationMethod === 'daily_total') {
-          const eSnf = entry.eveningSNF || 0;
-          const entryRate = useFatSnfSystem && eSnf > 0
-            ? calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, eSnf, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat!)
-            : entry.eveningFat! * rate;
-          dailyTotalAmount += entry.eveningMilk * entryRate;
+    if ((shiftFilter === 'both' || shiftFilter === 'evening')) {
+      const eMilk = entry.eveningMilk ?? 0;
+      const eFat = entry.eveningFat ?? 0;
+      const ePrice = entry.eveningPrice ?? 0;
+      
+      if (animalType === 'buyer') {
+        if (ePrice > 0) {
+          dailyTotalAmount += ePrice;
+          totalMilk += eMilk;
+        } else if (eMilk > 0) {
+          dailyTotalAmount += eMilk * literRate;
+          totalMilk += eMilk;
         }
-      } else if (animalType === 'buyer') {
-        const price = entry.eveningPrice;
-        if (price !== null && price !== undefined && price > 0) {
-          dailyTotalAmount += price;
-        } else {
-          dailyTotalAmount += entry.eveningMilk * literRate;
+      } else if (eMilk > 0) {
+        totalMilk += eMilk;
+        if (eFat > 0) {
+          totalFatSum += eFat;
+          fatCount++;
+          if (calculationMethod === 'daily_total') {
+            const eSnf = entry.eveningSNF || 0;
+            const entryRate = useFatSnfSystem && eSnf > 0
+              ? calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, eSnf, fatSnfSettings.snfDeductionPerPoint, eFat)
+              : eFat * rate;
+            dailyTotalAmount += eMilk * entryRate;
+          }
         }
       }
-    } else if ((shiftFilter === 'both' || shiftFilter === 'evening') && animalType === 'buyer' &&
-               entry.eveningPrice !== null && entry.eveningPrice !== undefined && entry.eveningPrice > 0) {
-      // Buyer entry with only price, no milk
-      dailyTotalAmount += entry.eveningPrice;
     }
   });
 
