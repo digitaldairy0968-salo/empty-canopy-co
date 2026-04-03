@@ -379,60 +379,74 @@ const SupplierDashboard: React.FC = () => {
           <div className="overflow-x-auto -mx-5 px-1">
             <table className="milk-table text-[9px]">
               <thead>
-                 <tr>
+                 {(() => {
+                   const isBuyer = supplierData?.animalType === 'buyer';
+                   const colCount = isBuyer ? 2 : (showRakamToCustomers ? 5 : 4);
+                   return (
+                   <>
+                   <tr>
                    <th rowSpan={2} className="w-6 px-0.5">{language === 'hi' ? 'दि' : 'D'}</th>
-                   <th colSpan={showRakamToCustomers ? 5 : 4} className="bg-primary/10 px-0.5">🌅</th>
-                   <th colSpan={showRakamToCustomers ? 5 : 4} className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] bg-accent/10 px-0.5">🌙</th>
+                   <th colSpan={colCount} className="bg-primary/10 px-0.5">🌅</th>
+                   <th colSpan={colCount} className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] bg-accent/10 px-0.5">🌙</th>
                  </tr>
                  <tr>
                    <th className="px-0.5">{language === 'hi' ? 'दूध' : 'M'}</th>
-                   <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>
-                   <th className="px-0.5">SNF</th>
-                   <th className="px-0.5">LR</th>
-                   {showRakamToCustomers && (
+                   {!isBuyer && <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>}
+                   {!isBuyer && <th className="px-0.5">SNF</th>}
+                   {!isBuyer && <th className="px-0.5">LR</th>}
+                   {(isBuyer || showRakamToCustomers) && (
                      <th className="text-primary font-bold px-0.5">₹</th>
                    )}
                    <th className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] px-0.5">{language === 'hi' ? 'दूध' : 'M'}</th>
-                   <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>
-                   <th className="px-0.5">SNF</th>
-                   <th className="px-0.5">LR</th>
-                   {showRakamToCustomers && (
+                   {!isBuyer && <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>}
+                   {!isBuyer && <th className="px-0.5">SNF</th>}
+                   {!isBuyer && <th className="px-0.5">LR</th>}
+                   {(isBuyer || showRakamToCustomers) && (
                      <th className="text-primary font-bold px-0.5">₹</th>
                    )}
                  </tr>
+                   </>
+                   );
+                 })()}
               </thead>
               <tbody>
                 {getMonthDates().map(date => {
                   const entry = getEntryForDate(date);
                   const dayNum = Number(date.split('-')[2]);
                   const isToday = date === format(new Date(), 'yyyy-MM-dd');
+                  const isBuyer = supplierData?.animalType === 'buyer';
+                  const literRate = rateSettings.literRate || 50;
 
-                  const morningAmount = entry?.morningMilk && entry?.morningFat
-                    ? (fatSnfSettings.isEnabled && entry?.morningSNF
-                      ? entry.morningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.morningSNF, fatSnfSettings.snfDeductionPerPoint, entry.morningFat)
-                      : entry.morningMilk * entry.morningFat * rate)
-                    : null;
-                  const eveningAmount = entry?.eveningMilk && entry?.eveningFat
-                    ? (fatSnfSettings.isEnabled && entry?.eveningSNF
-                      ? entry.eveningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.eveningSNF, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat)
-                      : entry.eveningMilk * entry.eveningFat * rate)
-                    : null;
+                  const morningAmount = isBuyer
+                    ? (entry?.morningMilk ? entry.morningMilk * literRate : null)
+                    : (entry?.morningMilk && entry?.morningFat
+                      ? (fatSnfSettings.isEnabled && entry?.morningSNF
+                        ? entry.morningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.morningSNF, fatSnfSettings.snfDeductionPerPoint, entry.morningFat)
+                        : entry.morningMilk * entry.morningFat * rate)
+                      : null);
+                  const eveningAmount = isBuyer
+                    ? (entry?.eveningMilk ? entry.eveningMilk * literRate : null)
+                    : (entry?.eveningMilk && entry?.eveningFat
+                      ? (fatSnfSettings.isEnabled && entry?.eveningSNF
+                        ? entry.eveningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.eveningSNF, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat)
+                        : entry.eveningMilk * entry.eveningFat * rate)
+                      : null);
 
                   return (
                     <tr key={date} className={cn(isToday && 'bg-primary/5')}>
                       <td className="font-medium">{dayNum}</td>
                       <td>{entry?.morningMilk ?? '-'}</td>
-                      <td>{entry?.morningFat ?? '-'}</td>
-                      <td>{entry?.morningSNF ?? '-'}</td>
-                      <td>{entry?.morningLR ?? '-'}</td>
-                       {showRakamToCustomers && (
+                      {!isBuyer && <td>{entry?.morningFat ?? '-'}</td>}
+                      {!isBuyer && <td>{entry?.morningSNF ?? '-'}</td>}
+                      {!isBuyer && <td>{entry?.morningLR ?? '-'}</td>}
+                       {(isBuyer || showRakamToCustomers) && (
                          <td className="text-primary font-bold">{morningAmount !== null ? `₹${morningAmount.toFixed(0)}` : '-'}</td>
                        )}
                        <td className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)]">{entry?.eveningMilk ?? '-'}</td>
-                       <td>{entry?.eveningFat ?? '-'}</td>
-                       <td>{entry?.eveningSNF ?? '-'}</td>
-                       <td>{entry?.eveningLR ?? '-'}</td>
-                       {showRakamToCustomers && (
+                       {!isBuyer && <td>{entry?.eveningFat ?? '-'}</td>}
+                       {!isBuyer && <td>{entry?.eveningSNF ?? '-'}</td>}
+                       {!isBuyer && <td>{entry?.eveningLR ?? '-'}</td>}
+                       {(isBuyer || showRakamToCustomers) && (
                          <td className="text-primary font-bold">{eveningAmount !== null ? `₹${eveningAmount.toFixed(0)}` : '-'}</td>
                        )}
                     </tr>
@@ -477,21 +491,29 @@ const SupplierDashboard: React.FC = () => {
 
                   return (
                     <>
+                      {(() => {
+                        const isBuyer = supplierData?.animalType === 'buyer';
+                        const literRate = rateSettings.literRate || 50;
+                        return (
+                        <>
                       <tr className="bg-primary/10 font-bold border-t-2 border-primary">
                         <td className="text-primary">{t('total')}</td>
                         <td>{totalMorningMilk.toFixed(1)}</td>
-                        <td>{totalMorningFat.toFixed(1)}</td>
-                        <td>-</td><td>-</td>
-                         {showRakamToCustomers && (
-                           <td className="text-primary">₹{totalMorningAmount.toFixed(0)}</td>
+                        {!isBuyer && <td>{totalMorningFat.toFixed(1)}</td>}
+                        {!isBuyer && <td>-</td>}
+                        {!isBuyer && <td>-</td>}
+                         {(isBuyer || showRakamToCustomers) && (
+                           <td className="text-primary">₹{isBuyer ? (totalMorningMilk * literRate).toFixed(0) : totalMorningAmount.toFixed(0)}</td>
                          )}
                          <td className="border-l-4 border-dairy-divider">{totalEveningMilk.toFixed(1)}</td>
-                         <td>{totalEveningFat.toFixed(1)}</td>
-                         <td>-</td><td>-</td>
-                         {showRakamToCustomers && (
-                           <td className="text-primary">₹{totalEveningAmount.toFixed(0)}</td>
+                         {!isBuyer && <td>{totalEveningFat.toFixed(1)}</td>}
+                         {!isBuyer && <td>-</td>}
+                         {!isBuyer && <td>-</td>}
+                         {(isBuyer || showRakamToCustomers) && (
+                           <td className="text-primary">₹{isBuyer ? (totalEveningMilk * literRate).toFixed(0) : totalEveningAmount.toFixed(0)}</td>
                          )}
                       </tr>
+                      {!isBuyer && (
                       <tr className="bg-muted/30 text-xs text-muted-foreground">
                         <td className="font-medium">{language === 'hi' ? 'एवग' : 'Avg'}</td>
                         <td>-</td>
@@ -503,6 +525,10 @@ const SupplierDashboard: React.FC = () => {
                          <td>-</td><td>-</td>
                          {showRakamToCustomers && <td>-</td>}
                       </tr>
+                      )}
+                        </>
+                        );
+                      })()}
                     </>
                   );
                 })()}

@@ -64,20 +64,15 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
         </p>
 
         {/* Admin auth image OR fallback */}
-        <div className="mt-6 relative mx-auto max-w-[280px]">
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-          {authImageUrl ? (
+        {authImageUrl && (
+          <div className="mt-6 relative mx-auto max-w-[280px]">
             <img 
               src={authImageUrl} 
               alt="Dairy" 
-              className="w-full h-auto max-h-[200px] object-contain rounded-3xl shadow-xl animate-fade-in mx-auto"
+              className="w-full h-auto max-h-[220px] object-contain rounded-2xl shadow-xl animate-fade-in mx-auto"
             />
-          ) : (
-            <div className="w-full h-[180px] bg-gradient-to-br from-primary/10 to-accent/10 rounded-3xl flex items-center justify-center">
-              <span className="text-6xl">🥛</span>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Language Selection */}

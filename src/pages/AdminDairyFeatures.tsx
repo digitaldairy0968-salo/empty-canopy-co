@@ -84,9 +84,16 @@ const AdminDairyFeatures: React.FC = () => {
 
       if (error) throw error;
 
-      // If enabling customer_code, generate a 12-digit code if dairy doesn't have one
+      // If enabling customer_code, generate a 12-digit code ONLY if dairy never had one
       if (featureKey === 'customer_code' && enabled) {
-        if (!dairyCode || dairyCode.length !== 12) {
+        // Check DB for existing code first (might have been disabled but code preserved)
+        const { data: dairyData } = await supabase
+          .from('dairies')
+          .select('code')
+          .eq('id', dairyId!)
+          .single();
+        
+        if (!dairyData?.code || dairyData.code.length !== 12) {
           const newCode = Math.floor(100000000000 + Math.random() * 900000000000).toString();
           const { error: codeError } = await supabase
             .from('dairies')
@@ -97,17 +104,15 @@ const AdminDairyFeatures: React.FC = () => {
             setDairyCode(newCode);
             toast.success(`12-digit code generated: ${newCode}`);
           }
+        } else {
+          setDairyCode(dairyData.code);
+          toast.success(`Existing code restored: ${dairyData.code}`);
         }
       }
 
-      // If disabling customer_code, remove the code
-      if (featureKey === 'customer_code' && !enabled) {
-        await supabase
-          .from('dairies')
-          .update({ code: null })
-          .eq('id', dairyId!);
-        setDairyCode(null);
-      }
+      // If disabling customer_code, do NOT remove the code from DB
+      // Just disable the feature - code stays for re-enabling later
+      // Existing linked suppliers can still login since their user_id is already set
 
       setFeatures(prev => ({ ...prev, [featureKey]: enabled }));
       toast.success(`${enabled ? 'Enabled' : 'Disabled'}: ${MASTER_FEATURES.find(f => f.key === featureKey)?.label}`);
