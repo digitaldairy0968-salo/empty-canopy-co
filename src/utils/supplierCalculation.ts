@@ -66,13 +66,12 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
       const mPrice = entry.morningPrice ?? 0;
       
       if (animalType === 'buyer') {
-        // Buyer: price takes priority, then milk * literRate
-        if (mPrice > 0) {
-          dailyTotalAmount += mPrice;
-          totalMilk += mMilk;
-        } else if (mMilk > 0) {
+        // Buyer: match supplier card rakam logic — milk × literRate first, direct price only as fallback
+        if (mMilk > 0) {
           dailyTotalAmount += mMilk * literRate;
           totalMilk += mMilk;
+        } else if (mPrice > 0) {
+          dailyTotalAmount += mPrice;
         }
       } else if (mMilk > 0) {
         totalMilk += mMilk;
@@ -97,12 +96,11 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
       const ePrice = entry.eveningPrice ?? 0;
       
       if (animalType === 'buyer') {
-        if (ePrice > 0) {
-          dailyTotalAmount += ePrice;
-          totalMilk += eMilk;
-        } else if (eMilk > 0) {
+        if (eMilk > 0) {
           dailyTotalAmount += eMilk * literRate;
           totalMilk += eMilk;
+        } else if (ePrice > 0) {
+          dailyTotalAmount += ePrice;
         }
       } else if (eMilk > 0) {
         totalMilk += eMilk;
