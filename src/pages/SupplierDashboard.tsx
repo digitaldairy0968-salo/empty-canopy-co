@@ -379,27 +379,35 @@ const SupplierDashboard: React.FC = () => {
           <div className="overflow-x-auto -mx-5 px-1">
             <table className="milk-table text-[9px]">
               <thead>
-                 <tr>
+                 {(() => {
+                   const isBuyer = supplierData?.animalType === 'buyer';
+                   const colCount = isBuyer ? 2 : (showRakamToCustomers ? 5 : 4);
+                   return (
+                   <>
+                   <tr>
                    <th rowSpan={2} className="w-6 px-0.5">{language === 'hi' ? 'दि' : 'D'}</th>
-                   <th colSpan={showRakamToCustomers ? 5 : 4} className="bg-primary/10 px-0.5">🌅</th>
-                   <th colSpan={showRakamToCustomers ? 5 : 4} className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] bg-accent/10 px-0.5">🌙</th>
+                   <th colSpan={colCount} className="bg-primary/10 px-0.5">🌅</th>
+                   <th colSpan={colCount} className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] bg-accent/10 px-0.5">🌙</th>
                  </tr>
                  <tr>
                    <th className="px-0.5">{language === 'hi' ? 'दूध' : 'M'}</th>
-                   <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>
-                   <th className="px-0.5">SNF</th>
-                   <th className="px-0.5">LR</th>
-                   {showRakamToCustomers && (
+                   {!isBuyer && <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>}
+                   {!isBuyer && <th className="px-0.5">SNF</th>}
+                   {!isBuyer && <th className="px-0.5">LR</th>}
+                   {(isBuyer || showRakamToCustomers) && (
                      <th className="text-primary font-bold px-0.5">₹</th>
                    )}
                    <th className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)] px-0.5">{language === 'hi' ? 'दूध' : 'M'}</th>
-                   <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>
-                   <th className="px-0.5">SNF</th>
-                   <th className="px-0.5">LR</th>
-                   {showRakamToCustomers && (
+                   {!isBuyer && <th className="px-0.5">{language === 'hi' ? 'फैट' : 'F'}</th>}
+                   {!isBuyer && <th className="px-0.5">SNF</th>}
+                   {!isBuyer && <th className="px-0.5">LR</th>}
+                   {(isBuyer || showRakamToCustomers) && (
                      <th className="text-primary font-bold px-0.5">₹</th>
                    )}
                  </tr>
+                   </>
+                   );
+                 })()}
               </thead>
               <tbody>
                 {getMonthDates().map(date => {
