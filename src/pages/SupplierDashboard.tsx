@@ -414,33 +414,39 @@ const SupplierDashboard: React.FC = () => {
                   const entry = getEntryForDate(date);
                   const dayNum = Number(date.split('-')[2]);
                   const isToday = date === format(new Date(), 'yyyy-MM-dd');
+                  const isBuyer = supplierData?.animalType === 'buyer';
+                  const literRate = rateSettings.literRate || 50;
 
-                  const morningAmount = entry?.morningMilk && entry?.morningFat
-                    ? (fatSnfSettings.isEnabled && entry?.morningSNF
-                      ? entry.morningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.morningSNF, fatSnfSettings.snfDeductionPerPoint, entry.morningFat)
-                      : entry.morningMilk * entry.morningFat * rate)
-                    : null;
-                  const eveningAmount = entry?.eveningMilk && entry?.eveningFat
-                    ? (fatSnfSettings.isEnabled && entry?.eveningSNF
-                      ? entry.eveningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.eveningSNF, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat)
-                      : entry.eveningMilk * entry.eveningFat * rate)
-                    : null;
+                  const morningAmount = isBuyer
+                    ? (entry?.morningMilk ? entry.morningMilk * literRate : null)
+                    : (entry?.morningMilk && entry?.morningFat
+                      ? (fatSnfSettings.isEnabled && entry?.morningSNF
+                        ? entry.morningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.morningSNF, fatSnfSettings.snfDeductionPerPoint, entry.morningFat)
+                        : entry.morningMilk * entry.morningFat * rate)
+                      : null);
+                  const eveningAmount = isBuyer
+                    ? (entry?.eveningMilk ? entry.eveningMilk * literRate : null)
+                    : (entry?.eveningMilk && entry?.eveningFat
+                      ? (fatSnfSettings.isEnabled && entry?.eveningSNF
+                        ? entry.eveningMilk * calculateRatePerLiterWithSnf(fatSnfSettings.baseFatRate, fatSnfSettings.baseSNF, entry.eveningSNF, fatSnfSettings.snfDeductionPerPoint, entry.eveningFat)
+                        : entry.eveningMilk * entry.eveningFat * rate)
+                      : null);
 
                   return (
                     <tr key={date} className={cn(isToday && 'bg-primary/5')}>
                       <td className="font-medium">{dayNum}</td>
                       <td>{entry?.morningMilk ?? '-'}</td>
-                      <td>{entry?.morningFat ?? '-'}</td>
-                      <td>{entry?.morningSNF ?? '-'}</td>
-                      <td>{entry?.morningLR ?? '-'}</td>
-                       {showRakamToCustomers && (
+                      {!isBuyer && <td>{entry?.morningFat ?? '-'}</td>}
+                      {!isBuyer && <td>{entry?.morningSNF ?? '-'}</td>}
+                      {!isBuyer && <td>{entry?.morningLR ?? '-'}</td>}
+                       {(isBuyer || showRakamToCustomers) && (
                          <td className="text-primary font-bold">{morningAmount !== null ? `₹${morningAmount.toFixed(0)}` : '-'}</td>
                        )}
                        <td className="border-l-4 border-dairy-divider shadow-[inset_4px_0_8px_-4px_hsl(0_80%_55%/0.4)]">{entry?.eveningMilk ?? '-'}</td>
-                       <td>{entry?.eveningFat ?? '-'}</td>
-                       <td>{entry?.eveningSNF ?? '-'}</td>
-                       <td>{entry?.eveningLR ?? '-'}</td>
-                       {showRakamToCustomers && (
+                       {!isBuyer && <td>{entry?.eveningFat ?? '-'}</td>}
+                       {!isBuyer && <td>{entry?.eveningSNF ?? '-'}</td>}
+                       {!isBuyer && <td>{entry?.eveningLR ?? '-'}</td>}
+                       {(isBuyer || showRakamToCustomers) && (
                          <td className="text-primary font-bold">{eveningAmount !== null ? `₹${eveningAmount.toFixed(0)}` : '-'}</td>
                        )}
                     </tr>
