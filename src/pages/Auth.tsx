@@ -356,7 +356,7 @@ const Auth: React.FC = () => {
           <div className="text-center pt-4">
             {/* Admin-uploaded animated image above logo */}
             {authPageImageUrl && (
-              <div className="mb-4 relative mx-auto w-36 h-36">
+              <div className="mb-4 relative mx-auto w-44 h-44">
                 <img 
                   src={authPageImageUrl} 
                   alt="Dairy" 

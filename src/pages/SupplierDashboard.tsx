@@ -491,21 +491,29 @@ const SupplierDashboard: React.FC = () => {
 
                   return (
                     <>
+                      {(() => {
+                        const isBuyer = supplierData?.animalType === 'buyer';
+                        const literRate = rateSettings.literRate || 50;
+                        return (
+                        <>
                       <tr className="bg-primary/10 font-bold border-t-2 border-primary">
                         <td className="text-primary">{t('total')}</td>
                         <td>{totalMorningMilk.toFixed(1)}</td>
-                        <td>{totalMorningFat.toFixed(1)}</td>
-                        <td>-</td><td>-</td>
-                         {showRakamToCustomers && (
-                           <td className="text-primary">₹{totalMorningAmount.toFixed(0)}</td>
+                        {!isBuyer && <td>{totalMorningFat.toFixed(1)}</td>}
+                        {!isBuyer && <td>-</td>}
+                        {!isBuyer && <td>-</td>}
+                         {(isBuyer || showRakamToCustomers) && (
+                           <td className="text-primary">₹{isBuyer ? (totalMorningMilk * literRate).toFixed(0) : totalMorningAmount.toFixed(0)}</td>
                          )}
                          <td className="border-l-4 border-dairy-divider">{totalEveningMilk.toFixed(1)}</td>
-                         <td>{totalEveningFat.toFixed(1)}</td>
-                         <td>-</td><td>-</td>
-                         {showRakamToCustomers && (
-                           <td className="text-primary">₹{totalEveningAmount.toFixed(0)}</td>
+                         {!isBuyer && <td>{totalEveningFat.toFixed(1)}</td>}
+                         {!isBuyer && <td>-</td>}
+                         {!isBuyer && <td>-</td>}
+                         {(isBuyer || showRakamToCustomers) && (
+                           <td className="text-primary">₹{isBuyer ? (totalEveningMilk * literRate).toFixed(0) : totalEveningAmount.toFixed(0)}</td>
                          )}
                       </tr>
+                      {!isBuyer && (
                       <tr className="bg-muted/30 text-xs text-muted-foreground">
                         <td className="font-medium">{language === 'hi' ? 'एवग' : 'Avg'}</td>
                         <td>-</td>
@@ -517,6 +525,10 @@ const SupplierDashboard: React.FC = () => {
                          <td>-</td><td>-</td>
                          {showRakamToCustomers && <td>-</td>}
                       </tr>
+                      )}
+                        </>
+                        );
+                      })()}
                     </>
                   );
                 })()}

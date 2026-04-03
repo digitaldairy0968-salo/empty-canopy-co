@@ -203,23 +203,26 @@ const PaymentRequired: React.FC = () => {
     : (language === 'hi' ? 'भुगतान करें' : 'Make Payment');
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="dairy-header px-4 py-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={handleBack} className="text-primary-foreground hover:bg-primary-foreground/20">
-            {step === 'varieties' ? <ArrowLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-foreground/20 rounded-full flex items-center justify-center">
-              <CreditCard className="w-5 h-5" />
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream">
+      {/* Premium Header */}
+      <header className="relative overflow-hidden px-4 pt-6 pb-8">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-primary/70" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary-foreground/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary-foreground/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-4">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="text-primary-foreground hover:bg-primary-foreground/20">
+              {step === 'varieties' ? <ArrowLeft className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+            </Button>
+          </div>
+          <div className="text-center text-primary-foreground">
+            <div className="w-16 h-16 bg-primary-foreground/20 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+              <span className="text-3xl">👑</span>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">{stepTitle}</h1>
-              <p className="text-primary-foreground/70 text-sm">
-                {language === 'hi' ? 'डेयरी सक्रिय करें' : 'Activate your dairy'}
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold">{stepTitle}</h1>
+            <p className="text-primary-foreground/80 text-sm mt-1">
+              {language === 'hi' ? '✨ प्रीमियम डेयरी प्रबंधन' : '✨ Premium Dairy Management'}
+            </p>
           </div>
         </div>
       </header>
