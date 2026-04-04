@@ -111,6 +111,25 @@ const SupplierDashboard: React.FC = () => {
     }
   };
 
+  // Check if customer_code feature is enabled for this dairy
+  useEffect(() => {
+    const checkCustomerCodeFeature = async () => {
+      if (!user?.dairyId) return;
+      try {
+        const { data } = await supabase
+          .from('dairy_features')
+          .select('is_enabled')
+          .eq('dairy_id', user.dairyId)
+          .eq('feature_key', 'customer_code')
+          .maybeSingle();
+        setCustomerCodeEnabled(data?.is_enabled ?? false);
+      } catch (error) {
+        console.error('Error checking customer_code feature:', error);
+      }
+    };
+    checkCustomerCodeFeature();
+  }, [user?.dairyId]);
+
   // Fetch owner settings
   useEffect(() => {
     const fetchOwnerSettings = async () => {
