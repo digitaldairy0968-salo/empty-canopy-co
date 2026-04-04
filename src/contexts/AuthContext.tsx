@@ -704,6 +704,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (errorCode === 'not_supplier') {
         return 'आपका अकाउंट सप्लायर नहीं है। / Your account is not a supplier.';
       }
+      if (errorCode === 'code_disabled') {
+        return 'इस डेयरी का कोड अभी बंद है। डेयरी मालिक या एडमिन से संपर्क करें। / This dairy code is currently disabled. Contact dairy owner or admin.';
+      }
 
       return 'कुछ गलत हो गया / Something went wrong';
     } catch (error) {

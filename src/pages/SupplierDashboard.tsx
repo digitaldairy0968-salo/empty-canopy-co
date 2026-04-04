@@ -43,6 +43,7 @@ const SupplierDashboard: React.FC = () => {
   // Month navigation
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showRakamToCustomers, setShowRakamToCustomers] = useState(true);
+  const [customerCodeEnabled, setCustomerCodeEnabled] = useState<boolean | null>(null);
 
   // Date range filter
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
