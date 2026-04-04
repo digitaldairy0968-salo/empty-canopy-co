@@ -43,6 +43,7 @@ const SupplierDashboard: React.FC = () => {
   // Month navigation
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showRakamToCustomers, setShowRakamToCustomers] = useState(true);
+  const [customerCodeEnabled, setCustomerCodeEnabled] = useState<boolean | null>(null);
 
   // Date range filter
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
@@ -109,6 +110,25 @@ const SupplierDashboard: React.FC = () => {
       console.error('Error confirming payment:', error);
     }
   };
+
+  // Check if customer_code feature is enabled for this dairy
+  useEffect(() => {
+    const checkCustomerCodeFeature = async () => {
+      if (!user?.dairyId) return;
+      try {
+        const { data } = await supabase
+          .from('dairy_features')
+          .select('is_enabled')
+          .eq('dairy_id', user.dairyId)
+          .eq('feature_key', 'customer_code')
+          .maybeSingle();
+        setCustomerCodeEnabled(data?.is_enabled ?? false);
+      } catch (error) {
+        console.error('Error checking customer_code feature:', error);
+      }
+    };
+    checkCustomerCodeFeature();
+  }, [user?.dairyId]);
 
   // Fetch owner settings
   useEffect(() => {
@@ -207,6 +227,24 @@ const SupplierDashboard: React.FC = () => {
   };
 
   const customRangeStats = getCustomRangeStats();
+
+  // Block access if customer_code feature is disabled
+  if (customerCodeEnabled === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="dairy-card text-center py-12 max-w-sm animate-fade-in">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-xl font-bold mb-2">एक्सेस बंद है</h2>
+          <p className="text-muted-foreground text-sm">
+            इस डेयरी का कस्टमर कोड अभी बंद है। कृपया डेयरी मालिक या एडमिन से संपर्क करें।
+          </p>
+          <p className="text-muted-foreground text-xs mt-2">
+            Access is currently disabled for this dairy. Please contact the dairy owner or admin.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!supplier || !supplierData) {
     return (
