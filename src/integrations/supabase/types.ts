@@ -884,6 +884,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_demo_subscription: {
+        Args: { _dairy_id: string }
+        Returns: boolean
+      }
       activate_subscription_code: {
         Args: { _code: string; _dairy_id: string }
         Returns: boolean

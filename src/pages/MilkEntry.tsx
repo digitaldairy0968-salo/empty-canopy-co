@@ -46,6 +46,22 @@ const MilkEntry: React.FC = () => {
   const { settings: fatSnfSettings } = useFatSnfRateSettings();
   const { settings: ownerSettings } = useOwnerSettings();
 
+  // Check if entry_settings feature is enabled (advance feature)
+  const [entrySettingsEnabled, setEntrySettingsEnabled] = useState(false);
+  useEffect(() => {
+    const checkFeature = async () => {
+      if (!user?.dairyId) return;
+      const { data } = await supabase
+        .from('dairy_features')
+        .select('is_enabled')
+        .eq('dairy_id', user.dairyId)
+        .eq('feature_key', 'entry_settings')
+        .maybeSingle();
+      setEntrySettingsEnabled(data?.is_enabled ?? false);
+    };
+    checkFeature();
+  }, [user?.dairyId]);
+
   // Check if selected supplier is a buyer (uses rate per liter, no fat input)
   const isBuyer = (supplier: typeof suppliers[0] | undefined) => supplier?.animalType === 'buyer';
 
@@ -299,22 +315,22 @@ const MilkEntry: React.FC = () => {
   // Also prefill fat/snf/lr if enabled in owner settings
   useEffect(() => {
     if (selectedSupplier) {
-      // Only auto-fill milk if predictMilkEnabled (default true)
-      if (ownerSettings.predictMilkEnabled !== false) {
+      // Only auto-fill milk if predictMilkEnabled AND entry_settings feature is enabled
+      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled !== false) {
         const autoQty = getAutoFillQuantity(selectedSupplier, shift);
         setMilkQty(autoQty);
       } else {
         setMilkQty('');
       }
       
-      // Prefill fat/snf/lr from owner settings if enabled
-      if (ownerSettings.prefillEnabled) {
+      // Prefill fat/snf/lr from owner settings if enabled AND entry_settings feature is enabled
+      if (entrySettingsEnabled && ownerSettings.prefillEnabled) {
         if (ownerSettings.prefillFat !== null) setFatValue(ownerSettings.prefillFat.toString());
         if (ownerSettings.prefillSnf !== null) setSnfValue(ownerSettings.prefillSnf.toString());
         if (ownerSettings.prefillLr !== null) setLrValue(ownerSettings.prefillLr.toString());
       }
     }
-  }, [selectedSupplier?.id, shift]);
+  }, [selectedSupplier?.id, shift, entrySettingsEnabled]);
 
   const handleSupplierCodeChange = (value: string) => {
     setSupplierCode(value);
@@ -594,11 +610,11 @@ const MilkEntry: React.FC = () => {
       setLrValue('');
       setBuyerPrice('');
 
-      // Direct print - skip receipt dialog, send to printer if connected
+      // Show receipt dialog: always show if printer connected (for auto-print) or if receipt enabled
       if (ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled) {
-        // Auto print mode: don't show dialog at all
-        // The receipt will be printed directly (handled elsewhere)
-      } else if (showReceiptEnabled && !ownerSettings.autoPrintEnabled) {
+        // Auto print mode: show dialog which will auto-trigger print
+        setShowReceiptDialog(true);
+      } else if (showReceiptEnabled) {
         setShowReceiptDialog(true);
       }
       
@@ -1149,6 +1165,7 @@ const MilkEntry: React.FC = () => {
                 dairyName: user?.dairyName,
               }}
               onClose={() => setShowReceiptDialog(false)}
+              autoPrint={ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled}
             />
           )}
         </DialogContent>

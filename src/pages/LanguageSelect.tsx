@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Droplets } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
-
 type Language = 'hi' | 'gu' | 'en';
 
 interface LanguageSelectProps {
@@ -11,21 +9,6 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
-  const [authImageUrl, setAuthImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchAuthImage = async () => {
-      const { data } = await supabase
-        .from('subscription_settings')
-        .select('auth_page_image_url')
-        .limit(1)
-        .maybeSingle();
-      if ((data as any)?.auth_page_image_url) {
-        setAuthImageUrl((data as any).auth_page_image_url);
-      }
-    };
-    fetchAuthImage();
-  }, []);
 
   const languages: { code: Language; name: string; nativeName: string; emoji: string }[] = [
     { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', emoji: '🙏' },
@@ -63,16 +46,6 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
           Dairy Manager
         </p>
 
-        {/* Admin auth image OR fallback */}
-        {authImageUrl && (
-          <div className="mt-6 relative mx-auto max-w-[280px]">
-            <img 
-              src={authImageUrl} 
-              alt="Dairy" 
-              className="w-full h-auto max-h-[220px] object-contain rounded-2xl shadow-xl animate-fade-in mx-auto"
-            />
-          </div>
-        )}
       </div>
 
       {/* Language Selection */}

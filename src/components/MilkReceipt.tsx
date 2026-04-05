@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Printer } from 'lucide-react';
@@ -22,6 +22,7 @@ interface ReceiptData {
 interface MilkReceiptProps {
   data: ReceiptData;
   onClose: () => void;
+  autoPrint?: boolean;
 }
 
 // Helper to get receipt field settings from localStorage
@@ -42,11 +43,23 @@ const getEntryReceiptFields = () => {
   }
 };
 
-const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose }) => {
+const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = false }) => {
   const { t } = useLanguage();
   const [paymentMode, setPaymentMode] = useState<'cash' | 'bank'>('cash');
   const receiptRef = useRef<HTMLDivElement>(null);
   const fields = getEntryReceiptFields();
+  const hasPrinted = useRef(false);
+
+  // Auto-print on mount when autoPrint is true
+  useEffect(() => {
+    if (autoPrint && !hasPrinted.current) {
+      hasPrinted.current = true;
+      const timer = setTimeout(() => {
+        handlePrint();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [autoPrint]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
