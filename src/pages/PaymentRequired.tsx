@@ -160,16 +160,6 @@ const PaymentRequired: React.FC = () => {
     if (!user?.dairyId) { toast.error(language === 'hi' ? 'डेयरी नहीं मिली' : 'Dairy not found'); return; }
     setActivatingDemo(true);
     try {
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + demoDays * 24 * 60 * 60 * 1000);
-      const { data: existing } = await supabase.from('subscriptions').select('id').eq('dairy_id', user.dairyId).maybeSingle();
-      if (existing) {
-        const { error } = await supabase.from('subscriptions').update({ status: 'active', started_at: now.toISOString(), expires_at: expiresAt.toISOString() }).eq('dairy_id', user.dairyId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('subscriptions').insert({ dairy_id: user.dairyId, status: 'active', started_at: now.toISOString(), expires_at: expiresAt.toISOString() });
-        if (error) throw error;
-      }
 
       // Use RPC to activate demo (bypasses RLS for dairy_features)
       const { error: demoError } = await supabase.rpc('activate_demo_subscription', { _dairy_id: user.dairyId });
