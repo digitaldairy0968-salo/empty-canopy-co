@@ -46,6 +46,22 @@ const MilkEntry: React.FC = () => {
   const { settings: fatSnfSettings } = useFatSnfRateSettings();
   const { settings: ownerSettings } = useOwnerSettings();
 
+  // Check if entry_settings feature is enabled (advance feature)
+  const [entrySettingsEnabled, setEntrySettingsEnabled] = useState(false);
+  useEffect(() => {
+    const checkFeature = async () => {
+      if (!user?.dairyId) return;
+      const { data } = await supabase
+        .from('dairy_features')
+        .select('is_enabled')
+        .eq('dairy_id', user.dairyId)
+        .eq('feature_key', 'entry_settings')
+        .maybeSingle();
+      setEntrySettingsEnabled(data?.is_enabled ?? false);
+    };
+    checkFeature();
+  }, [user?.dairyId]);
+
   // Check if selected supplier is a buyer (uses rate per liter, no fat input)
   const isBuyer = (supplier: typeof suppliers[0] | undefined) => supplier?.animalType === 'buyer';
 
