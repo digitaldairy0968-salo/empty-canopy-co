@@ -315,22 +315,22 @@ const MilkEntry: React.FC = () => {
   // Also prefill fat/snf/lr if enabled in owner settings
   useEffect(() => {
     if (selectedSupplier) {
-      // Only auto-fill milk if predictMilkEnabled (default true)
-      if (ownerSettings.predictMilkEnabled !== false) {
+      // Only auto-fill milk if predictMilkEnabled AND entry_settings feature is enabled
+      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled !== false) {
         const autoQty = getAutoFillQuantity(selectedSupplier, shift);
         setMilkQty(autoQty);
       } else {
         setMilkQty('');
       }
       
-      // Prefill fat/snf/lr from owner settings if enabled
-      if (ownerSettings.prefillEnabled) {
+      // Prefill fat/snf/lr from owner settings if enabled AND entry_settings feature is enabled
+      if (entrySettingsEnabled && ownerSettings.prefillEnabled) {
         if (ownerSettings.prefillFat !== null) setFatValue(ownerSettings.prefillFat.toString());
         if (ownerSettings.prefillSnf !== null) setSnfValue(ownerSettings.prefillSnf.toString());
         if (ownerSettings.prefillLr !== null) setLrValue(ownerSettings.prefillLr.toString());
       }
     }
-  }, [selectedSupplier?.id, shift]);
+  }, [selectedSupplier?.id, shift, entrySettingsEnabled]);
 
   const handleSupplierCodeChange = (value: string) => {
     setSupplierCode(value);
