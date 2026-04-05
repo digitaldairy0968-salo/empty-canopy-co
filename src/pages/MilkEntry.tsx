@@ -1149,6 +1149,7 @@ const MilkEntry: React.FC = () => {
                 dairyName: user?.dairyName,
               }}
               onClose={() => setShowReceiptDialog(false)}
+              autoPrint={ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled}
             />
           )}
         </DialogContent>
