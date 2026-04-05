@@ -637,20 +637,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return false;
       }
 
-      // Create rate settings using values from RateSetup (or defaults)
+      // Update rate settings with values from RateSetup (trigger already created defaults)
       const initialFatRate = parseFloat(localStorage.getItem('initial_fat_rate') || '8');
       const initialLiterRate = parseFloat(localStorage.getItem('initial_liter_rate') || '50');
       
       await supabase
         .from('rate_settings')
-        .insert({
-          dairy_id: newDairy.id,
+        .update({
           rate_type: 'per_fat',
           rate_value: initialFatRate,
           liter_rate: initialLiterRate,
-        });
+        })
+        .eq('dairy_id', newDairy.id);
       
-      // Clear the temporary localStorage values
+      // Clear the temporary localStorage values AFTER successful update
       localStorage.removeItem('initial_fat_rate');
       localStorage.removeItem('initial_liter_rate');
 

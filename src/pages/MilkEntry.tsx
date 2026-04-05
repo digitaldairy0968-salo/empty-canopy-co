@@ -594,11 +594,11 @@ const MilkEntry: React.FC = () => {
       setLrValue('');
       setBuyerPrice('');
 
-      // Direct print - skip receipt dialog, send to printer if connected
+      // Show receipt dialog: always show if printer connected (for auto-print) or if receipt enabled
       if (ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled) {
-        // Auto print mode: don't show dialog at all
-        // The receipt will be printed directly (handled elsewhere)
-      } else if (showReceiptEnabled && !ownerSettings.autoPrintEnabled) {
+        // Auto print mode: show dialog which will auto-trigger print
+        setShowReceiptDialog(true);
+      } else if (showReceiptEnabled) {
         setShowReceiptDialog(true);
       }
       

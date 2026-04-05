@@ -171,14 +171,14 @@ const PaymentRequired: React.FC = () => {
         if (error) throw error;
       }
 
-      // Auto-enable all features for demo users EXCEPT customer_code
-      const demoFeatures = ['entry_settings', 'connect_fat_machine'];
-      for (const featureKey of demoFeatures) {
-        await supabase.from('dairy_features').upsert({
-          dairy_id: user.dairyId,
-          feature_key: featureKey,
-          is_enabled: true,
-        } as any, { onConflict: 'dairy_id,feature_key' });
+      // Use RPC to activate demo (bypasses RLS for dairy_features)
+      const { error: demoError } = await supabase.rpc('activate_demo_subscription', { _dairy_id: user.dairyId });
+      if (demoError) {
+        if (demoError.message.includes('demo_already_used')) {
+          toast.error(language === 'hi' ? 'डेमो पहले से उपयोग किया जा चुका है' : 'Demo already used');
+          return;
+        }
+        throw demoError;
       }
 
       localStorage.removeItem('subscription_cache');

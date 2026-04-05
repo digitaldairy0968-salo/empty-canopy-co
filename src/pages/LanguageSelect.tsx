@@ -63,16 +63,6 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
           Dairy Manager
         </p>
 
-        {/* Admin auth image OR fallback */}
-        {authImageUrl && (
-          <div className="mt-6 relative mx-auto max-w-[280px]">
-            <img 
-              src={authImageUrl} 
-              alt="Dairy" 
-              className="w-full h-auto max-h-[220px] object-contain rounded-2xl shadow-xl animate-fade-in mx-auto"
-            />
-          </div>
-        )}
       </div>
 
       {/* Language Selection */}
