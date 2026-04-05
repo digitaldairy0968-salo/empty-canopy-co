@@ -22,6 +22,7 @@ interface ReceiptData {
 interface MilkReceiptProps {
   data: ReceiptData;
   onClose: () => void;
+  autoPrint?: boolean;
 }
 
 // Helper to get receipt field settings from localStorage
