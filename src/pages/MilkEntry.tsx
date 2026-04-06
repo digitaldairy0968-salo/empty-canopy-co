@@ -565,7 +565,7 @@ const MilkEntry: React.FC = () => {
             setSnfValue('');
             setLrValue('');
             setBuyerPrice('');
-            selectNextEntrySupplier();
+            if (codeDirectionEnabled) selectNextEntrySupplier();
             setIsLoading(false);
             return;
           }
