@@ -82,6 +82,9 @@ const MilkEntry: React.FC = () => {
   const [buyerPrice, setBuyerPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Code direction toggle - default OFF, when ON shows ⬇️⬆️ nav buttons
+  const [codeDirectionEnabled, setCodeDirectionEnabled] = useState(false);
+
   // Voice entry settings
   const [voiceSettings] = useState(getVoiceSettings);
   
@@ -316,7 +319,7 @@ const MilkEntry: React.FC = () => {
   useEffect(() => {
     if (selectedSupplier) {
       // Only auto-fill milk if predictMilkEnabled AND entry_settings feature is enabled
-      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled !== false) {
+      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled === true) {
         const autoQty = getAutoFillQuantity(selectedSupplier, shift);
         setMilkQty(autoQty);
       } else {
@@ -562,7 +565,7 @@ const MilkEntry: React.FC = () => {
             setSnfValue('');
             setLrValue('');
             setBuyerPrice('');
-            selectNextEntrySupplier();
+            if (codeDirectionEnabled) selectNextEntrySupplier();
             setIsLoading(false);
             return;
           }
@@ -619,7 +622,7 @@ const MilkEntry: React.FC = () => {
       }
       
       // Auto-select next supplier
-      selectNextEntrySupplier();
+      if (codeDirectionEnabled) selectNextEntrySupplier();
     } catch (error) {
       toast({ title: t('error'), description: 'एंट्री सेव करने में विफल / Failed to save entry', variant: 'destructive' });
     } finally {
@@ -782,19 +785,39 @@ const MilkEntry: React.FC = () => {
             </div>
           </div>
 
+          {/* Code Direction Toggle */}
+          {entrySettingsEnabled && (
+            <div className="flex items-center justify-between mb-2 p-2 bg-muted/50 rounded-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
+                {codeDirectionEnabled && (
+                  <span className="text-xs text-muted-foreground">
+                    {ownerSettings.codeDirection === 'reverse' ? '⬇️' : '⬆️'}
+                  </span>
+                )}
+              </div>
+              <Switch
+                checked={codeDirectionEnabled}
+                onCheckedChange={setCodeDirectionEnabled}
+              />
+            </div>
+          )}
+
           {/* Supplier Code Input with Navigation - Compact */}
           <div className="mb-2 space-y-2">
             {/* Select by Code Row */}
             <div className="flex items-center gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => navigateEntrySupplier('up')}
-                className="h-10 w-10 rounded-lg shrink-0"
-              >
-                <ChevronUp className="h-5 w-5" />
-              </Button>
+              {codeDirectionEnabled && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigateEntrySupplier('up')}
+                  className="h-10 w-10 rounded-lg shrink-0"
+                >
+                  <ChevronUp className="h-5 w-5" />
+                </Button>
+              )}
               <div className="relative flex-1">
                 <Input
                   type="text"
@@ -806,15 +829,17 @@ const MilkEntry: React.FC = () => {
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={() => navigateEntrySupplier('down')}
-                className="h-10 w-10 rounded-lg shrink-0"
-              >
-                <ChevronDown className="h-5 w-5" />
-              </Button>
+              {codeDirectionEnabled && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigateEntrySupplier('down')}
+                  className="h-10 w-10 rounded-lg shrink-0"
+                >
+                  <ChevronDown className="h-5 w-5" />
+                </Button>
+              )}
             </div>
             
             {/* Select by Name Row */}
