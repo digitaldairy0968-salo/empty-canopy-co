@@ -494,7 +494,7 @@ const EntrySettingsSection: React.FC<{
           <span className="font-medium">{language === 'hi' ? 'दूध भविष्यवाणी (Predict Milk)' : 'Predict Milk'} <span className="text-xs text-primary">⭐ Pro</span></span>
           <p className="text-xs text-muted-foreground">{language === 'hi' ? 'पिछली 2 बार समान दूध हो तो ऑटो भरें' : 'Auto-fill if last 2 entries have same quantity'}</p>
         </div>
-        <Switch checked={ownerSettings.predictMilkEnabled ?? true} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
+        <Switch checked={ownerSettings.predictMilkEnabled ?? false} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
       </div>
 
       {/* Code Direction Toggle */}

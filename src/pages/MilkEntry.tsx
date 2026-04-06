@@ -316,7 +316,7 @@ const MilkEntry: React.FC = () => {
   useEffect(() => {
     if (selectedSupplier) {
       // Only auto-fill milk if predictMilkEnabled AND entry_settings feature is enabled
-      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled !== false) {
+      if (entrySettingsEnabled && ownerSettings.predictMilkEnabled === true) {
         const autoQty = getAutoFillQuantity(selectedSupplier, shift);
         setMilkQty(autoQty);
       } else {
