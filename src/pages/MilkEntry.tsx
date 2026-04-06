@@ -622,7 +622,7 @@ const MilkEntry: React.FC = () => {
       }
       
       // Auto-select next supplier
-      selectNextEntrySupplier();
+      if (codeDirectionEnabled) selectNextEntrySupplier();
     } catch (error) {
       toast({ title: t('error'), description: 'एंट्री सेव करने में विफल / Failed to save entry', variant: 'destructive' });
     } finally {
