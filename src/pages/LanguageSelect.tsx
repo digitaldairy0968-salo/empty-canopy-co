@@ -1,6 +1,6 @@
-import React from 'react';
-import { Droplets } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 type Language = 'hi' | 'gu' | 'en';
 
 interface LanguageSelectProps {
@@ -9,6 +9,15 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      const { data } = await supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle();
+      if (data?.auth_page_image_url) setAuthImageUrl(data.auth_page_image_url);
+    };
+    fetchImage();
+  }, []);
 
   const languages: { code: Language; name: string; nativeName: string; emoji: string }[] = [
     { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', emoji: '🙏' },
@@ -31,12 +40,18 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
         <div className="absolute top-20 left-1/4 w-16 h-16 bg-primary/10 rounded-full blur-2xl" />
         <div className="absolute top-32 right-1/4 w-24 h-24 bg-accent/10 rounded-full blur-2xl" />
         
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
-          <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-lg shadow-primary/25 animate-bounce-gentle">
-            <Droplets className="w-10 h-10 text-primary-foreground" />
+        {/* Auth Image or App Icon */}
+        {authImageUrl ? (
+          <div className="flex justify-center mb-4">
+            <img src={authImageUrl} alt="Dairy Manager" className="w-24 h-24 rounded-3xl object-cover shadow-lg shadow-primary/25" />
           </div>
-        </div>
+        ) : (
+          <div className="flex justify-center mb-4">
+            <div className="w-20 h-20 bg-gradient-to-br from-primary to-primary/80 rounded-3xl flex items-center justify-center shadow-lg shadow-primary/25 animate-bounce-gentle">
+              <span className="text-4xl">🥛</span>
+            </div>
+          </div>
+        )}
         
         {/* App Name */}
         <h1 className="text-3xl font-bold text-foreground mb-1">

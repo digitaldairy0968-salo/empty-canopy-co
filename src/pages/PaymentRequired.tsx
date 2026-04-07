@@ -382,30 +382,17 @@ const PaymentRequired: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {/* Code */}
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary font-bold">3</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium">{language === 'hi' ? 'प्राप्त कोड दर्ज करें' : 'Enter received code'}</p>
-                </div>
-              </div>
             </div>
 
-            {/* Activation Code */}
-            <div className="dairy-card space-y-4">
-              <h3 className="font-semibold">{language === 'hi' ? 'एक्टिवेशन कोड' : 'Activation Code'}</h3>
-              <Input
-                type="text" value={activationCode}
-                onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-                placeholder={language === 'hi' ? 'कोड दर्ज करें' : 'Enter code'}
-                className="text-center text-xl tracking-widest uppercase" maxLength={12}
-              />
-              <Button onClick={activateCode} disabled={activating || !activationCode.trim()} className="w-full" size="lg">
-                {activating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : (language === 'hi' ? 'सक्रिय करें' : 'Activate')}
-              </Button>
+            {/* Final Message - no code input */}
+            <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl text-center py-6 px-4">
+              <div className="text-3xl mb-2">💰</div>
+              <p className="text-lg font-bold text-primary">
+                {language === 'hi' ? 'पेमेंट कर दें!' : 'Make the payment!'}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {language === 'hi' ? 'एडमिन आपका टाइम पीरियड बढ़ा देगा 🚀' : 'Admin will extend your subscription 🚀'}
+              </p>
             </div>
           </>
         )}

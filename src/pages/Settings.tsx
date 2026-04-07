@@ -344,7 +344,7 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
             {language === 'hi' ? 'रेफरल कोड' : 'Referral Code'}
           </p>
           <p className="text-xs text-muted-foreground">
-            {language === 'hi' ? 'दोस्तों को शेयर करें - उनकी पहली खरीद पर 1 महीना फ्री!' : 'Share with friends - get 1 month free on their first purchase!'}
+            {language === 'hi' ? 'दोस्तों को शेयर करें - हर रेफरल पर 100 डिजिटल कॉइन पाएं!' : 'Share with friends - earn 100 digital coins per referral!'}
           </p>
         </div>
       </div>
@@ -359,6 +359,50 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
         </Button>
       </div>
     </div>
+  );
+};
+
+// Digital Coins Balance Display
+const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
+  const [balance, setBalance] = useState<number>(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!dairyId) return;
+      const { data } = await supabase
+        .from('digital_coins')
+        .select('balance')
+        .eq('dairy_id', dairyId)
+        .maybeSingle();
+      setBalance((data as any)?.balance || 0);
+    };
+    fetch();
+  }, [dairyId]);
+
+  return (
+    <button
+      onClick={() => navigate('/subscription-renewal')}
+      className="w-full dairy-card animate-fade-in text-left hover:shadow-lg transition-shadow border-2 border-amber-200 dark:border-amber-800"
+    >
+      <div className="flex items-center gap-3">
+        <div className="icon-badge-sm bg-amber-100 dark:bg-amber-900/30">
+          <span className="text-lg">🪙</span>
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold">
+            {language === 'hi' ? 'डिजिटल कॉइन' : 'Digital Coins'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {language === 'hi' ? '1 कॉइन = ₹1 • प्लान खरीदने में उपयोग करें' : '1 coin = ₹1 • Use to buy plans'}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{balance}</p>
+          <p className="text-[10px] text-muted-foreground">{language === 'hi' ? 'कॉइन' : 'coins'}</p>
+        </div>
+      </div>
+    </button>
   );
 };
 
@@ -497,27 +541,37 @@ const EntrySettingsSection: React.FC<{
         <Switch checked={ownerSettings.predictMilkEnabled ?? false} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
       </div>
 
-      {/* Code Direction Toggle */}
+      {/* Auto Code Change Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
-          <span className="font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
+          <span className="font-medium">{language === 'hi' ? 'ऑटो कोड चेंज' : 'Auto Code Change'} <span className="text-xs text-primary">⭐ Pro</span></span>
           <p className="text-xs text-muted-foreground">
-            {language === 'hi' 
-              ? (ownerSettings.codeDirection === 'forward' ? 'सेव के बाद कोड बढ़ेगा' : 'सेव के बाद कोड घटेगा')
-              : (ownerSettings.codeDirection === 'forward' ? 'Code increases after save' : 'Code decreases after save')}
+            {language === 'hi' ? 'सेव के बाद अगला/पिछला कोड ऑटो सेलेक्ट हो' : 'Auto-select next/prev code after save'}
           </p>
         </div>
-        <div className="flex bg-muted rounded-full p-0.5">
-          <button
-            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'forward' })}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-          >⬆️</button>
-          <button
-            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'reverse' })}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-          >⬇️</button>
-        </div>
+        <Switch 
+          checked={ownerSettings.codeDirection !== 'off'} 
+          onCheckedChange={(checked) => updateOwnerSettings({ codeDirection: checked ? 'forward' : 'off' })} 
+          disabled={savingOwnerSettings || isLocked} 
+        />
       </div>
+
+      {/* Direction selector - only when auto code change is ON */}
+      {ownerSettings.codeDirection !== 'off' && !isLocked && (
+        <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl mb-3">
+          <span className="text-sm font-medium">{language === 'hi' ? 'दिशा' : 'Direction'}</span>
+          <div className="flex bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => updateOwnerSettings({ codeDirection: 'forward' })}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+            >⬆️ {language === 'hi' ? 'आगे' : 'Up'}</button>
+            <button
+              onClick={() => updateOwnerSettings({ codeDirection: 'reverse' })}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+            >⬇️ {language === 'hi' ? 'पीछे' : 'Down'}</button>
+          </div>
+        </div>
+      )}
 
       {/* Default Prefill Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
@@ -765,6 +819,9 @@ const Settings: React.FC = () => {
 
         {/* Referral Code */}
         {user?.role === 'owner' && <ReferralCodeDisplay language={language} />}
+
+        {/* Digital Coins Balance */}
+        {user?.role === 'owner' && <CoinBalanceDisplay language={language} dairyId={user?.dairyId} />}
 
         {/* Dairy Customer Code */}
         {user?.role === 'owner' && <DairyCodeDisplay language={language} dairyId={user?.dairyId} />}

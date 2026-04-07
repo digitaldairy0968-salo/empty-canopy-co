@@ -22,18 +22,22 @@ const SubscriptionRenewal: React.FC = () => {
   const [activationCode, setActivationCode] = useState('');
   const [activating, setActivating] = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
+  const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
-      const [sRes, subRes, vRes, pRes] = await Promise.all([
+      const [sRes, subRes, vRes, pRes, coinRes] = await Promise.all([
         supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
         user?.dairyId ? supabase.from('subscriptions').select('expires_at').eq('dairy_id', user.dairyId).eq('status', 'active').maybeSingle() : Promise.resolve({ data: null }),
         supabase.from('subscription_varieties').select('*').eq('is_active', true).order('created_at'),
         supabase.from('variety_plans').select('*').eq('is_active', true).order('price'),
+        user?.dairyId ? supabase.from('digital_coins').select('balance').eq('dairy_id', user.dairyId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       setSettings(sRes.data);
       setVarieties(vRes.data || []);
       setVarPlans(pRes.data || []);
+      setCoinBalance((coinRes.data as any)?.balance || 0);
       if (subRes.data?.expires_at) {
         setDaysLeft(Math.max(0, Math.ceil((new Date(subRes.data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
       }
@@ -85,6 +89,24 @@ const SubscriptionRenewal: React.FC = () => {
     } catch (e: any) {
       toast.error(e.message || 'Failed');
     } finally { setActivating(false); }
+  };
+
+  const buyWithCoins = async (planId: string, planPrice: number) => {
+    if (!user?.dairyId) return;
+    if (coinBalance < planPrice) {
+      toast.error(language === 'hi' ? `पर्याप्त कॉइन नहीं हैं (${coinBalance}/${planPrice})` : `Insufficient coins (${coinBalance}/${planPrice})`);
+      return;
+    }
+    setBuyingWithCoins(planId);
+    try {
+      const { error } = await supabase.rpc('purchase_plan_with_coins', { _dairy_id: user.dairyId, _plan_id: planId });
+      if (error) {
+        if (error.message.includes('insufficient_coins')) { toast.error(language === 'hi' ? 'पर्याप्त कॉइन नहीं' : 'Insufficient coins'); return; }
+        throw error;
+      }
+      toast.success(language === 'hi' ? '✅ प्लान कॉइन से खरीदा गया!' : '✅ Plan purchased with coins!');
+      window.location.reload();
+    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setBuyingWithCoins(null); }
   };
 
   return (
@@ -165,14 +187,25 @@ const SubscriptionRenewal: React.FC = () => {
               {vp.length > 0 && (
                 <div className="p-4 pt-0 space-y-2">
                   {vp.map((plan: any) => (
-                    <div key={plan.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-2xl border border-border/30">
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">{plan.name}</p>
-                        <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                    <div key={plan.id} className="p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-2xl border border-border/30">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-sm text-foreground">{plan.name}</p>
+                          <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-primary">₹{plan.price}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-black text-primary">₹{plan.price}</p>
-                      </div>
+                      {coinBalance >= plan.price && (
+                        <button
+                          onClick={() => buyWithCoins(plan.id, plan.price)}
+                          disabled={buyingWithCoins === plan.id}
+                          className="mt-2 w-full py-2 px-3 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                        >
+                          {buyingWithCoins === plan.id ? '...' : `🪙 ${language === 'hi' ? 'कॉइन से खरीदें' : 'Buy with Coins'} (${coinBalance})`}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
