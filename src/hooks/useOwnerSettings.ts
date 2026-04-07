@@ -74,7 +74,7 @@ export function useOwnerSettings() {
             bluetoothPrinterConnected: (data as any).bluetooth_printer_connected ?? false,
             showRakamToCustomers: (data as any).show_rakam_to_customers ?? true,
             bhugtanOutputType: (data as any).bhugtan_output_type ?? 'print',
-            codeDirection: (data as any).code_direction ?? 'forward',
+            codeDirection: (data as any).code_direction ?? 'off',
             prefillEnabled: (data as any).prefill_enabled ?? false,
             prefillFat: (data as any).prefill_fat ?? null,
             prefillSnf: (data as any).prefill_snf ?? null,
