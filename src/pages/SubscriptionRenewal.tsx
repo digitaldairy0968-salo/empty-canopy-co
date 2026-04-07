@@ -22,6 +22,8 @@ const SubscriptionRenewal: React.FC = () => {
   const [activationCode, setActivationCode] = useState('');
   const [activating, setActivating] = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
+  const [coinBalance, setCoinBalance] = useState(0);
+  const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
