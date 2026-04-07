@@ -384,14 +384,30 @@ const PaymentRequired: React.FC = () => {
               </div>
             </div>
 
-            {/* Final Message - no code input */}
+            {/* Activation Code Input */}
+            <div className="dairy-card space-y-3 border-2 border-primary/20">
+              <h3 className="font-semibold flex items-center gap-2">
+                🔑 {language === 'hi' ? 'एक्टिवेशन कोड दर्ज करें' : 'Enter Activation Code'}
+              </h3>
+              <Input
+                placeholder={language === 'hi' ? 'कोड दर्ज करें' : 'Enter code'}
+                value={activationCode}
+                onChange={e => setActivationCode(e.target.value.toUpperCase())}
+                className="h-12 text-center text-lg font-bold tracking-widest rounded-xl"
+              />
+              <Button onClick={activateCode} disabled={activating || !activationCode.trim()} className="w-full h-12 rounded-xl">
+                {activating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : (language === 'hi' ? '✅ कोड सक्रिय करें' : '✅ Activate Code')}
+              </Button>
+            </div>
+
+            {/* Final Message */}
             <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl text-center py-6 px-4">
               <div className="text-3xl mb-2">💰</div>
               <p className="text-lg font-bold text-primary">
                 {language === 'hi' ? 'पेमेंट कर दें!' : 'Make the payment!'}
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {language === 'hi' ? 'एडमिन आपका टाइम पीरियड बढ़ा देगा 🚀' : 'Admin will extend your subscription 🚀'}
+                {language === 'hi' ? 'एडमिन आपको कोड देगा, कोड दर्ज करें 🚀' : 'Admin will give you a code, enter it above 🚀'}
               </p>
             </div>
           </>
