@@ -381,6 +381,7 @@ const PaymentRequired: React.FC = () => {
                     </Button>
                   )}
                 </div>
+              </div>
             </div>
 
             {/* Final Message - no code input */}
