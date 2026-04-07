@@ -18,10 +18,6 @@ const SubscriptionRenewal: React.FC = () => {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
-  const [varieties, setVarieties] = useState<any[]>([]);
-  const [varPlans, setVarPlans] = useState<any[]>([]);
-  const [activationCode, setActivationCode] = useState('');
-  const [activating, setActivating] = useState(false);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [coinBalance, setCoinBalance] = useState(0);
   const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
