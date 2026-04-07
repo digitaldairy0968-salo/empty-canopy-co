@@ -91,6 +91,24 @@ const SubscriptionRenewal: React.FC = () => {
     } finally { setActivating(false); }
   };
 
+  const buyWithCoins = async (planId: string, planPrice: number) => {
+    if (!user?.dairyId) return;
+    if (coinBalance < planPrice) {
+      toast.error(language === 'hi' ? `पर्याप्त कॉइन नहीं हैं (${coinBalance}/${planPrice})` : `Insufficient coins (${coinBalance}/${planPrice})`);
+      return;
+    }
+    setBuyingWithCoins(planId);
+    try {
+      const { error } = await supabase.rpc('purchase_plan_with_coins', { _dairy_id: user.dairyId, _plan_id: planId });
+      if (error) {
+        if (error.message.includes('insufficient_coins')) { toast.error(language === 'hi' ? 'पर्याप्त कॉइन नहीं' : 'Insufficient coins'); return; }
+        throw error;
+      }
+      toast.success(language === 'hi' ? '✅ प्लान कॉइन से खरीदा गया!' : '✅ Plan purchased with coins!');
+      window.location.reload();
+    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setBuyingWithCoins(null); }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       {/* Premium Header */}
