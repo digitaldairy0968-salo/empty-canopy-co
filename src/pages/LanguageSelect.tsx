@@ -1,6 +1,6 @@
-import React from 'react';
-import { Droplets } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 type Language = 'hi' | 'gu' | 'en';
 
 interface LanguageSelectProps {
