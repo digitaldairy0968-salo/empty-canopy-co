@@ -32,7 +32,7 @@ const defaultSettings: OwnerSettings = {
   bluetoothPrinterConnected: false,
   showRakamToCustomers: true,
   bhugtanOutputType: 'print',
-  codeDirection: 'forward',
+  codeDirection: 'off',
   prefillEnabled: false,
   prefillFat: null,
   prefillSnf: null,
