@@ -344,7 +344,7 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
             {language === 'hi' ? 'रेफरल कोड' : 'Referral Code'}
           </p>
           <p className="text-xs text-muted-foreground">
-            {language === 'hi' ? 'दोस्तों को शेयर करें - उनकी पहली खरीद पर 1 महीना फ्री!' : 'Share with friends - get 1 month free on their first purchase!'}
+            {language === 'hi' ? 'दोस्तों को शेयर करें - हर रेफरल पर 100 डिजिटल कॉइन पाएं!' : 'Share with friends - earn 100 digital coins per referral!'}
           </p>
         </div>
       </div>
@@ -359,6 +359,50 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
         </Button>
       </div>
     </div>
+  );
+};
+
+// Digital Coins Balance Display
+const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
+  const [balance, setBalance] = useState<number>(0);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetch = async () => {
+      if (!dairyId) return;
+      const { data } = await supabase
+        .from('digital_coins')
+        .select('balance')
+        .eq('dairy_id', dairyId)
+        .maybeSingle();
+      setBalance((data as any)?.balance || 0);
+    };
+    fetch();
+  }, [dairyId]);
+
+  return (
+    <button
+      onClick={() => navigate('/subscription-renewal')}
+      className="w-full dairy-card animate-fade-in text-left hover:shadow-lg transition-shadow border-2 border-amber-200 dark:border-amber-800"
+    >
+      <div className="flex items-center gap-3">
+        <div className="icon-badge-sm bg-amber-100 dark:bg-amber-900/30">
+          <span className="text-lg">🪙</span>
+        </div>
+        <div className="flex-1">
+          <p className="font-semibold">
+            {language === 'hi' ? 'डिजिटल कॉइन' : 'Digital Coins'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {language === 'hi' ? '1 कॉइन = ₹1 • प्लान खरीदने में उपयोग करें' : '1 coin = ₹1 • Use to buy plans'}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{balance}</p>
+          <p className="text-[10px] text-muted-foreground">{language === 'hi' ? 'कॉइन' : 'coins'}</p>
+        </div>
+      </div>
+    </button>
   );
 };
 
