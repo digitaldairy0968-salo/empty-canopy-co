@@ -79,7 +79,7 @@ export function useOwnerSettings() {
             prefillFat: (data as any).prefill_fat ?? null,
             prefillSnf: (data as any).prefill_snf ?? null,
             prefillLr: (data as any).prefill_lr ?? null,
-            predictMilkEnabled: (data as any).predict_milk_enabled ?? true,
+            predictMilkEnabled: (data as any).predict_milk_enabled ?? false,
           });
         }
       } catch (error) {
