@@ -197,15 +197,18 @@ const SubscriptionRenewal: React.FC = () => {
                           <p className="text-2xl font-black text-primary">₹{plan.price}</p>
                         </div>
                       </div>
-                      {coinBalance >= plan.price && (
-                        <button
-                          onClick={() => buyWithCoins(plan.id, plan.price)}
-                          disabled={buyingWithCoins === plan.id}
-                          className="mt-2 w-full py-2 px-3 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl text-sm font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
-                        >
-                          {buyingWithCoins === plan.id ? '...' : `🪙 ${language === 'hi' ? 'कॉइन से खरीदें' : 'Buy with Coins'} (${coinBalance})`}
-                        </button>
-                      )}
+                      <button
+                        onClick={() => buyWithCoins(plan.id, plan.price)}
+                        disabled={buyingWithCoins === plan.id || coinBalance < plan.price}
+                        className={cn(
+                          "mt-2 w-full py-2 px-3 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50",
+                          coinBalance >= plan.price
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50"
+                            : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {buyingWithCoins === plan.id ? '...' : `🪙 ${language === 'hi' ? 'कॉइन से खरीदें' : 'Buy with Coins'} (${coinBalance}/${plan.price})`}
+                      </button>
                     </div>
                   ))}
                 </div>
