@@ -82,8 +82,8 @@ const MilkEntry: React.FC = () => {
   const [buyerPrice, setBuyerPrice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Code direction toggle - default OFF, when ON shows ⬇️⬆️ nav buttons
-  const [codeDirectionEnabled, setCodeDirectionEnabled] = useState(false);
+  // Code direction from owner settings - 'off' means disabled
+  const codeDirectionEnabled = ownerSettings.codeDirection !== 'off';
 
   // Voice entry settings
   const [voiceSettings] = useState(getVoiceSettings);
