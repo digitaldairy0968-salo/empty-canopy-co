@@ -9,6 +9,15 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      const { data } = await supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle();
+      if (data?.auth_page_image_url) setAuthImageUrl(data.auth_page_image_url);
+    };
+    fetchImage();
+  }, []);
 
   const languages: { code: Language; name: string; nativeName: string; emoji: string }[] = [
     { code: 'hi', name: 'Hindi', nativeName: 'हिंदी', emoji: '🙏' },
