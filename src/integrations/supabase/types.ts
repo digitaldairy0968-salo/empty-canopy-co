@@ -84,6 +84,33 @@ export type Database = {
           },
         ]
       }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          dairy_id: string
+          description: string | null
+          id: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          dairy_id: string
+          description?: string | null
+          id?: string
+          type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          dairy_id?: string
+          description?: string | null
+          id?: string
+          type?: string
+        }
+        Relationships: []
+      }
       dairies: {
         Row: {
           code: string | null
@@ -145,6 +172,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      digital_coins: {
+        Row: {
+          balance: number
+          created_at: string
+          dairy_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          dairy_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          dairy_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       entry_edit_requests: {
         Row: {
@@ -925,6 +976,10 @@ export type Database = {
           error_code: string
           linked: boolean
         }[]
+      }
+      purchase_plan_with_coins: {
+        Args: { _dairy_id: string; _plan_id: string }
+        Returns: boolean
       }
     }
     Enums: {
