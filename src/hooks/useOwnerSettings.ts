@@ -13,7 +13,7 @@ export interface OwnerSettings {
   bluetoothPrinterConnected: boolean;
   showRakamToCustomers: boolean;
   bhugtanOutputType: 'print' | 'pdf' | 'nothing';
-  codeDirection: 'forward' | 'reverse';
+  codeDirection: 'off' | 'forward' | 'reverse';
   prefillEnabled: boolean;
   prefillFat: number | null;
   prefillSnf: number | null;
