@@ -541,27 +541,37 @@ const EntrySettingsSection: React.FC<{
         <Switch checked={ownerSettings.predictMilkEnabled ?? false} onCheckedChange={(checked) => updateOwnerSettings({ predictMilkEnabled: checked })} disabled={savingOwnerSettings || isLocked} />
       </div>
 
-      {/* Code Direction Toggle */}
+      {/* Auto Code Change Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
-          <span className="font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
+          <span className="font-medium">{language === 'hi' ? 'ऑटो कोड चेंज' : 'Auto Code Change'} <span className="text-xs text-primary">⭐ Pro</span></span>
           <p className="text-xs text-muted-foreground">
-            {language === 'hi' 
-              ? (ownerSettings.codeDirection === 'forward' ? 'सेव के बाद कोड बढ़ेगा' : 'सेव के बाद कोड घटेगा')
-              : (ownerSettings.codeDirection === 'forward' ? 'Code increases after save' : 'Code decreases after save')}
+            {language === 'hi' ? 'सेव के बाद अगला/पिछला कोड ऑटो सेलेक्ट हो' : 'Auto-select next/prev code after save'}
           </p>
         </div>
-        <div className="flex bg-muted rounded-full p-0.5">
-          <button
-            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'forward' })}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-          >⬆️</button>
-          <button
-            onClick={() => !isLocked && updateOwnerSettings({ codeDirection: 'reverse' })}
-            className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
-          >⬇️</button>
-        </div>
+        <Switch 
+          checked={ownerSettings.codeDirection !== 'off'} 
+          onCheckedChange={(checked) => updateOwnerSettings({ codeDirection: checked ? 'forward' : 'off' })} 
+          disabled={savingOwnerSettings || isLocked} 
+        />
       </div>
+
+      {/* Direction selector - only when auto code change is ON */}
+      {ownerSettings.codeDirection !== 'off' && !isLocked && (
+        <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl mb-3">
+          <span className="text-sm font-medium">{language === 'hi' ? 'दिशा' : 'Direction'}</span>
+          <div className="flex bg-muted rounded-full p-0.5">
+            <button
+              onClick={() => updateOwnerSettings({ codeDirection: 'forward' })}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'forward' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+            >⬆️ {language === 'hi' ? 'आगे' : 'Up'}</button>
+            <button
+              onClick={() => updateOwnerSettings({ codeDirection: 'reverse' })}
+              className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all", ownerSettings.codeDirection === 'reverse' ? "bg-primary text-primary-foreground" : "text-muted-foreground")}
+            >⬇️ {language === 'hi' ? 'पीछे' : 'Down'}</button>
+          </div>
+        </div>
+      )}
 
       {/* Default Prefill Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
