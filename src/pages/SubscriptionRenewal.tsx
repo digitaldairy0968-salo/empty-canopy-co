@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Copy, Check, QrCode, Phone, MessageCircle, Download, Crown, Sparkles, Shield, Zap, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,7 +17,8 @@ const SubscriptionRenewal: React.FC = () => {
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
-  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [varieties, setVarieties] = useState<any[]>([]);
+  const [varPlans, setVarPlans] = useState<any[]>([]);
   const [coinBalance, setCoinBalance] = useState(0);
   const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
 
@@ -71,23 +71,6 @@ const SubscriptionRenewal: React.FC = () => {
     } catch {}
   };
 
-  const activateCode = async () => {
-    if (!activationCode.trim() || !user?.dairyId) return;
-    setActivating(true);
-    try {
-      const code = activationCode.trim().toUpperCase();
-      const { error } = await supabase.rpc('activate_subscription_code', { _code: code, _dairy_id: user.dairyId });
-      if (error) {
-        if (error.message.includes('invalid_code')) { toast.error(language === 'hi' ? 'अमान्य कोड' : 'Invalid code'); return; }
-        throw error;
-      }
-      toast.success(language === 'hi' ? '✅ सक्रियण सफल!' : '✅ Activation successful!');
-      window.location.reload();
-    } catch (e: any) {
-      toast.error(e.message || 'Failed');
-    } finally { setActivating(false); }
-  };
-
   const buyWithCoins = async (planId: string, planPrice: number) => {
     if (!user?.dairyId) return;
     if (coinBalance < planPrice) {
@@ -126,7 +109,6 @@ const SubscriptionRenewal: React.FC = () => {
             </div>
           </div>
 
-          {/* Days remaining badge */}
           {daysLeft !== null && (
             <div className="flex justify-center mb-4">
               <div className="bg-primary-foreground/15 backdrop-blur-sm rounded-2xl px-6 py-4 text-center border border-primary-foreground/20">
@@ -138,7 +120,6 @@ const SubscriptionRenewal: React.FC = () => {
             </div>
           )}
 
-          {/* Features badges */}
           <div className="flex flex-wrap justify-center gap-2 mb-2">
             {[
               { icon: <Zap className="h-3 w-3" />, text: language === 'hi' ? 'असीमित एंट्री' : 'Unlimited Entries' },
@@ -154,7 +135,19 @@ const SubscriptionRenewal: React.FC = () => {
       </div>
 
       <main className="px-4 py-6 max-w-md mx-auto space-y-4 -mt-2">
-        {/* Variety Cards */}
+        {/* Coin Balance */}
+        <div className="bg-card rounded-3xl shadow-xl border-2 border-amber-200 dark:border-amber-800 p-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🪙</span>
+            <div className="flex-1">
+              <p className="font-semibold">{language === 'hi' ? 'डिजिटल कॉइन बैलेंस' : 'Digital Coin Balance'}</p>
+              <p className="text-xs text-muted-foreground">{language === 'hi' ? '1 कॉइन = ₹1' : '1 coin = ₹1'}</p>
+            </div>
+            <p className="text-3xl font-black text-amber-600 dark:text-amber-400">{coinBalance}</p>
+          </div>
+        </div>
+
+        {/* Variety Cards with coin buy */}
         {varieties.map((v: any) => {
           const vp = varPlans.filter((p: any) => p.variety_id === v.id);
           const features = Array.isArray(v.features) ? v.features : [];
@@ -258,45 +251,14 @@ const SubscriptionRenewal: React.FC = () => {
           </div>
         </div>
 
-        {/* Activation Code Section */}
-        <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden">
-          <button 
-            onClick={() => setShowCodeInput(!showCodeInput)}
-            className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🔑</span>
-              <span className="font-semibold">{language === 'hi' ? 'एक्टिवेशन कोड है?' : 'Have activation code?'}</span>
-            </div>
-            <span className="text-muted-foreground">{showCodeInput ? '▲' : '▼'}</span>
-          </button>
-          {showCodeInput && (
-            <div className="px-4 pb-4 space-y-3">
-              <Input
-                placeholder={language === 'hi' ? 'कोड दर्ज करें' : 'Enter code'}
-                value={activationCode}
-                onChange={e => setActivationCode(e.target.value.toUpperCase())}
-                className="h-12 text-center text-lg font-bold tracking-widest rounded-xl"
-              />
-              <Button onClick={activateCode} disabled={activating || !activationCode.trim()} className="w-full h-12 rounded-xl">
-                {activating ? '...' : (language === 'hi' ? '✅ कोड सक्रिय करें' : '✅ Activate Code')}
-              </Button>
-            </div>
-          )}
-        </div>
-
         {/* Final CTA */}
         <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-3xl border-2 border-primary/20 text-center py-8 px-4">
           <div className="text-4xl mb-3">💰</div>
           <p className="text-xl font-black text-primary mb-2">
-            {language === 'hi'
-              ? 'पेमेंट कर दें!'
-              : 'Make the payment!'}
+            {language === 'hi' ? 'पेमेंट कर दें!' : 'Make the payment!'}
           </p>
           <p className="text-sm text-muted-foreground">
-            {language === 'hi'
-              ? 'एडमिन आपका टाइम पीरियड बढ़ा देगा 🚀'
-              : 'Admin will extend your subscription 🚀'}
+            {language === 'hi' ? 'एडमिन आपका टाइम पीरियड बढ़ा देगा 🚀' : 'Admin will extend your subscription 🚀'}
           </p>
         </div>
       </main>
