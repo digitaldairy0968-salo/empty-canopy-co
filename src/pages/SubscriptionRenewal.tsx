@@ -27,15 +27,17 @@ const SubscriptionRenewal: React.FC = () => {
 
   useEffect(() => {
     const fetch = async () => {
-      const [sRes, subRes, vRes, pRes] = await Promise.all([
+      const [sRes, subRes, vRes, pRes, coinRes] = await Promise.all([
         supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
         user?.dairyId ? supabase.from('subscriptions').select('expires_at').eq('dairy_id', user.dairyId).eq('status', 'active').maybeSingle() : Promise.resolve({ data: null }),
         supabase.from('subscription_varieties').select('*').eq('is_active', true).order('created_at'),
         supabase.from('variety_plans').select('*').eq('is_active', true).order('price'),
+        user?.dairyId ? supabase.from('digital_coins').select('balance').eq('dairy_id', user.dairyId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       setSettings(sRes.data);
       setVarieties(vRes.data || []);
       setVarPlans(pRes.data || []);
+      setCoinBalance((coinRes.data as any)?.balance || 0);
       if (subRes.data?.expires_at) {
         setDaysLeft(Math.max(0, Math.ceil((new Date(subRes.data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
       }
