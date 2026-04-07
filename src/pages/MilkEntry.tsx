@@ -785,21 +785,12 @@ const MilkEntry: React.FC = () => {
             </div>
           </div>
 
-          {/* Code Direction Toggle */}
-          {entrySettingsEnabled && (
-            <div className="flex items-center justify-between mb-2 p-2 bg-muted/50 rounded-xl">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">{language === 'hi' ? 'कोड दिशा' : 'Code Direction'}</span>
-                {codeDirectionEnabled && (
-                  <span className="text-xs text-muted-foreground">
-                    {ownerSettings.codeDirection === 'reverse' ? '⬇️' : '⬆️'}
-                  </span>
-                )}
-              </div>
-              <Switch
-                checked={codeDirectionEnabled}
-                onCheckedChange={setCodeDirectionEnabled}
-              />
+          {/* Code Direction indicator */}
+          {codeDirectionEnabled && (
+            <div className="flex items-center justify-center mb-2 p-1.5 bg-primary/5 rounded-xl">
+              <span className="text-xs font-medium text-primary">
+                {ownerSettings.codeDirection === 'reverse' ? '⬇️' : '⬆️'} {language === 'hi' ? 'ऑटो कोड चेंज चालू' : 'Auto Code Change ON'}
+              </span>
             </div>
           )}
 
