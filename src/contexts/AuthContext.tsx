@@ -640,13 +640,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // Update rate settings with values from RateSetup (trigger already created defaults)
       const initialFatRate = parseFloat(localStorage.getItem('initial_fat_rate') || '8');
       const initialLiterRate = parseFloat(localStorage.getItem('initial_liter_rate') || '50');
-      
+      const pendingOwnerSettings = JSON.parse(localStorage.getItem('pending_owner_settings') || 'null');
+
       await supabase
         .from('rate_settings')
         .update({
           rate_type: 'per_fat',
           rate_value: initialFatRate,
           liter_rate: initialLiterRate,
+          calculation_method: pendingOwnerSettings?.calculationSystem ?? 'avg_fat',
         })
         .eq('dairy_id', newDairy.id);
       
