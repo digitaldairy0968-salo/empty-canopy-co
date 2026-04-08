@@ -12,16 +12,27 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const [authImageUrl, setAuthImageUrl] = useState<string | null>(() => {
     return sessionStorage.getItem('auth_page_image_url') || null;
   });
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     const fetchImage = async () => {
       const { data } = await supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle();
       if (data?.auth_page_image_url) {
-        setAuthImageUrl(data.auth_page_image_url);
-        sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url);
+        // Preload image before showing
+        const img = new Image();
+        img.onload = () => {
+          setAuthImageUrl(data.auth_page_image_url);
+          setImageLoaded(true);
+          sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url!);
+        };
+        img.src = data.auth_page_image_url;
       }
     };
-    fetchImage();
+    if (authImageUrl) {
+      setImageLoaded(true);
+    } else {
+      fetchImage();
+    }
   }, []);
 
   const languages: { code: Language; name: string; nativeName: string; emoji: string }[] = [
@@ -46,9 +57,9 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
         <div className="absolute top-32 right-1/4 w-24 h-24 bg-accent/10 rounded-full blur-2xl" />
         
         {/* Auth Image or App Icon */}
-        {authImageUrl ? (
+        {authImageUrl && imageLoaded ? (
           <div className="flex justify-center mb-4">
-            <img src={authImageUrl} alt="Dairy Manager" className="w-24 h-24 rounded-3xl object-cover shadow-lg shadow-primary/25" />
+            <img src={authImageUrl} alt="Dairy Manager" className="w-24 h-24 rounded-3xl object-cover shadow-lg shadow-primary/25" loading="eager" />
           </div>
         ) : (
           <div className="flex justify-center mb-4">
