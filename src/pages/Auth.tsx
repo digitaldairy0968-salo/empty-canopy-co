@@ -68,6 +68,7 @@ const Auth: React.FC = () => {
         .maybeSingle();
       if ((data as any)?.auth_page_image_url) {
         setAuthPageImageUrl((data as any).auth_page_image_url);
+        sessionStorage.setItem('auth_page_image_url', (data as any).auth_page_image_url);
       }
     };
     fetchAuthImage();
