@@ -9,12 +9,17 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
-  const [authImageUrl, setAuthImageUrl] = useState<string | null>(null);
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(() => {
+    return sessionStorage.getItem('auth_page_image_url') || null;
+  });
 
   useEffect(() => {
     const fetchImage = async () => {
       const { data } = await supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle();
-      if (data?.auth_page_image_url) setAuthImageUrl(data.auth_page_image_url);
+      if (data?.auth_page_image_url) {
+        setAuthImageUrl(data.auth_page_image_url);
+        sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url);
+      }
     };
     fetchImage();
   }, []);

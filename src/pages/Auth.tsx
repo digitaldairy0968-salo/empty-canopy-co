@@ -30,7 +30,10 @@ const Auth: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(null);
+  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(() => {
+    const cached = sessionStorage.getItem('auth_page_image_url');
+    return cached || null;
+  });
 
   // Determine initial step based on pending state
   const getInitialStep = (): AuthStep => {
