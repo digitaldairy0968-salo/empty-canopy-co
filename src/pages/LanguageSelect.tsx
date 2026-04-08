@@ -57,9 +57,9 @@ const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
         <div className="absolute top-32 right-1/4 w-24 h-24 bg-accent/10 rounded-full blur-2xl" />
         
         {/* Auth Image or App Icon */}
-        {authImageUrl ? (
+        {authImageUrl && imageLoaded ? (
           <div className="flex justify-center mb-4">
-            <img src={authImageUrl} alt="Dairy Manager" className="w-24 h-24 rounded-3xl object-cover shadow-lg shadow-primary/25" />
+            <img src={authImageUrl} alt="Dairy Manager" className="w-24 h-24 rounded-3xl object-cover shadow-lg shadow-primary/25" loading="eager" />
           </div>
         ) : (
           <div className="flex justify-center mb-4">
