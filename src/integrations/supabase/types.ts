@@ -951,6 +951,10 @@ export type Database = {
         Args: { dairy_code: string }
         Returns: boolean
       }
+      confirm_supplier_payment: {
+        Args: { _payment_id: string }
+        Returns: boolean
+      }
       get_dairy_by_code: {
         Args: { dairy_code: string }
         Returns: {
