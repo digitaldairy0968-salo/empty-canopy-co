@@ -144,13 +144,8 @@ const SupplierSettings: React.FC = () => {
     try {
       const payment = pendingPayments.find(p => p.id === paymentId);
       
-      await supabase
-        .from('payment_history')
-        .update({ 
-          supplier_confirmed: confirmed, 
-          confirmed_at: new Date().toISOString() 
-        } as any)
-        .eq('id', paymentId);
+      const { error: rpcError } = await supabase.rpc('confirm_supplier_payment', { _payment_id: paymentId, _confirmed: confirmed });
+      if (rpcError) throw rpcError;
 
       // If confirmed (हां), NOW deduct the amount from supplier's pending_balance
       if (confirmed && payment && (payment.amount_paid || 0) > 0) {
