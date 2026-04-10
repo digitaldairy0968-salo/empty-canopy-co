@@ -30,7 +30,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import { useVoiceEntry, getVoiceSettings, VoiceField } from '@/hooks/useVoiceEntry';
+import { useVoiceEntry } from '@/hooks/useVoiceEntry';
 import { useFatSnfRateSettings } from '@/hooks/useFatSnfRateSettings';
 import { calculateFatSnfEntry } from '@/utils/fatSnfCalculation';
 import { useOwnerSettings } from '@/hooks/useOwnerSettings';
@@ -85,77 +85,19 @@ const MilkEntry: React.FC = () => {
   // Code direction from owner settings - 'off' means disabled
   const codeDirectionEnabled = ownerSettings.codeDirection !== 'off';
 
-  // Voice entry settings
-  const [voiceSettings] = useState(getVoiceSettings);
-  
   // Input refs for focus management
   const milkInputRef = useRef<HTMLInputElement>(null);
   const fatInputRef = useRef<HTMLInputElement>(null);
   const snfInputRef = useRef<HTMLInputElement>(null);
   const lrInputRef = useRef<HTMLInputElement>(null);
 
-  // Voice value detected handler - routes value to correct field
-  const handleVoiceValueDetected = useCallback((field: VoiceField, value: number) => {
-    const valueStr = value.toString();
-    switch (field) {
-      case 'milk':
-        setMilkQty(valueStr);
-        break;
-      case 'fat':
-        setFatValue(valueStr);
-        break;
-      case 'snf':
-        setSnfValue(valueStr);
-        break;
-      case 'lr':
-        setLrValue(valueStr);
-        break;
-    }
-    
-    // Repeat number after 0.5s delay if enabled
-    if (localStorage.getItem('voiceRepeatEnabled') === 'true') {
-      setTimeout(() => {
-        try {
-          speechSynthesis.cancel();
-          const fieldNames: Record<string, Record<VoiceField, string>> = {
-            hi: { milk: 'लीटर', fat: 'फैट', snf: 'एसएनएफ', lr: 'एलआर' },
-            gu: { milk: 'લીટર', fat: 'ફેટ', snf: 'એસએનએફ', lr: 'એલઆર' },
-            en: { milk: 'liters', fat: 'fat', snf: 'SNF', lr: 'LR' },
-          };
-          const fieldName = fieldNames[language]?.[field] || field;
-          const utterance = new SpeechSynthesisUtterance(`${value} ${fieldName}`);
-          utterance.lang = language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN';
-          utterance.rate = 1.1;
-          utterance.volume = 0.8;
-          speechSynthesis.speak(utterance);
-        } catch (e) {}
-      }, 500);
-    }
-  }, [language]);
-
-  // Voice field change handler - focus the appropriate input
-  const handleVoiceFieldChange = useCallback((field: VoiceField) => {
-    switch (field) {
-      case 'milk':
-        milkInputRef.current?.focus();
-        break;
-      case 'fat':
-        fatInputRef.current?.focus();
-        break;
-      case 'snf':
-        snfInputRef.current?.focus();
-        break;
-      case 'lr':
-        lrInputRef.current?.focus();
-        break;
-    }
+  // Voice: only fills milk input
+  const handleVoiceValue = useCallback((value: number) => {
+    setMilkQty(value.toString());
   }, []);
 
-  // Voice entry hook
   const voiceEntry = useVoiceEntry({
-    settings: voiceSettings,
-    onValueDetected: handleVoiceValueDetected,
-    onFieldChange: handleVoiceFieldChange,
+    onValueDetected: handleVoiceValue,
     language,
   });
 
@@ -967,9 +909,9 @@ const MilkEntry: React.FC = () => {
             <div className="space-y-0.5">
               <label className={cn(
                 "text-[10px] font-medium block text-center",
-                voiceEntry.isListening && voiceEntry.currentField === 'milk' ? "text-accent font-bold" : "text-muted-foreground"
+                voiceEntry.isListening ? "text-accent font-bold" : "text-muted-foreground"
               )}>
-                {t('quantity')} * {voiceEntry.isListening && voiceEntry.currentField === 'milk' && '🎤'}
+                {t('quantity')} * {voiceEntry.isListening && '🎤'}
               </label>
               <Input
                 ref={milkInputRef}
@@ -980,7 +922,7 @@ const MilkEntry: React.FC = () => {
                 onChange={e => setMilkQty(e.target.value)}
                 className={cn(
                   "h-11 text-lg font-bold text-center rounded-lg border-2 bg-background",
-                  voiceEntry.isListening && voiceEntry.currentField === 'milk' 
+                  voiceEntry.isListening
                     ? "border-accent ring-2 ring-accent/30" 
                     : "border-primary/30 focus:border-primary"
                 )}
