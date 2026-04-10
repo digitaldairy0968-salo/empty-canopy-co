@@ -92,7 +92,7 @@ const parseWordNumber = (text: string, dict: Record<string, number>): number | n
   return null;
 };
 
-
+const parseSpokenNumber = (text: string): number | null => {
   let cleanText = normalizeSpeechText(text).toLowerCase().trim();
   
   // Hindi number words - comprehensive
