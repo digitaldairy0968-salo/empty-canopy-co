@@ -94,16 +94,36 @@ const MilkEntry: React.FC = () => {
   const snfInputRef = useRef<HTMLInputElement>(null);
   const lrInputRef = useRef<HTMLInputElement>(null);
 
-  // Voice value detected handler - only for milk
+  // Voice value detected handler - routes value to correct field
   const handleVoiceValueDetected = useCallback((field: VoiceField, value: number) => {
-    setMilkQty(value.toString());
+    const valueStr = value.toString();
+    switch (field) {
+      case 'milk':
+        setMilkQty(valueStr);
+        break;
+      case 'fat':
+        setFatValue(valueStr);
+        break;
+      case 'snf':
+        setSnfValue(valueStr);
+        break;
+      case 'lr':
+        setLrValue(valueStr);
+        break;
+    }
     
     // Repeat number after 0.5s delay if enabled
     if (localStorage.getItem('voiceRepeatEnabled') === 'true') {
       setTimeout(() => {
         try {
           speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(value.toString());
+          const fieldNames: Record<string, Record<VoiceField, string>> = {
+            hi: { milk: 'लीटर', fat: 'फैट', snf: 'एसएनएफ', lr: 'एलआर' },
+            gu: { milk: 'લીટર', fat: 'ફેટ', snf: 'એસએનએફ', lr: 'એલઆર' },
+            en: { milk: 'liters', fat: 'fat', snf: 'SNF', lr: 'LR' },
+          };
+          const fieldName = fieldNames[language]?.[field] || field;
+          const utterance = new SpeechSynthesisUtterance(`${value} ${fieldName}`);
           utterance.lang = language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN';
           utterance.rate = 1.1;
           utterance.volume = 0.8;
