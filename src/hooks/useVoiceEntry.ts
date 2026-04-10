@@ -79,7 +79,20 @@ const detectField = (text: string): VoiceField | null => {
 };
 
 // Parse spoken numbers including Hindi/Gujarati numerals
-const parseSpokenNumber = (text: string): number | null => {
+// Helper: look up a single word-number from the dictionary
+const parseWordNumber = (text: string, dict: Record<string, number>): number | null => {
+  const t = text.trim().toLowerCase();
+  // Try direct digit parse first
+  const num = parseFloat(t);
+  if (!isNaN(num) && num >= 0) return num;
+  // Look up word
+  for (const [word, val] of Object.entries(dict)) {
+    if (t.includes(word) && val !== 0) return val;
+  }
+  return null;
+};
+
+
   let cleanText = normalizeSpeechText(text).toLowerCase().trim();
   
   // Hindi number words - comprehensive
