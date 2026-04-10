@@ -94,16 +94,36 @@ const MilkEntry: React.FC = () => {
   const snfInputRef = useRef<HTMLInputElement>(null);
   const lrInputRef = useRef<HTMLInputElement>(null);
 
-  // Voice value detected handler - only for milk
+  // Voice value detected handler - routes value to correct field
   const handleVoiceValueDetected = useCallback((field: VoiceField, value: number) => {
-    setMilkQty(value.toString());
+    const valueStr = value.toString();
+    switch (field) {
+      case 'milk':
+        setMilkQty(valueStr);
+        break;
+      case 'fat':
+        setFatValue(valueStr);
+        break;
+      case 'snf':
+        setSnfValue(valueStr);
+        break;
+      case 'lr':
+        setLrValue(valueStr);
+        break;
+    }
     
     // Repeat number after 0.5s delay if enabled
     if (localStorage.getItem('voiceRepeatEnabled') === 'true') {
       setTimeout(() => {
         try {
           speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(value.toString());
+          const fieldNames: Record<string, Record<VoiceField, string>> = {
+            hi: { milk: 'लीटर', fat: 'फैट', snf: 'एसएनएफ', lr: 'एलआर' },
+            gu: { milk: 'લીટર', fat: 'ફેટ', snf: 'એસએનએફ', lr: 'એલઆર' },
+            en: { milk: 'liters', fat: 'fat', snf: 'SNF', lr: 'LR' },
+          };
+          const fieldName = fieldNames[language]?.[field] || field;
+          const utterance = new SpeechSynthesisUtterance(`${value} ${fieldName}`);
           utterance.lang = language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN';
           utterance.rate = 1.1;
           utterance.volume = 0.8;
@@ -866,24 +886,34 @@ const MilkEntry: React.FC = () => {
             </div>
           )}
 
-          {/* Voice Entry Microphone Toggle - Only for milk */}
+          {/* Voice Entry Microphone Toggle */}
           {voiceEntry.isSupported && (
-            <div className="mb-3 p-3 bg-muted/30 rounded-xl border border-border/40">
+            <div className={cn(
+              "mb-3 p-3 rounded-xl border transition-all duration-300",
+              voiceEntry.isListening 
+                ? "bg-destructive/5 border-destructive/30 shadow-lg shadow-destructive/10" 
+                : "bg-muted/30 border-border/40"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {voiceEntry.isListening ? (
-                    <Mic className="h-5 w-5 text-destructive animate-pulse" />
+                    <div className="relative">
+                      <Mic className="h-5 w-5 text-destructive animate-pulse" />
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
+                    </div>
                   ) : (
                     <MicOff className="h-5 w-5 text-muted-foreground" />
                   )}
                   <div>
                     <p className="text-sm font-semibold">
-                      {language === 'hi' ? '🎤 दूध मात्रा बोलें' : '🎤 Speak Milk Qty'}
+                      {language === 'hi' ? '🎤 आवाज से एंट्री करें' : language === 'gu' ? '🎤 અવાજથી એન્ટ્રી કરો' : '🎤 Voice Entry'}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       {language === 'hi' 
-                        ? 'सिर्फ नंबर बोलें: 6.4, 5.3, 10' 
-                        : 'Speak numbers only: 6.4, 5.3, 10'}
+                        ? 'बोलें: "6.5 लीटर", "4 फैट", "8.5 SNF"' 
+                        : language === 'gu'
+                        ? 'બોલો: "6.5 લીટર", "4 ફેટ", "8.5 SNF"'
+                        : 'Say: "6.5 liters", "4 fat", "8.5 SNF"'}
                     </p>
                   </div>
                 </div>

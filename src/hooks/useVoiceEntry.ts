@@ -47,11 +47,16 @@ const normalizeSpeechText = (text: string): string => {
     // Hindi common mishears
     .replace(/फीट/g, 'फेट')
     .replace(/फिट/g, 'फेट')
+    .replace(/फ़ैट/g, 'फेट')
     // English common mishears
     .replace(/\bfeet\b/gi, 'fat')
     .replace(/\bfit\b/gi, 'fat')
     .replace(/\bfact\b/gi, 'fat')
-    .replace(/\bfate\b/gi, 'fat');
+    .replace(/\bfate\b/gi, 'fat')
+    .replace(/\bfeed\b/gi, 'fat')
+    .replace(/\bfast\b/gi, 'fat')
+    // Hindi decimal spoken patterns - "छह पॉइंट पांच" → "6.5"
+    .replace(/(\S+)\s*(पॉइंट|पोइंट|दशमलव|डॉट)\s*(\S+)/g, '$1 point $3');
 };
 
 // Detect which field the user is referring to
@@ -74,6 +79,19 @@ const detectField = (text: string): VoiceField | null => {
 };
 
 // Parse spoken numbers including Hindi/Gujarati numerals
+// Helper: look up a single word-number from the dictionary
+const parseWordNumber = (text: string, dict: Record<string, number>): number | null => {
+  const t = text.trim().toLowerCase();
+  // Try direct digit parse first
+  const num = parseFloat(t);
+  if (!isNaN(num) && num >= 0) return num;
+  // Look up word
+  for (const [word, val] of Object.entries(dict)) {
+    if (t.includes(word) && val !== 0) return val;
+  }
+  return null;
+};
+
 const parseSpokenNumber = (text: string): number | null => {
   let cleanText = normalizeSpeechText(text).toLowerCase().trim();
   
@@ -130,11 +148,22 @@ const parseSpokenNumber = (text: string): number | null => {
     if (parsed !== null) return parsed * 1.25;
   }
   
-  for (const [word, num] of Object.entries(allNumbers)) {
-    if (cleanText.includes(word) && num !== 0) {
-      return num;
+  // Handle "X point Y" pattern with word numbers (e.g. "छह पॉइंट पांच" = 6.5)
+  const pointPattern = /(.+?)\s*(?:point|पॉइंट|पोइंट|दशमलव|डॉट|dot)\s*(.+)/i;
+  const pointMatch = cleanText.match(pointPattern);
+  if (pointMatch) {
+    const intPart = parseWordNumber(pointMatch[1].trim(), allNumbers);
+    const decPart = parseWordNumber(pointMatch[2].trim(), allNumbers);
+    if (intPart !== null && decPart !== null) {
+      // "6 point 5" = 6.5, "6 point 45" = 6.45
+      const decStr = decPart.toString();
+      return intPart + decPart / Math.pow(10, decStr.length);
     }
   }
+
+  // Single word number lookup
+  const wordNum = parseWordNumber(cleanText, allNumbers);
+  if (wordNum !== null) return wordNum;
   
   // Remove field keywords to extract number
   cleanText = cleanText
