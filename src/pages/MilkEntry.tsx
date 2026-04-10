@@ -946,11 +946,8 @@ const MilkEntry: React.FC = () => {
             {!isBuyer(selectedSupplier) && (
               <>
                 <div className="space-y-0.5">
-                  <label className={cn(
-                    "text-[10px] font-medium block text-center",
-                    voiceEntry.isListening && voiceEntry.currentField === 'fat' ? "text-accent font-bold" : "text-muted-foreground"
-                  )}>
-                    {t('fat')} {voiceEntry.isListening && voiceEntry.currentField === 'fat' && '🎤'}
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
+                    {t('fat')}
                   </label>
                   <Input
                     ref={fatInputRef}
@@ -959,20 +956,12 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={fatValue}
                     onChange={e => setFatValue(e.target.value)}
-                    className={cn(
-                      "h-11 text-lg font-bold text-center rounded-lg border-2",
-                      voiceEntry.isListening && voiceEntry.currentField === 'fat' 
-                        ? "border-accent ring-2 ring-accent/30" 
-                        : ""
-                    )}
+                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
                 <div className="space-y-0.5">
-                  <label className={cn(
-                    "text-[10px] font-medium block text-center",
-                    voiceEntry.isListening && voiceEntry.currentField === 'snf' ? "text-accent font-bold" : "text-muted-foreground"
-                  )}>
-                    {t('snf')} {voiceEntry.isListening && voiceEntry.currentField === 'snf' && '🎤'}
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
+                    {t('snf')}
                   </label>
                   <Input
                     ref={snfInputRef}
@@ -981,20 +970,12 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={snfValue}
                     onChange={e => setSnfValue(e.target.value)}
-                    className={cn(
-                      "h-11 text-lg font-bold text-center rounded-lg border-2",
-                      voiceEntry.isListening && voiceEntry.currentField === 'snf' 
-                        ? "border-accent ring-2 ring-accent/30" 
-                        : ""
-                    )}
+                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
                 <div className="space-y-0.5">
-                  <label className={cn(
-                    "text-[10px] font-medium block text-center",
-                    voiceEntry.isListening && voiceEntry.currentField === 'lr' ? "text-accent font-bold" : "text-muted-foreground"
-                  )}>
-                    {t('lr')} {voiceEntry.isListening && voiceEntry.currentField === 'lr' && '🎤'}
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
+                    {t('lr')}
                   </label>
                   <Input
                     ref={lrInputRef}
@@ -1003,12 +984,7 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={lrValue}
                     onChange={e => setLrValue(e.target.value)}
-                    className={cn(
-                      "h-11 text-lg font-bold text-center rounded-lg border-2",
-                      voiceEntry.isListening && voiceEntry.currentField === 'lr' 
-                        ? "border-accent ring-2 ring-accent/30" 
-                        : ""
-                    )}
+                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
               </>
