@@ -47,11 +47,16 @@ const normalizeSpeechText = (text: string): string => {
     // Hindi common mishears
     .replace(/फीट/g, 'फेट')
     .replace(/फिट/g, 'फेट')
+    .replace(/फ़ैट/g, 'फेट')
     // English common mishears
     .replace(/\bfeet\b/gi, 'fat')
     .replace(/\bfit\b/gi, 'fat')
     .replace(/\bfact\b/gi, 'fat')
-    .replace(/\bfate\b/gi, 'fat');
+    .replace(/\bfate\b/gi, 'fat')
+    .replace(/\bfeed\b/gi, 'fat')
+    .replace(/\bfast\b/gi, 'fat')
+    // Hindi decimal spoken patterns - "छह पॉइंट पांच" → "6.5"
+    .replace(/(\S+)\s*(पॉइंट|पोइंट|दशमलव|डॉट)\s*(\S+)/g, '$1 point $3');
 };
 
 // Detect which field the user is referring to
