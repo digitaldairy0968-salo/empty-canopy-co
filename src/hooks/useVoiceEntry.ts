@@ -135,11 +135,22 @@ const parseSpokenNumber = (text: string): number | null => {
     if (parsed !== null) return parsed * 1.25;
   }
   
-  for (const [word, num] of Object.entries(allNumbers)) {
-    if (cleanText.includes(word) && num !== 0) {
-      return num;
+  // Handle "X point Y" pattern with word numbers (e.g. "छह पॉइंट पांच" = 6.5)
+  const pointPattern = /(.+?)\s*(?:point|पॉइंट|पोइंट|दशमलव|डॉट|dot)\s*(.+)/i;
+  const pointMatch = cleanText.match(pointPattern);
+  if (pointMatch) {
+    const intPart = parseWordNumber(pointMatch[1].trim(), allNumbers);
+    const decPart = parseWordNumber(pointMatch[2].trim(), allNumbers);
+    if (intPart !== null && decPart !== null) {
+      // "6 point 5" = 6.5, "6 point 45" = 6.45
+      const decStr = decPart.toString();
+      return intPart + decPart / Math.pow(10, decStr.length);
     }
   }
+
+  // Single word number lookup
+  const wordNum = parseWordNumber(cleanText, allNumbers);
+  if (wordNum !== null) return wordNum;
   
   // Remove field keywords to extract number
   cleanText = cleanText
