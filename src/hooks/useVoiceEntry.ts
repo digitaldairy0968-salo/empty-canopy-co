@@ -182,6 +182,19 @@ export const useVoiceEntry = ({
 
     onValueDetected(value);
 
+    // Repeat number via speech synthesis if enabled
+    const repeatEnabled = localStorage.getItem('voiceRepeatEnabled') === 'true';
+    if (repeatEnabled) {
+      try {
+        speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(value.toString());
+        utterance.lang = language === 'gu' ? 'gu-IN' : language === 'en' ? 'en-IN' : 'hi-IN';
+        utterance.rate = 1.1;
+        utterance.volume = 1;
+        speechSynthesis.speak(utterance);
+      } catch { /* silent */ }
+    }
+
     // Beep feedback
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -196,7 +209,7 @@ export const useVoiceEntry = ({
       osc.start();
       osc.stop(audioCtx.currentTime + 0.07);
     } catch { /* silent */ }
-  }, [onValueDetected]);
+  }, [onValueDetected, language]);
 
   const initRecognition = useCallback(() => {
     const SpeechRecognitionClass = getSpeechRecognition();

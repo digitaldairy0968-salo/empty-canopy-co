@@ -828,8 +828,8 @@ const MilkEntry: React.FC = () => {
             </div>
           )}
 
-          {/* Voice Entry Microphone Toggle */}
-          {voiceEntry.isSupported && (
+          {/* Voice Entry Microphone Toggle - only show if ownerSettings.showVoiceEntry is true */}
+          {voiceEntry.isSupported && ownerSettings.showVoiceEntry && (
             <div className={cn(
               "mb-3 p-3 rounded-xl border transition-all duration-300",
               voiceEntry.isListening 
