@@ -132,7 +132,11 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const cached = localStorage.getItem(CACHE_KEY_RATES);
     return cached ? JSON.parse(cached) : { fatRate: 8, literRate: 50, showCalculationsToSuppliers: true, calculationMethod: 'avg_fat' };
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    // If we have cached data, don't show loading
+    const cached = localStorage.getItem(CACHE_KEY_SUPPLIERS);
+    return !cached;
+  });
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   // Monitor online status
