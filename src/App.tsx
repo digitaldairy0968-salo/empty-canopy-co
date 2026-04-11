@@ -238,199 +238,45 @@ const AuthRedirect = () => {
 };
 
 const AppRoutes = () => {
-  const location = useLocation();
-  
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<PageTransition><Index /></PageTransition>} />
-        <Route path="/auth" element={<PageTransition><AuthRedirect /></PageTransition>} />
-        <Route path="/dairy-setup" element={<PageTransition><DairySetupRoute /></PageTransition>} />
-        
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <PageTransition><AdminDashboard /></PageTransition>
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/subscriptions"
-          element={
-            <AdminRoute>
-              <PageTransition><AdminSubscriptions /></PageTransition>
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/dairy-features/:dairyId"
-          element={
-            <AdminRoute>
-              <PageTransition><AdminDairyFeatures /></PageTransition>
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/varieties"
-          element={
-            <AdminRoute>
-              <PageTransition><AdminVarieties /></PageTransition>
-            </AdminRoute>
-          }
-        />
-        
-        
-        {/* Payment Required Route */}
-        <Route
-          path="/payment-required"
-          element={
-            <ProtectedRoute>
-              <PageTransition><PaymentRequired /></PageTransition>
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Subscription Renewal (from owner settings) */}
-        <Route
-          path="/subscription-renewal"
-          element={
-            <OwnerRoute>
-              <PageTransition><SubscriptionRenewal /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        
-        {/* Owner Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <OwnerRoute>
-              <PageTransition><Dashboard /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/suppliers"
-          element={
-            <OwnerRoute>
-              <PageTransition><Suppliers /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/add-supplier"
-          element={
-            <OwnerRoute>
-              <PageTransition><AddSupplier /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/supplier/:id"
-          element={
-            <OwnerRoute>
-              <PageTransition><SupplierCard /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/milk-entry"
-          element={
-            <OwnerRoute>
-              <PageTransition><MilkEntry /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/reports"
-          element={
-            <OwnerRoute>
-              <PageTransition><Reports /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/hisaab-report"
-          element={
-            <OwnerRoute>
-              <PageTransition><HisaabReport /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/customer-history"
-          element={
-            <OwnerRoute>
-              <PageTransition><CustomerHistory /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/announcements"
-          element={
-            <OwnerRoute>
-              <PageTransition><Announcements /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <OwnerRoute>
-              <PageTransition><Settings /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        <Route
-          path="/fat-snf-rate-setup"
-          element={
-            <OwnerRoute>
-              <PageTransition><FatSnfRateSetup /></PageTransition>
-            </OwnerRoute>
-          }
-        />
-        
-        {/* Supplier Routes */}
-        <Route
-          path="/supplier-dashboard"
-          element={
-            <SupplierRoute>
-              <PageTransition><SupplierDashboard /></PageTransition>
-            </SupplierRoute>
-          }
-        />
-        <Route
-          path="/supplier-view/:id"
-          element={
-            <SupplierRoute>
-              <PageTransition><SupplierViewCard /></PageTransition>
-            </SupplierRoute>
-          }
-        />
-        <Route
-          path="/supplier-settings"
-          element={
-            <SupplierRoute>
-              <PageTransition><SupplierSettings /></PageTransition>
-            </SupplierRoute>
-          }
-        />
-        
-        {/* Shared Routes */}
-        <Route
-          path="/calculator"
-          element={
-            <ProtectedRoute>
-              <PageTransition><Calculator /></PageTransition>
-            </ProtectedRoute>
-          }
-        />
-        
-        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
-      </Routes>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/dairy-setup" element={<DairySetupRoute />} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/subscriptions" element={<AdminRoute><AdminSubscriptions /></AdminRoute>} />
+      <Route path="/admin/dairy-features/:dairyId" element={<AdminRoute><AdminDairyFeatures /></AdminRoute>} />
+      <Route path="/admin/varieties" element={<AdminRoute><AdminVarieties /></AdminRoute>} />
+      
+      {/* Payment Required Route */}
+      <Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
+      <Route path="/subscription-renewal" element={<OwnerRoute><SubscriptionRenewal /></OwnerRoute>} />
+      
+      {/* Owner Routes */}
+      <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+      <Route path="/suppliers" element={<OwnerRoute><Suppliers /></OwnerRoute>} />
+      <Route path="/add-supplier" element={<OwnerRoute><AddSupplier /></OwnerRoute>} />
+      <Route path="/supplier/:id" element={<OwnerRoute><SupplierCard /></OwnerRoute>} />
+      <Route path="/milk-entry" element={<OwnerRoute><MilkEntry /></OwnerRoute>} />
+      <Route path="/reports" element={<OwnerRoute><Reports /></OwnerRoute>} />
+      <Route path="/hisaab-report" element={<OwnerRoute><HisaabReport /></OwnerRoute>} />
+      <Route path="/customer-history" element={<OwnerRoute><CustomerHistory /></OwnerRoute>} />
+      <Route path="/announcements" element={<OwnerRoute><Announcements /></OwnerRoute>} />
+      <Route path="/settings" element={<OwnerRoute><Settings /></OwnerRoute>} />
+      <Route path="/fat-snf-rate-setup" element={<OwnerRoute><FatSnfRateSetup /></OwnerRoute>} />
+      
+      {/* Supplier Routes */}
+      <Route path="/supplier-dashboard" element={<SupplierRoute><SupplierDashboard /></SupplierRoute>} />
+      <Route path="/supplier-view/:id" element={<SupplierRoute><SupplierViewCard /></SupplierRoute>} />
+      <Route path="/supplier-settings" element={<SupplierRoute><SupplierSettings /></SupplierRoute>} />
+      
+      {/* Shared Routes */}
+      <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+      
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
