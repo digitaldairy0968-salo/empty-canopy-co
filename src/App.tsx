@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DairyProvider } from "@/contexts/DairyContext";
-import { AnimatePresence } from "framer-motion";
-import { PageTransition } from "@/components/PageTransition";
+
+
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DairySetup from "./pages/DairySetup";
@@ -38,7 +38,16 @@ import NotFound from "./pages/NotFound";
 import { useState, useEffect } from "react";
 
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // No loading screen - use cached data for instant access
 
@@ -47,9 +56,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, authUser } = useAuth();
   
   if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
+    return null; // Don't show spinner, wait silently
   }
   
   if (!isAuthenticated) {
@@ -60,24 +67,34 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 // Protected Route Component for Owner (with subscription check)
+// Uses cache-first approach — show content immediately, check in background
 const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, authUser, isAdmin } = useAuth();
-  const [subStatus, setSubStatus] = useState<'loading' | 'active' | 'expired' | 'none'>('loading');
+  
+  // Initialize from cache immediately — no loading state
+  const [subStatus, setSubStatus] = useState<'active' | 'expired' | 'none'>(() => {
+    if (isAdmin) return 'active';
+    const cached = localStorage.getItem('subscription_cache');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        return parsed.status || 'active';
+      } catch {}
+    }
+    return 'active'; // Assume active, verify in background
+  });
 
   useEffect(() => {
     let isMounted = true;
     const checkSubscription = async () => {
-      if (!user?.dairyId || isAdmin) {
-        if (isMounted) setSubStatus('active'); // admin bypass
-        return;
-      }
+      if (!user?.dairyId || isAdmin) return;
 
-      // Check cache first (valid for 60s)
+      // Check if cache is fresh (valid for 5 minutes)
       const cached = localStorage.getItem('subscription_cache');
       if (cached) {
         try {
           const parsed = JSON.parse(cached);
-          if (Date.now() - parsed.timestamp < 60000) {
+          if (Date.now() - parsed.timestamp < 300000) {
             if (isMounted) setSubStatus(parsed.status);
             return;
           }
@@ -109,19 +126,11 @@ const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
   }, [user?.dairyId, isAdmin]);
 
   if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
+    return null; // Don't show spinner
   }
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
-  }
-
-  if (subStatus === 'loading') {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
   }
 
   if (subStatus === 'expired' || subStatus === 'none') {
@@ -135,34 +144,16 @@ const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
 const SupplierRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, authUser } = useAuth();
 
-  if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-
+  if (authUser && !user) return null;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
 
 // Protected Route for authenticated users (any role)
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, authUser, user } = useAuth();
-  
-  // Wait for auth to be fully determined
-  if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/auth" replace />;
-  }
-  
+  if (authUser && !user) return null;
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 };
 
@@ -185,12 +176,7 @@ const DairySetupRoute = () => {
     return () => { isMounted = false; };
   }, [isAuthenticated, hasRefreshed]);
   
-  // Wait for auth to be fully determined
-  if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
-  }
+  if (authUser && !user) return null;
   
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
@@ -229,15 +215,8 @@ const AuthRedirect = () => {
     return <Auth />;
   }
   
-  if (authUser && !user) {
-    return <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>;
-  }
-  
-  if (!isAuthenticated) {
-    return <Auth />;
-  }
+  if (authUser && !user) return null;
+  if (!isAuthenticated) return <Auth />;
 
   // Route based on role
   if (isAdmin) {
