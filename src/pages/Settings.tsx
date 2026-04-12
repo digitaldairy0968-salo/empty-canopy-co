@@ -536,8 +536,20 @@ const EntrySettingsSection: React.FC<{
         .eq('dairy_id', dairyId)
         .eq('feature_key', 'entry_settings')
         .maybeSingle();
-      setFeatureEnabled((data as any)?.is_enabled || false);
+      const enabled = (data as any)?.is_enabled || false;
+      setFeatureEnabled(enabled);
       setLoading(false);
+
+      // Auto-disable pro toggles when admin locks advance settings
+      if (!enabled) {
+        const disableUpdates: any = {};
+        if (ownerSettings.predictMilkEnabled) disableUpdates.predictMilkEnabled = false;
+        if (ownerSettings.codeDirection !== 'off') disableUpdates.codeDirection = 'off';
+        if (ownerSettings.prefillEnabled) disableUpdates.prefillEnabled = false;
+        if (Object.keys(disableUpdates).length > 0) {
+          updateOwnerSettings(disableUpdates);
+        }
+      }
     };
     checkFeature();
   }, [dairyId]);
@@ -553,13 +565,13 @@ const EntrySettingsSection: React.FC<{
       subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है • ⭐ Pro' : '🔒 Locked by admin • ⭐ Pro') : undefined}
       delay="160ms"
     >
-      {/* Show Voice Entry Toggle */}
-      <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
+      {/* Show Voice Entry Toggle - NOT pro, always available */}
+      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
         <div>
-          <span className="font-medium">{language === 'hi' ? '🎤 आवाज एंट्री दिखाएं' : '🎤 Show Voice Entry'} <span className="text-xs text-primary">⭐ Pro</span></span>
+          <span className="font-medium">{language === 'hi' ? '🎤 आवाज एंट्री दिखाएं' : '🎤 Show Voice Entry'}</span>
           <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री सेक्शन में वॉइस टॉगल दिखाएं' : 'Show voice toggle in entry section'}</p>
         </div>
-        <Switch checked={ownerSettings.showVoiceEntry ?? true} onCheckedChange={(checked) => updateOwnerSettings({ showVoiceEntry: checked })} disabled={savingOwnerSettings || isLocked} />
+        <Switch checked={ownerSettings.showVoiceEntry ?? true} onCheckedChange={(checked) => updateOwnerSettings({ showVoiceEntry: checked })} disabled={savingOwnerSettings} />
       </div>
 
       {/* Predict Milk Toggle */}
