@@ -7,35 +7,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DairyProvider } from "@/contexts/DairyContext";
-
+import React, { Suspense, useState, useEffect, lazy } from "react";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DairySetup from "./pages/DairySetup";
 
-import Dashboard from "./pages/Dashboard";
-import SupplierDashboard from "./pages/SupplierDashboard";
-import Suppliers from "./pages/Suppliers";
-import AddSupplier from "./pages/AddSupplier";
-import SupplierCard from "./pages/SupplierCard";
-import SupplierViewCard from "./pages/SupplierViewCard";
-import MilkEntry from "./pages/MilkEntry";
-import HisaabReport from "./pages/HisaabReport";
-import CustomerHistory from "./pages/CustomerHistory";
-import Calculator from "./pages/Calculator";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import FatSnfRateSetup from "./pages/FatSnfRateSetup";
-import SupplierSettings from "./pages/SupplierSettings";
-import Announcements from "./pages/Announcements";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminSubscriptions from "./pages/AdminSubscriptions";
-import AdminDairyFeatures from "./pages/AdminDairyFeatures";
-import AdminVarieties from "./pages/AdminVarieties";
-import PaymentRequired from "./pages/PaymentRequired";
-import SubscriptionRenewal from "./pages/SubscriptionRenewal";
-import NotFound from "./pages/NotFound";
-import { useState, useEffect } from "react";
+// Lazy load all heavy pages
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SupplierDashboard = lazy(() => import("./pages/SupplierDashboard"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
+const AddSupplier = lazy(() => import("./pages/AddSupplier"));
+const SupplierCard = lazy(() => import("./pages/SupplierCard"));
+const SupplierViewCard = lazy(() => import("./pages/SupplierViewCard"));
+const MilkEntry = lazy(() => import("./pages/MilkEntry"));
+const HisaabReport = lazy(() => import("./pages/HisaabReport"));
+const CustomerHistory = lazy(() => import("./pages/CustomerHistory"));
+const Calculator = lazy(() => import("./pages/Calculator"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const FatSnfRateSetup = lazy(() => import("./pages/FatSnfRateSetup"));
+const SupplierSettings = lazy(() => import("./pages/SupplierSettings"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminSubscriptions = lazy(() => import("./pages/AdminSubscriptions"));
+const AdminDairyFeatures = lazy(() => import("./pages/AdminDairyFeatures"));
+const AdminVarieties = lazy(() => import("./pages/AdminVarieties"));
+const PaymentRequired = lazy(() => import("./pages/PaymentRequired"));
+const SubscriptionRenewal = lazy(() => import("./pages/SubscriptionRenewal"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 
 const queryClient = new QueryClient({

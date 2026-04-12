@@ -1,0 +1,1 @@
+ALTER TABLE public.owner_settings ADD COLUMN IF NOT EXISTS show_voice_entry boolean DEFAULT true;
