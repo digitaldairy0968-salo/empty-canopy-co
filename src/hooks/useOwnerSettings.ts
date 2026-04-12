@@ -44,8 +44,13 @@ const defaultSettings: OwnerSettings = {
 
 export function useOwnerSettings() {
   const { user } = useAuth();
-  const [settings, setSettings] = useState<OwnerSettings>(defaultSettings);
-  const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<OwnerSettings>(() => {
+    const cached = localStorage.getItem('cached_owner_settings');
+    return cached ? { ...defaultSettings, ...JSON.parse(cached) } : defaultSettings;
+  });
+  const [loading, setLoading] = useState(() => {
+    return !localStorage.getItem('cached_owner_settings');
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -65,7 +70,7 @@ export function useOwnerSettings() {
         if (error) throw error;
 
         if (data) {
-          setSettings({
+          const newSettings = {
             usesPrinter: (data as any).uses_printer ?? false,
             milkBuyingBasis: (data as any).milk_buying_basis ?? 'fat',
             calculationSystem: (data as any).calculation_system ?? 'avg_fat',
@@ -83,7 +88,9 @@ export function useOwnerSettings() {
             prefillLr: (data as any).prefill_lr ?? null,
             predictMilkEnabled: (data as any).predict_milk_enabled ?? false,
             showVoiceEntry: (data as any).show_voice_entry ?? true,
-          });
+          };
+          setSettings(newSettings);
+          localStorage.setItem('cached_owner_settings', JSON.stringify(newSettings));
         }
       } catch (error) {
         console.error('Error fetching owner settings:', error);
@@ -128,7 +135,11 @@ export function useOwnerSettings() {
 
       if (error) throw error;
 
-      setSettings(prev => ({ ...prev, ...updates }));
+      setSettings(prev => {
+        const updated = { ...prev, ...updates };
+        localStorage.setItem('cached_owner_settings', JSON.stringify(updated));
+        return updated;
+      });
       return true;
     } catch (error) {
       console.error('Error updating owner settings:', error);
