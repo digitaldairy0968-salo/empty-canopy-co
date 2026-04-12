@@ -760,17 +760,15 @@ const MilkEntry: React.FC = () => {
           <div className="mb-2 space-y-2">
             {/* Select by Code Row */}
             <div className="flex items-center gap-1.5">
-              {codeDirectionEnabled && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigateEntrySupplier('up')}
-                  className="h-10 w-10 rounded-lg shrink-0"
-                >
-                  <ChevronUp className="h-5 w-5" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => navigateEntrySupplier('up')}
+                className="h-10 w-10 rounded-lg shrink-0"
+              >
+                <ChevronUp className="h-5 w-5" />
+              </Button>
               <div className="relative flex-1">
                 <Input
                   type="text"
@@ -782,17 +780,15 @@ const MilkEntry: React.FC = () => {
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               </div>
-              {codeDirectionEnabled && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigateEntrySupplier('down')}
-                  className="h-10 w-10 rounded-lg shrink-0"
-                >
-                  <ChevronDown className="h-5 w-5" />
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => navigateEntrySupplier('down')}
+                className="h-10 w-10 rounded-lg shrink-0"
+              >
+                <ChevronDown className="h-5 w-5" />
+              </Button>
             </div>
             
             {/* Select by Name Row */}
