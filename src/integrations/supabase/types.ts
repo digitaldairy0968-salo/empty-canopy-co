@@ -448,6 +448,7 @@ export type Database = {
           prefill_lr: number | null
           prefill_snf: number | null
           show_rakam_to_customers: boolean | null
+          show_voice_entry: boolean | null
           updated_at: string
           uses_printer: boolean | null
         }
@@ -470,6 +471,7 @@ export type Database = {
           prefill_lr?: number | null
           prefill_snf?: number | null
           show_rakam_to_customers?: boolean | null
+          show_voice_entry?: boolean | null
           updated_at?: string
           uses_printer?: boolean | null
         }
@@ -492,6 +494,7 @@ export type Database = {
           prefill_lr?: number | null
           prefill_snf?: number | null
           show_rakam_to_customers?: boolean | null
+          show_voice_entry?: boolean | null
           updated_at?: string
           uses_printer?: boolean | null
         }

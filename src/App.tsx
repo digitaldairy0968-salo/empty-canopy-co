@@ -7,35 +7,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DairyProvider } from "@/contexts/DairyContext";
-
+import React, { Suspense, useState, useEffect, lazy } from "react";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DairySetup from "./pages/DairySetup";
 
-import Dashboard from "./pages/Dashboard";
-import SupplierDashboard from "./pages/SupplierDashboard";
-import Suppliers from "./pages/Suppliers";
-import AddSupplier from "./pages/AddSupplier";
-import SupplierCard from "./pages/SupplierCard";
-import SupplierViewCard from "./pages/SupplierViewCard";
-import MilkEntry from "./pages/MilkEntry";
-import HisaabReport from "./pages/HisaabReport";
-import CustomerHistory from "./pages/CustomerHistory";
-import Calculator from "./pages/Calculator";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import FatSnfRateSetup from "./pages/FatSnfRateSetup";
-import SupplierSettings from "./pages/SupplierSettings";
-import Announcements from "./pages/Announcements";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminSubscriptions from "./pages/AdminSubscriptions";
-import AdminDairyFeatures from "./pages/AdminDairyFeatures";
-import AdminVarieties from "./pages/AdminVarieties";
-import PaymentRequired from "./pages/PaymentRequired";
-import SubscriptionRenewal from "./pages/SubscriptionRenewal";
-import NotFound from "./pages/NotFound";
-import { useState, useEffect } from "react";
+// Lazy load all heavy pages
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const SupplierDashboard = lazy(() => import("./pages/SupplierDashboard"));
+const Suppliers = lazy(() => import("./pages/Suppliers"));
+const AddSupplier = lazy(() => import("./pages/AddSupplier"));
+const SupplierCard = lazy(() => import("./pages/SupplierCard"));
+const SupplierViewCard = lazy(() => import("./pages/SupplierViewCard"));
+const MilkEntry = lazy(() => import("./pages/MilkEntry"));
+const HisaabReport = lazy(() => import("./pages/HisaabReport"));
+const CustomerHistory = lazy(() => import("./pages/CustomerHistory"));
+const Calculator = lazy(() => import("./pages/Calculator"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const FatSnfRateSetup = lazy(() => import("./pages/FatSnfRateSetup"));
+const SupplierSettings = lazy(() => import("./pages/SupplierSettings"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const AdminSubscriptions = lazy(() => import("./pages/AdminSubscriptions"));
+const AdminDairyFeatures = lazy(() => import("./pages/AdminDairyFeatures"));
+const AdminVarieties = lazy(() => import("./pages/AdminVarieties"));
+const PaymentRequired = lazy(() => import("./pages/PaymentRequired"));
+const SubscriptionRenewal = lazy(() => import("./pages/SubscriptionRenewal"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 
 const queryClient = new QueryClient({
@@ -239,44 +239,46 @@ const AuthRedirect = () => {
 
 const AppRoutes = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<AuthRedirect />} />
-      <Route path="/dairy-setup" element={<DairySetupRoute />} />
-      
-      {/* Admin Routes */}
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/subscriptions" element={<AdminRoute><AdminSubscriptions /></AdminRoute>} />
-      <Route path="/admin/dairy-features/:dairyId" element={<AdminRoute><AdminDairyFeatures /></AdminRoute>} />
-      <Route path="/admin/varieties" element={<AdminRoute><AdminVarieties /></AdminRoute>} />
-      
-      {/* Payment Required Route */}
-      <Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
-      <Route path="/subscription-renewal" element={<OwnerRoute><SubscriptionRenewal /></OwnerRoute>} />
-      
-      {/* Owner Routes */}
-      <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
-      <Route path="/suppliers" element={<OwnerRoute><Suppliers /></OwnerRoute>} />
-      <Route path="/add-supplier" element={<OwnerRoute><AddSupplier /></OwnerRoute>} />
-      <Route path="/supplier/:id" element={<OwnerRoute><SupplierCard /></OwnerRoute>} />
-      <Route path="/milk-entry" element={<OwnerRoute><MilkEntry /></OwnerRoute>} />
-      <Route path="/reports" element={<OwnerRoute><Reports /></OwnerRoute>} />
-      <Route path="/hisaab-report" element={<OwnerRoute><HisaabReport /></OwnerRoute>} />
-      <Route path="/customer-history" element={<OwnerRoute><CustomerHistory /></OwnerRoute>} />
-      <Route path="/announcements" element={<OwnerRoute><Announcements /></OwnerRoute>} />
-      <Route path="/settings" element={<OwnerRoute><Settings /></OwnerRoute>} />
-      <Route path="/fat-snf-rate-setup" element={<OwnerRoute><FatSnfRateSetup /></OwnerRoute>} />
-      
-      {/* Supplier Routes */}
-      <Route path="/supplier-dashboard" element={<SupplierRoute><SupplierDashboard /></SupplierRoute>} />
-      <Route path="/supplier-view/:id" element={<SupplierRoute><SupplierViewCard /></SupplierRoute>} />
-      <Route path="/supplier-settings" element={<SupplierRoute><SupplierSettings /></SupplierRoute>} />
-      
-      {/* Shared Routes */}
-      <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
-      
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthRedirect />} />
+        <Route path="/dairy-setup" element={<DairySetupRoute />} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/subscriptions" element={<AdminRoute><AdminSubscriptions /></AdminRoute>} />
+        <Route path="/admin/dairy-features/:dairyId" element={<AdminRoute><AdminDairyFeatures /></AdminRoute>} />
+        <Route path="/admin/varieties" element={<AdminRoute><AdminVarieties /></AdminRoute>} />
+        
+        {/* Payment Required Route */}
+        <Route path="/payment-required" element={<ProtectedRoute><PaymentRequired /></ProtectedRoute>} />
+        <Route path="/subscription-renewal" element={<OwnerRoute><SubscriptionRenewal /></OwnerRoute>} />
+        
+        {/* Owner Routes */}
+        <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+        <Route path="/suppliers" element={<OwnerRoute><Suppliers /></OwnerRoute>} />
+        <Route path="/add-supplier" element={<OwnerRoute><AddSupplier /></OwnerRoute>} />
+        <Route path="/supplier/:id" element={<OwnerRoute><SupplierCard /></OwnerRoute>} />
+        <Route path="/milk-entry" element={<OwnerRoute><MilkEntry /></OwnerRoute>} />
+        <Route path="/reports" element={<OwnerRoute><Reports /></OwnerRoute>} />
+        <Route path="/hisaab-report" element={<OwnerRoute><HisaabReport /></OwnerRoute>} />
+        <Route path="/customer-history" element={<OwnerRoute><CustomerHistory /></OwnerRoute>} />
+        <Route path="/announcements" element={<OwnerRoute><Announcements /></OwnerRoute>} />
+        <Route path="/settings" element={<OwnerRoute><Settings /></OwnerRoute>} />
+        <Route path="/fat-snf-rate-setup" element={<OwnerRoute><FatSnfRateSetup /></OwnerRoute>} />
+        
+        {/* Supplier Routes */}
+        <Route path="/supplier-dashboard" element={<SupplierRoute><SupplierDashboard /></SupplierRoute>} />
+        <Route path="/supplier-view/:id" element={<SupplierRoute><SupplierViewCard /></SupplierRoute>} />
+        <Route path="/supplier-settings" element={<SupplierRoute><SupplierSettings /></SupplierRoute>} />
+        
+        {/* Shared Routes */}
+        <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 };
 
