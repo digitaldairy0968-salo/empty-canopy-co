@@ -30,12 +30,15 @@ import {
 
 type Language = 'hi' | 'gu' | 'en';
 
-// Subscription info component - clickable, shows QR/UPI/WhatsApp
+// Subscription info component - cache-first
 const SubscriptionInfo: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user } = useAuth();
-  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [daysLeft, setDaysLeft] = useState<number | null>(() => {
+    const cached = localStorage.getItem('cached_days_left');
+    return cached ? parseInt(cached) : null;
+  });
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [settings, setSettings] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
@@ -52,7 +55,9 @@ const SubscriptionInfo: React.FC = () => {
         .maybeSingle();
       if (data?.expires_at) {
         const diff = Math.ceil((new Date(data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-        setDaysLeft(Math.max(0, diff));
+        const d = Math.max(0, diff);
+        setDaysLeft(d);
+        localStorage.setItem('cached_days_left', d.toString());
       }
     };
     const fetchSettings = async () => {
@@ -312,9 +317,11 @@ const ReceiptCustomization: React.FC<{ language: string }> = ({ language }) => {
   );
 };
 
-// Referral Code Display
+// Referral Code Display - cache-first
 const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
-  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(() => {
+    return localStorage.getItem('cached_referral_code') || null;
+  });
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
 
@@ -326,7 +333,9 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
         .select('referral_code')
         .eq('user_id', user.id)
         .maybeSingle();
-      setReferralCode((data as any)?.referral_code || null);
+      const code = (data as any)?.referral_code || null;
+      setReferralCode(code);
+      if (code) localStorage.setItem('cached_referral_code', code);
     };
     fetch();
   }, [user?.id]);
@@ -362,9 +371,12 @@ const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
   );
 };
 
-// Digital Coins Balance Display
+// Digital Coins Balance Display - cache-first
 const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
-  const [balance, setBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(() => {
+    const cached = localStorage.getItem('cached_coin_balance');
+    return cached ? parseInt(cached) || 0 : 0;
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -375,7 +387,9 @@ const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ 
         .select('balance')
         .eq('dairy_id', dairyId)
         .maybeSingle();
-      setBalance((data as any)?.balance || 0);
+      const b = (data as any)?.balance || 0;
+      setBalance(b);
+      localStorage.setItem('cached_coin_balance', b.toString());
     };
     fetch();
   }, [dairyId]);
@@ -406,10 +420,14 @@ const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ 
   );
 };
 
-// Dairy Customer Code Display (only if admin enabled)
+// Dairy Customer Code Display (only if admin enabled) - cache-first
 const DairyCodeDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
-  const [dairyCode, setDairyCode] = useState<string | null>(null);
-  const [featureEnabled, setFeatureEnabled] = useState(false);
+  const [dairyCode, setDairyCode] = useState<string | null>(() => {
+    return localStorage.getItem('cached_dairy_code') || null;
+  });
+  const [featureEnabled, setFeatureEnabled] = useState(() => {
+    return localStorage.getItem('cached_dairy_code_feature') === 'true';
+  });
 
   useEffect(() => {
     const fetch = async () => {
@@ -424,6 +442,7 @@ const DairyCodeDisplay: React.FC<{ language: string; dairyId?: string }> = ({ la
       
       const enabled = (feat as any)?.is_enabled || false;
       setFeatureEnabled(enabled);
+      localStorage.setItem('cached_dairy_code_feature', enabled.toString());
 
       if (enabled) {
         const { data: dairy } = await supabase
@@ -431,7 +450,9 @@ const DairyCodeDisplay: React.FC<{ language: string; dairyId?: string }> = ({ la
           .select('code')
           .eq('id', dairyId)
           .single();
-        setDairyCode(dairy?.code || null);
+        const code = dairy?.code || null;
+        setDairyCode(code);
+        if (code) localStorage.setItem('cached_dairy_code', code);
       }
     };
     fetch();
