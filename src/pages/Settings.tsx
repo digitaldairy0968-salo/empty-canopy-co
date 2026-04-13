@@ -565,15 +565,6 @@ const EntrySettingsSection: React.FC<{
       subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है • ⭐ Pro' : '🔒 Locked by admin • ⭐ Pro') : undefined}
       delay="160ms"
     >
-      {/* Show Voice Entry Toggle - NOT pro, always available */}
-      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
-        <div>
-          <span className="font-medium">{language === 'hi' ? '🎤 आवाज एंट्री दिखाएं' : '🎤 Show Voice Entry'}</span>
-          <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री सेक्शन में वॉइस टॉगल दिखाएं' : 'Show voice toggle in entry section'}</p>
-        </div>
-        <Switch checked={ownerSettings.showVoiceEntry ?? true} onCheckedChange={(checked) => updateOwnerSettings({ showVoiceEntry: checked })} disabled={savingOwnerSettings} />
-      </div>
-
       {/* Predict Milk Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
@@ -1222,6 +1213,24 @@ const Settings: React.FC = () => {
           >
             <ReceiptCustomization language={language} />
           </SettingsSection>
+        )}
+
+        {/* Voice Entry Toggle - Separate, always visible for owners */}
+        {user?.role === 'owner' && (
+          <div className="dairy-card animate-fade-in" style={{ animationDelay: '150ms' }}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="icon-badge-sm bg-primary/10">
+                  <span className="text-lg">🎤</span>
+                </div>
+                <div>
+                  <p className="font-semibold">{language === 'hi' ? 'आवाज एंट्री दिखाएं' : 'Show Voice Entry'}</p>
+                  <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री सेक्शन में वॉइस टॉगल दिखाएं' : 'Show voice toggle in entry section'}</p>
+                </div>
+              </div>
+              <Switch checked={ownerSettings.showVoiceEntry ?? true} onCheckedChange={(checked) => updateOwnerSettings({ showVoiceEntry: checked })} disabled={savingOwnerSettings} />
+            </div>
+          </div>
         )}
 
         {/* Code Direction & Prefill Settings - Only for Owners - Requires admin feature */}

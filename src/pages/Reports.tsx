@@ -155,8 +155,19 @@ const Reports: React.FC = () => {
                   <p className="text-2xl font-bold text-primary">{supplierReportData.grandTotalMilk.toFixed(1)} L</p>
                 </div>
                 <div className="text-center p-4 bg-accent/10 rounded-xl">
-                  <p className="text-sm text-muted-foreground">{t('totalAmount')}</p>
+                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'सप्लायर राशि' : 'Supplier Amount'}</p>
                   <p className="text-2xl font-bold text-accent">₹{supplierReportData.grandTotalAmount.toFixed(0)}</p>
+                </div>
+              </div>
+              {/* Buyer Amount (liter rate based) */}
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div className="text-center p-4 bg-green-500/10 rounded-xl">
+                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'खरीदार राशि' : 'Buyer Amount'}</p>
+                  <p className="text-2xl font-bold text-green-600">₹{(supplierReportData.grandTotalMilk * (rateSettings.literRate || 50)).toFixed(0)}</p>
+                </div>
+                <div className="text-center p-4 bg-amber-500/10 rounded-xl">
+                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'मुनाफा' : 'Profit'}</p>
+                  <p className="text-2xl font-bold text-amber-600">₹{((supplierReportData.grandTotalMilk * (rateSettings.literRate || 50)) - supplierReportData.grandTotalAmount).toFixed(0)}</p>
                 </div>
               </div>
 
