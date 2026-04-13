@@ -565,15 +565,6 @@ const EntrySettingsSection: React.FC<{
       subtitle={isLocked ? (language === 'hi' ? '🔒 एडमिन द्वारा लॉक है • ⭐ Pro' : '🔒 Locked by admin • ⭐ Pro') : undefined}
       delay="160ms"
     >
-      {/* Show Voice Entry Toggle - NOT pro, always available */}
-      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3">
-        <div>
-          <span className="font-medium">{language === 'hi' ? '🎤 आवाज एंट्री दिखाएं' : '🎤 Show Voice Entry'}</span>
-          <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री सेक्शन में वॉइस टॉगल दिखाएं' : 'Show voice toggle in entry section'}</p>
-        </div>
-        <Switch checked={ownerSettings.showVoiceEntry ?? true} onCheckedChange={(checked) => updateOwnerSettings({ showVoiceEntry: checked })} disabled={savingOwnerSettings} />
-      </div>
-
       {/* Predict Milk Toggle */}
       <div className={cn("flex items-center justify-between p-3 bg-muted/50 rounded-xl mb-3", isLocked && "opacity-50 pointer-events-none")}>
         <div>
