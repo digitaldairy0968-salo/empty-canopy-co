@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings, Calculator, Menu, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,22 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(() => {
+    return sessionStorage.getItem('auth_page_image_url') || null;
+  });
+
+  useEffect(() => {
+    if (!authImageUrl) {
+      import('@/integrations/supabase/client').then(({ supabase }) => {
+        supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle().then(({ data }) => {
+          if (data?.auth_page_image_url) {
+            setAuthImageUrl(data.auth_page_image_url);
+            sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url);
+          }
+        });
+      });
+    }
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -26,9 +42,13 @@ const Header: React.FC = () => {
     <header className="dairy-header sticky top-0 z-50 px-4 py-4 shadow-lg">
       <div className="flex items-center justify-between max-w-4xl mx-auto">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-primary-foreground/20 rounded-2xl flex items-center justify-center shadow-sm backdrop-blur-sm">
-            <Droplets className="w-6 h-6 text-primary-foreground" />
-          </div>
+          {authImageUrl ? (
+            <img src={authImageUrl} alt="Dairy" className="w-12 h-12 rounded-2xl object-cover shadow-sm" />
+          ) : (
+            <div className="w-12 h-12 bg-primary-foreground/20 rounded-2xl flex items-center justify-center shadow-sm backdrop-blur-sm">
+              <Droplets className="w-6 h-6 text-primary-foreground" />
+            </div>
+          )}
           <div>
             <h1 className="text-lg font-bold flex items-center gap-1.5">
               {t('appName')}
