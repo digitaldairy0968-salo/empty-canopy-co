@@ -485,61 +485,30 @@ const CustomerHistory: React.FC = () => {
 
 
                 {/* Print Receipt Button */}
-                {totalPendingBalance > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (!selectedSupplier) return;
-                      const printContent = `
-                        <html><head><title>Receipt</title><style>body{font-family:sans-serif;padding:20px;max-width:300px;margin:0 auto}h2{text-align:center;margin-bottom:4px}p{margin:4px 0;font-size:14px}.total{font-size:20px;font-weight:bold;text-align:center;margin-top:12px;padding:8px;border-top:2px dashed #000}.row{display:flex;justify-content:space-between}</style></head><body>
-                        <h2>भुगतान रसीद</h2>
-                        <p style="text-align:center;font-size:12px">${new Date().toLocaleDateString('en-IN')}</p>
-                        <hr/>
-                        <div class="row"><span>नाम:</span><span><b>${selectedSupplier.name}</b></span></div>
-                        <div class="row"><span>कोड:</span><span>#${selectedSupplier.code}</span></div>
-                        <div class="total">कुल बकाया: ₹${totalPendingBalance.toFixed(0)}</div>
-                        <hr/>
-                        <p style="text-align:center;font-size:11px;color:#666">Dairy Manager</p>
-                        </body></html>
-                      `;
-                      const win = window.open('', '_blank', 'width=350,height=500');
-                      if (win) { win.document.write(printContent); win.document.close(); win.print(); }
-                    }}
-                    className="w-full h-10 rounded-xl gap-2 mb-2"
-                  >
-                    <Printer className="h-4 w-4" />
-                    {language === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
-                  </Button>
-                )}
-
-                {/* Print Receipt Button - always show if there's a balance */}
-                {totalPendingBalance > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (!selectedSupplier) return;
-                      const printContent = `
-                        <html><head><title>Receipt</title><style>body{font-family:sans-serif;padding:20px;max-width:300px;margin:0 auto}h2{text-align:center;margin-bottom:4px}p{margin:4px 0;font-size:14px}.total{font-size:20px;font-weight:bold;text-align:center;margin-top:12px;padding:8px;border-top:2px dashed #000}.row{display:flex;justify-content:space-between}</style></head><body>
-                        <h2>भुगतान रसीद</h2>
-                        <p style="text-align:center;font-size:12px">${new Date().toLocaleDateString('en-IN')}</p>
-                        <hr/>
-                        <div class="row"><span>नाम:</span><span><b>${selectedSupplier.name}</b></span></div>
-                        <div class="row"><span>कोड:</span><span>#${selectedSupplier.code}</span></div>
-                        <div class="total">कुल बकाया: ₹${totalPendingBalance.toFixed(0)}</div>
-                        ${parseFloat(paidAmount) > 0 ? `<div class="row"><span>भुगतान:</span><span>₹${parseFloat(paidAmount).toFixed(0)}</span></div><div class="total">शेष: ₹${remainingAfterPayment.toFixed(0)}</div>` : ''}
-                        <hr/>
-                        <p style="text-align:center;font-size:11px;color:#666">Dairy Manager</p>
-                        </body></html>
-                      `;
-                      const win = window.open('', '_blank', 'width=350,height=500');
-                      if (win) { win.document.write(printContent); win.document.close(); win.print(); }
-                    }}
-                    className="w-full h-10 rounded-xl gap-2 mb-2"
-                  >
-                    <Printer className="h-4 w-4" />
-                    {language === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (!selectedSupplier) return;
+                    const bhugtanFields = JSON.parse(localStorage.getItem('bhugtanReceiptFields') || '{}');
+                    const paid = parseFloat(paidAmount) || 0;
+                    let rows = '';
+                    if (bhugtanFields.showCode !== false) rows += `<div class="row"><span>कोड:</span><span>#${selectedSupplier.code}</span></div>`;
+                    if (bhugtanFields.showName !== false) rows += `<div class="row"><span>नाम:</span><span><b>${selectedSupplier.name}</b></span></div>`;
+                    if (bhugtanFields.showDates !== false) rows += `<div class="row"><span>तारीख:</span><span>${new Date().toLocaleDateString('en-IN')}</span></div>`;
+                    if (bhugtanFields.showAmount !== false) rows += `<div class="total">कुल बकाया: ₹${totalPendingBalance.toFixed(0)}</div>`;
+                    if (paid > 0 && bhugtanFields.showRakam !== false) {
+                      rows += `<div class="row"><span>भुगतान:</span><span>₹${paid.toFixed(0)}</span></div>`;
+                      rows += `<div class="total">शेष: ₹${remainingAfterPayment.toFixed(0)}</div>`;
+                    }
+                    const printContent = `<html><head><title>Receipt</title><style>body{font-family:sans-serif;padding:20px;max-width:300px;margin:0 auto}h2{text-align:center;margin-bottom:4px}p{margin:4px 0;font-size:14px}.total{font-size:20px;font-weight:bold;text-align:center;margin-top:12px;padding:8px;border-top:2px dashed #000}.row{display:flex;justify-content:space-between;padding:2px 0}</style></head><body><h2>भुगतान रसीद</h2><hr/>${rows}<hr/><p style="text-align:center;font-size:11px;color:#666">Dairy Manager</p></body></html>`;
+                    const win = window.open('', '_blank', 'width=350,height=500');
+                    if (win) { win.document.write(printContent); win.document.close(); win.print(); }
+                  }}
+                  className="w-full h-10 rounded-xl gap-2 mb-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  {language === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
+                </Button>
 
                 {/* Add to History Button */}
                 <Button
