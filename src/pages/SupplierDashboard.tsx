@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Milk, TrendingUp, ChevronLeft, ChevronRight, CalendarIcon, Filter, History, ArrowDownCircle, ArrowUpCircle, Bell, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,8 @@ interface PaymentHistoryEntry {
 const SupplierDashboard: React.FC = () => {
   const { t, language } = useLanguage();
   const { getSupplierByPhone, getSupplierStats, rateSettings, suppliers, refreshData } = useDairy();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { settings: fatSnfSettings } = useFatSnfRateSettings();
 
   const supplier = user ? getSupplierByPhone(user.phone) : undefined;
@@ -226,22 +228,19 @@ const SupplierDashboard: React.FC = () => {
 
   const customRangeStats = getCustomRangeStats();
 
-  // Block access if customer_code feature is disabled
+  // Auto-logout if customer_code feature is disabled
+  useEffect(() => {
+    if (customerCodeEnabled === false) {
+      const doLogout = async () => {
+        await logout();
+        navigate('/auth');
+      };
+      doLogout();
+    }
+  }, [customerCodeEnabled, logout, navigate]);
+
   if (customerCodeEnabled === false) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="dairy-card text-center py-12 max-w-sm animate-fade-in">
-          <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-xl font-bold mb-2">एक्सेस बंद है</h2>
-          <p className="text-muted-foreground text-sm">
-            इस डेयरी का कस्टमर कोड अभी बंद है। कृपया डेयरी मालिक या एडमिन से संपर्क करें।
-          </p>
-          <p className="text-muted-foreground text-xs mt-2">
-            Access is currently disabled for this dairy. Please contact the dairy owner or admin.
-          </p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   if (!supplier || !supplierData) {
