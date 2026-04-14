@@ -223,11 +223,34 @@ export const useVoiceEntry = ({
     if (repeatEnabled) {
       setTimeout(() => {
         try {
+          // Pause recognition to prevent feedback loop (mic picking up speaker)
+          const rec = recognitionRef.current;
+          if (rec) {
+            try { rec.abort(); } catch { /* ignore */ }
+          }
+
           speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(value.toString());
           utterance.lang = language === 'gu' ? 'gu-IN' : language === 'en' ? 'en-IN' : 'hi-IN';
           utterance.rate = 0.9;
           utterance.volume = 1;
+
+          utterance.onend = () => {
+            // Resume recognition after speech finishes
+            if (isListeningRef.current && rec) {
+              setTimeout(() => {
+                try { rec.start(); } catch {
+                  // If old instance fails, create fresh
+                  const fresh = initRecognition();
+                  if (fresh) {
+                    recognitionRef.current = fresh;
+                    try { fresh.start(); } catch { /* ignore */ }
+                  }
+                }
+              }, 200);
+            }
+          };
+
           speechSynthesis.speak(utterance);
         } catch { /* silent */ }
       }, 2000);
