@@ -30,8 +30,8 @@ interface PaymentHistoryEntry {
 const SupplierDashboard: React.FC = () => {
   const { t, language } = useLanguage();
   const { getSupplierByPhone, getSupplierStats, rateSettings, suppliers, refreshData } = useDairy();
-  const { user } = useAuth();
-  const { settings: fatSnfSettings } = useFatSnfRateSettings();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const supplier = user ? getSupplierByPhone(user.phone) : undefined;
   const stats = supplier ? getSupplierStats(supplier.id, 10) : null;
