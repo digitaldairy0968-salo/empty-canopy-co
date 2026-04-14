@@ -39,10 +39,26 @@ const DairySetup: React.FC = () => {
             onboarding_completed: true,
           } as any, { onConflict: 'dairy_id' });
         
+        localStorage.removeItem('pending_owner_settings');
+      }
+
+      // Save rate settings from RateSetup page
+      const initialFatRate = localStorage.getItem('initial_fat_rate');
+      const initialLiterRate = localStorage.getItem('initial_liter_rate');
+      if (initialFatRate || initialLiterRate) {
+        const fatRate = parseFloat(initialFatRate || '8');
+        const literRate = parseFloat(initialLiterRate || '50');
+        
+        await supabase
+          .from('rate_settings')
+          .upsert({
+            dairy_id: dairyId,
+            rate_value: fatRate,
+            liter_rate: literRate,
+          } as any, { onConflict: 'dairy_id' });
+        
         localStorage.removeItem('initial_fat_rate');
         localStorage.removeItem('initial_liter_rate');
-        
-        localStorage.removeItem('pending_owner_settings');
       }
 
       const pendingFatSnfStr = localStorage.getItem('pending_fat_snf_settings');
