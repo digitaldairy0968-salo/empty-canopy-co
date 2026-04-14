@@ -249,6 +249,9 @@ export const useVoiceEntry = ({
     } catch { /* silent */ }
   }, [onValueDetected, language]);
 
+  const applyValueRef = useRef(applyValue);
+  useEffect(() => { applyValueRef.current = applyValue; }, [applyValue]);
+
   const initRecognition = useCallback(() => {
     const SpeechRecognitionClass = getSpeechRecognition();
     if (!SpeechRecognitionClass) return null;
@@ -270,7 +273,6 @@ export const useVoiceEntry = ({
         const result = event.results[i];
 
         if (result.isFinal) {
-          // Try all alternatives, pick best number
           let bestValue: number | null = null;
 
           for (let alt = 0; alt < result.length; alt++) {
@@ -279,14 +281,13 @@ export const useVoiceEntry = ({
             if (parsed !== null && parsed > 0) {
               bestValue = parsed;
               setTranscript(txt);
-              break; // first valid match from alternatives
+              break;
             }
           }
 
           if (bestValue !== null) {
-            applyValue(bestValue);
+            applyValueRef.current(bestValue);
           } else {
-            // Show what was heard even if we couldn't parse
             setTranscript(result[0]?.transcript || '');
           }
         } else {
@@ -299,30 +300,42 @@ export const useVoiceEntry = ({
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onerror = (event: any) => {
+      console.log('Speech recognition error:', event.error);
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setError(language === 'hi' ? 'माइक की अनुमति दें' : 'Allow microphone access');
+        setIsListening(false);
+        isListeningRef.current = false;
+        return;
+      }
       if (event.error !== 'no-speech' && event.error !== 'aborted') {
         setError(`Error: ${event.error}`);
       }
     };
 
     recognition.onend = () => {
-      if (restartTimeoutRef.current) {
-        clearTimeout(restartTimeoutRef.current);
-        restartTimeoutRef.current = null;
-      }
+      // Reuse the SAME recognition instance to avoid gesture chain break
       if (isListeningRef.current) {
+        // Small delay to prevent rapid restart loops
         restartTimeoutRef.current = setTimeout(() => {
           if (!isListeningRef.current) return;
           try {
-            const fresh = initRecognition();
-            if (fresh) {
-              recognitionRef.current = fresh;
-              fresh.start();
+            recognition.start();
+          } catch (e: any) {
+            // If start fails (e.g., already started or not-allowed), try fresh instance
+            console.log('Recognition restart failed, trying fresh:', e?.message);
+            try {
+              const fresh = initRecognition();
+              if (fresh) {
+                recognitionRef.current = fresh;
+                fresh.start();
+              } else {
+                setIsListening(false);
+              }
+            } catch {
+              setIsListening(false);
             }
-          } catch (e) {
-            console.error('Failed to restart recognition:', e);
-            setIsListening(false);
           }
-        }, 400);
+        }, 150);
       } else {
         setIsListening(false);
       }
