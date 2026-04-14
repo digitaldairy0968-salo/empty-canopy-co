@@ -18,16 +18,9 @@ interface UseVoiceEntryReturn {
 }
 
 // Valid milk quantity range: 0.1 to 25.0 liters (step 0.1)
-const MIN_MILK = 0.1;
-const MAX_MILK = 25.0;
-
 // Most common milk range: 0.1-25.0 (used for fuzzy matching priority, NOT for rejection)
-const COMMON_MIN = 0.1;
-const COMMON_MAX = 25.0;
 
-const isInCommonRange = (v: number): boolean => v >= COMMON_MIN && v <= COMMON_MAX;
-
-// Round to nearest 0.1
+// Round to nearest 0.1, accept any positive number
 const snapValue = (v: number): number | null => {
   const rounded = Math.round(v * 10) / 10;
   return rounded > 0 ? rounded : null;
