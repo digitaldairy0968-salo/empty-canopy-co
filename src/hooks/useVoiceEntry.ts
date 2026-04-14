@@ -81,7 +81,7 @@ const parseSpokenNumber = (rawText: string): number | null => {
   const directNum = text.match(/(\d+\.?\d*)/);
   if (directNum) {
     const val = parseFloat(directNum[1]);
-    const snapped = snapToValid(val);
+    const snapped = snapValue(val);
     if (snapped !== null) return snapped;
   }
 
@@ -122,14 +122,14 @@ const parseSpokenNumber = (rawText: string): number | null => {
   if (text.includes('साढ़े') || text.includes('saadhe') || text.includes('sadhe')) {
     const rest = text.replace(/साढ़े|saadhe|sadhe/g, '').trim();
     const base = parseSpokenNumber(rest);
-    if (base !== null) return snapToValid(base + 0.5);
+    if (base !== null) return snapValue(base + 0.5);
   }
 
   // --- 4. Handle "सवा X" (X + 0.25) pattern ---
   if (text.includes('सवा') || text.includes('sawa') || text.includes('sava')) {
     const rest = text.replace(/सवा|sawa|sava/g, '').trim();
     const base = parseSpokenNumber(rest);
-    if (base !== null) return snapToValid(base + 0.25);
+    if (base !== null) return snapValue(base + 0.25);
   }
 
   // --- 5. Handle decimal spoken as "X point Y" / "X पॉइंट Y" ---
@@ -140,16 +140,16 @@ const parseSpokenNumber = (rawText: string): number | null => {
     const decPart = lookupWord(pointMatch[2].trim(), allWords);
     if (intPart !== null && decPart !== null) {
       if (decPart >= 0 && decPart <= 9) {
-        return snapToValid(intPart + decPart / 10);
+        return snapValue(intPart + decPart / 10);
       }
       const decStr = decPart.toString();
-      return snapToValid(intPart + decPart / Math.pow(10, decStr.length));
+      return snapValue(intPart + decPart / Math.pow(10, decStr.length));
     }
   }
 
   // --- 6. Direct word lookup ---
   const wordVal = lookupWord(text, allWords);
-  if (wordVal !== null) return snapToValid(wordVal);
+  if (wordVal !== null) return snapValue(wordVal);
 
   // --- 7. Handle compound like "twenty one" / "बीस एक" or "X Y" → X.Y ---
   const words = text.split(/\s+/);
@@ -159,11 +159,11 @@ const parseSpokenNumber = (rawText: string): number | null => {
     if (first !== null && second !== null) {
       // "twenty one" = 21
       if (first >= 20 && first % 10 === 0 && second >= 1 && second <= 9) {
-        return snapToValid(first + second);
+        return snapValue(first + second);
       }
       // "6 5" → 6.5, "14 8" → 14.8 (common milk speech pattern: whole + decimal digit)
       if (first >= 1 && first <= 25 && second >= 0 && second <= 9) {
-        return snapToValid(first + second / 10);
+        return snapValue(first + second / 10);
       }
     }
   }
@@ -171,7 +171,7 @@ const parseSpokenNumber = (rawText: string): number | null => {
   // --- 8. Fuzzy: find closest phonetic match ---
   for (const [key, val] of Object.entries(phoneticFixes)) {
     if (text.includes(key)) {
-      return snapToValid(val);
+      return snapValue(val);
     }
   }
 
