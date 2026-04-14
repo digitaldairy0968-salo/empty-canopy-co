@@ -21,12 +21,16 @@ interface UseVoiceEntryReturn {
 const MIN_MILK = 0.1;
 const MAX_MILK = 25.0;
 
-const isValidMilkQty = (v: number): boolean => v >= MIN_MILK && v <= MAX_MILK;
+// Most common milk range: 0.1-25.0 (used for fuzzy matching priority, NOT for rejection)
+const COMMON_MIN = 0.1;
+const COMMON_MAX = 25.0;
 
-// Clamp & round to nearest 0.1
-const snapToValid = (v: number): number | null => {
+const isInCommonRange = (v: number): boolean => v >= COMMON_MIN && v <= COMMON_MAX;
+
+// Round to nearest 0.1
+const snapValue = (v: number): number | null => {
   const rounded = Math.round(v * 10) / 10;
-  return isValidMilkQty(rounded) ? rounded : null;
+  return rounded > 0 ? rounded : null;
 };
 
 // Common phonetic misheard words → correct number
