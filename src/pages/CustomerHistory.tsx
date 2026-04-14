@@ -18,6 +18,7 @@ import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useOwnerSettings } from '@/hooks/useOwnerSettings';
 
 interface PaymentHistoryEntry {
   id: string;
@@ -39,6 +40,7 @@ const CustomerHistory: React.FC = () => {
   const { suppliers, refreshData } = useDairy();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings: ownerSettings } = useOwnerSettings();
 
   const [searchCode, setSearchCode] = useState('');
   const [searchType, setSearchType] = useState<'code' | 'name'>('code');
@@ -484,7 +486,7 @@ const CustomerHistory: React.FC = () => {
                 </div>
 
 
-                {/* Print Receipt Button */}
+                {ownerSettings.bluetoothPrinterConnected && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -509,6 +511,7 @@ const CustomerHistory: React.FC = () => {
                   <Printer className="h-4 w-4" />
                   {language === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
                 </Button>
+                )}
 
                 {/* Add to History Button */}
                 <Button
