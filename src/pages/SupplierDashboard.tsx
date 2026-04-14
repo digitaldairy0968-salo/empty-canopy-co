@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Milk, TrendingUp, ChevronLeft, ChevronRight, CalendarIcon, Filter, History, ArrowDownCircle, ArrowUpCircle, Bell, Banknote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
