@@ -72,6 +72,7 @@ const MilkEntry: React.FC = () => {
   };
 
   // Entry form state
+  const [voiceRepeatEnabled, setVoiceRepeatEnabled] = useState(() => localStorage.getItem('voiceRepeatEnabled') === 'true');
   const [supplierCode, setSupplierCode] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [shift, setShift] = useState<'morning' | 'evening'>(getAutoShift());
