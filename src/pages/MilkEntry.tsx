@@ -72,6 +72,7 @@ const MilkEntry: React.FC = () => {
   };
 
   // Entry form state
+  const [voiceRepeatEnabled, setVoiceRepeatEnabled] = useState(() => localStorage.getItem('voiceRepeatEnabled') === 'true');
   const [supplierCode, setSupplierCode] = useState('');
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>('');
   const [shift, setShift] = useState<'morning' | 'evening'>(getAutoShift());
@@ -872,10 +873,11 @@ const MilkEntry: React.FC = () => {
                   {language === 'hi' ? '🔊 नंबर को वापिस बोले' : '🔊 Repeat number'}
                 </span>
                 <Switch
-                  checked={localStorage.getItem('voiceRepeatEnabled') === 'true'}
+                  checked={voiceRepeatEnabled}
                   onCheckedChange={(checked) => {
                     speechSynthesis.cancel();
                     localStorage.setItem('voiceRepeatEnabled', checked.toString());
+                    setVoiceRepeatEnabled(checked);
                   }}
                   className="scale-75 transition-all duration-300"
                 />
