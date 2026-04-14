@@ -124,45 +124,42 @@ async function executeSyncAction(action: SyncAction): Promise<boolean> {
       }
     }
 
-    let query: any;
+    let result: { error: any };
 
     switch (action.type) {
       case 'insert':
-        query = supabase.from(action.table).insert(action.data);
+        result = await (supabase.from(action.table) as any).insert(action.data);
         break;
       
       case 'upsert':
-        query = supabase.from(action.table).upsert(action.data, {
+        result = await (supabase.from(action.table) as any).upsert(action.data, {
           onConflict: action.onConflict || '',
         });
         break;
       
-      case 'update':
-        query = supabase.from(action.table).update(action.data);
-        if (action.matchColumn && action.matchValue) {
-          query = query.eq(action.matchColumn, action.matchValue);
-        }
-        if (action.matchColumn2 && action.matchValue2) {
-          query = query.eq(action.matchColumn2, action.matchValue2);
-        }
+      case 'update': {
+        let q = (supabase.from(action.table) as any).update(action.data);
+        if (action.matchColumn && action.matchValue) q = q.eq(action.matchColumn, action.matchValue);
+        if (action.matchColumn2 && action.matchValue2) q = q.eq(action.matchColumn2, action.matchValue2);
+        result = await q;
         break;
+      }
       
-      case 'delete':
-        query = supabase.from(action.table).delete();
-        if (action.matchColumn && action.matchValue) {
-          query = query.eq(action.matchColumn, action.matchValue);
-        }
-        if (action.matchColumn2 && action.matchValue2) {
-          query = query.eq(action.matchColumn2, action.matchValue2);
-        }
+      case 'delete': {
+        let q = (supabase.from(action.table) as any).delete();
+        if (action.matchColumn && action.matchValue) q = q.eq(action.matchColumn, action.matchValue);
+        if (action.matchColumn2 && action.matchValue2) q = q.eq(action.matchColumn2, action.matchValue2);
+        result = await q;
         break;
+      }
+      
+      default:
+        return false;
     }
 
-    const { error } = await query;
-    if (error) {
-      console.error(`[Sync] Failed to execute ${action.type} on ${action.table}:`, error);
-      // If it's a conflict/duplicate error, consider it synced (data already exists)
-      if (error.code === '23505' || error.message?.includes('duplicate')) {
+    if (result.error) {
+      console.error(`[Sync] Failed to execute ${action.type} on ${action.table}:`, result.error);
+      if (result.error.code === '23505' || result.error.message?.includes('duplicate')) {
         return true;
       }
       return false;
