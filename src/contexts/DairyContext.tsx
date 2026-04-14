@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showNotification, requestNotificationPermission } from '@/utils/notifications';
+import { addToSyncQueue, processSyncQueue, getSyncQueueCount } from '@/utils/offlineSyncQueue';
 
 export interface MilkEntry {
   date: string;
@@ -80,6 +81,7 @@ interface DairyContextType {
   updateDairy: (name: string) => Promise<boolean>;
   loading: boolean;
   isOnline: boolean;
+  pendingSyncCount: number;
   refreshData: () => Promise<void>;
   enableNotifications: () => Promise<boolean>;
 }
@@ -133,30 +135,56 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return cached ? JSON.parse(cached) : { fatRate: 8, literRate: 50, showCalculationsToSuppliers: true, calculationMethod: 'avg_fat' };
   });
   const [loading, setLoading] = useState(() => {
-    // If we have cached data, don't show loading
     const cached = localStorage.getItem(CACHE_KEY_SUPPLIERS);
     return !cached;
   });
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
 
-  // Monitor online status
+  // Monitor online status + auto-sync
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOnline(true);
-      if (user?.dairyId) {
-        fetchData();
-      }
+      // Auto-sync pending changes
+      try {
+        const result = await processSyncQueue();
+        const count = await getSyncQueueCount();
+        setPendingSyncCount(count);
+        if (result.synced > 0 && user?.dairyId) {
+          fetchData(); // Refresh from server after sync
+        }
+      } catch { /* ignore */ }
     };
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Listen for sync-complete events from OfflineIndicator
+    const handleSyncComplete = () => {
+      if (user?.dairyId) fetchData();
+    };
+    window.addEventListener('sync-complete', handleSyncComplete);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('sync-complete', handleSyncComplete);
     };
   }, [user?.dairyId]);
+
+  // Track pending sync count
+  useEffect(() => {
+    const updateCount = async () => {
+      try {
+        const count = await getSyncQueueCount();
+        setPendingSyncCount(count);
+      } catch { /* ignore */ }
+    };
+    updateCount();
+    const interval = setInterval(updateCount, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Save to cache whenever data changes
   useEffect(() => {
@@ -201,7 +229,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.error('Error fetching suppliers:', suppliersError);
       }
 
-      // Fetch ALL milk entries using pagination to bypass 1000-row limit
+      // Fetch ALL milk entries using pagination
       const supplierIds = suppliersData?.map(s => s.id) || [];
       let entriesData: any[] = [];
       
@@ -225,16 +253,8 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (!entriesByDate[date]) {
             entriesByDate[date] = {
               date,
-              morningMilk: null,
-              morningFat: null,
-              morningSNF: null,
-              morningLR: null,
-              morningPrice: null,
-              eveningMilk: null,
-              eveningFat: null,
-              eveningSNF: null,
-              eveningLR: null,
-              eveningPrice: null,
+              morningMilk: null, morningFat: null, morningSNF: null, morningLR: null, morningPrice: null,
+              eveningMilk: null, eveningFat: null, eveningSNF: null, eveningLR: null, eveningPrice: null,
             };
           }
           if (e.time_of_day === 'morning') {
@@ -327,35 +347,77 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     fetchData();
   }, [fetchData]);
 
+  // ==================== OFFLINE-FIRST MUTATIONS ====================
+
   const addSupplier = async (supplier: Omit<Supplier, 'id' | 'dairyId' | 'entries' | 'createdAt'>) => {
     if (!user?.dairyId) return;
 
-    const { data, error } = await supabase
-      .from('suppliers')
-      .insert({
-        dairy_id: user.dairyId,
-        name: supplier.name,
-        phone: supplier.phone,
-        animal_type: supplier.animalType,
-        village_name: supplier.villageName,
-        address: supplier.address,
-        code: supplier.code || '',
-      } as any)
-      .select()
-      .single();
+    const tempId = crypto.randomUUID();
+    const newSupplier: Supplier = {
+      id: tempId,
+      dairyId: user.dairyId,
+      name: supplier.name,
+      phone: supplier.phone,
+      code: supplier.code,
+      animalType: supplier.animalType,
+      villageName: supplier.villageName,
+      address: supplier.address,
+      entries: [],
+      createdAt: new Date().toISOString(),
+      pendingBalance: 0,
+      canSeeCalculations: true,
+    };
 
-    if (error) {
-      console.error('Error adding supplier:', error);
-      throw error;
+    // Update local state immediately
+    setSuppliers(prev => [...prev, newSupplier]);
+
+    const dbData = {
+      id: tempId,
+      dairy_id: user.dairyId,
+      name: supplier.name,
+      phone: supplier.phone,
+      animal_type: supplier.animalType,
+      village_name: supplier.villageName || null,
+      address: supplier.address || null,
+      code: supplier.code || '',
+    };
+
+    if (navigator.onLine) {
+      try {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .insert(dbData as any)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error adding supplier:', error);
+          // Queue for later sync
+          await addToSyncQueue({ type: 'insert', table: 'suppliers', data: dbData });
+          setPendingSyncCount(prev => prev + 1);
+        } else if (data) {
+          // Update with real server data
+          setSuppliers(prev => prev.map(s => s.id === tempId ? {
+            ...s,
+            id: data.id,
+            createdAt: data.created_at,
+          } : s));
+        }
+      } catch {
+        await addToSyncQueue({ type: 'insert', table: 'suppliers', data: dbData });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    } else {
+      await addToSyncQueue({ type: 'insert', table: 'suppliers', data: dbData });
+      setPendingSyncCount(prev => prev + 1);
     }
-
-    await fetchData();
   };
 
   const updateSupplier = async (id: string, updates: Partial<Supplier>) => {
-    if (!user?.dairyId) {
-      throw new Error('No dairy ID');
-    }
+    if (!user?.dairyId) throw new Error('No dairy ID');
+
+    // Update local state immediately
+    setSuppliers(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
 
     const updateData: any = {};
     if (updates.name) updateData.name = updates.name;
@@ -365,61 +427,85 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (updates.villageName !== undefined) updateData.village_name = updates.villageName;
     if (updates.address !== undefined) updateData.address = updates.address;
 
-    const { error } = await supabase
-      .from('suppliers')
-      .update(updateData)
-      .eq('id', id)
-      .eq('dairy_id', user.dairyId);
+    if (navigator.onLine) {
+      const { error } = await supabase
+        .from('suppliers')
+        .update(updateData)
+        .eq('id', id)
+        .eq('dairy_id', user.dairyId);
 
-    if (error) {
-      console.error('Error updating supplier:', error);
-      throw error;
+      if (error) {
+        console.error('Error updating supplier:', error);
+        await addToSyncQueue({
+          type: 'update', table: 'suppliers', data: updateData,
+          matchColumn: 'id', matchValue: id,
+          matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+        });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    } else {
+      await addToSyncQueue({
+        type: 'update', table: 'suppliers', data: updateData,
+        matchColumn: 'id', matchValue: id,
+        matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+      });
+      setPendingSyncCount(prev => prev + 1);
     }
-
-    await fetchData();
   };
 
   const deleteSupplier = async (id: string) => {
-    if (!user?.dairyId) {
-      throw new Error('No dairy ID');
+    if (!user?.dairyId) throw new Error('No dairy ID');
+
+    // Update local state immediately
+    setSuppliers(prev => prev.filter(s => s.id !== id));
+
+    if (navigator.onLine) {
+      await supabase.from('milk_entries').delete().eq('supplier_id', id).eq('dairy_id', user.dairyId);
+      const { error } = await supabase.from('suppliers').delete().eq('id', id).eq('dairy_id', user.dairyId);
+
+      if (error) {
+        console.error('Error deleting supplier:', error);
+        await addToSyncQueue({
+          type: 'delete', table: 'suppliers',
+          matchColumn: 'id', matchValue: id,
+          matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+          prerequisiteActions: [{
+            id: '', timestamp: 0,
+            type: 'delete', table: 'milk_entries',
+            data: null,
+            matchColumn: 'supplier_id', matchValue: id,
+            matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+          }],
+        });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    } else {
+      await addToSyncQueue({
+        type: 'delete', table: 'suppliers',
+        matchColumn: 'id', matchValue: id,
+        matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+        prerequisiteActions: [{
+          id: '', timestamp: 0,
+          type: 'delete', table: 'milk_entries',
+          data: null,
+          matchColumn: 'supplier_id', matchValue: id,
+          matchColumn2: 'dairy_id', matchValue2: user.dairyId,
+        }],
+      });
+      setPendingSyncCount(prev => prev + 1);
     }
-
-    const { error: entriesError } = await supabase
-      .from('milk_entries')
-      .delete()
-      .eq('supplier_id', id)
-      .eq('dairy_id', user.dairyId);
-
-    if (entriesError) {
-      console.error('Error deleting milk entries:', entriesError);
-    }
-
-    const { error } = await supabase
-      .from('suppliers')
-      .delete()
-      .eq('id', id)
-      .eq('dairy_id', user.dairyId);
-
-    if (error) {
-      console.error('Error deleting supplier:', error);
-      throw error;
-    }
-
-    await fetchData();
   };
 
   const addMilkEntry = async (supplierId: string, entry: MilkEntry) => {
     if (!user?.dairyId) return;
 
+    // Update local state immediately
     setSuppliers(prev => prev.map(supplier => {
       if (supplier.id === supplierId) {
         const existingEntryIndex = supplier.entries.findIndex(e => e.date === entry.date);
         if (existingEntryIndex >= 0) {
           const updatedEntries = [...supplier.entries];
-          updatedEntries[existingEntryIndex] = {
-            ...updatedEntries[existingEntryIndex],
-            ...entry
-          };
+          updatedEntries[existingEntryIndex] = { ...updatedEntries[existingEntryIndex], ...entry };
           return { ...supplier, entries: updatedEntries };
         } else {
           return { ...supplier, entries: [...supplier.entries, entry] };
@@ -458,96 +544,193 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
     }
 
-    Promise.all(
-      entries.map(entryData =>
-        supabase
-          .from('milk_entries')
-          .upsert(entryData, { onConflict: 'supplier_id,date,time_of_day' })
-      )
-    ).then(results => {
-      const hasError = results.some(r => r.error);
-      if (hasError) {
-        console.error('Error saving milk entries:', results.filter(r => r.error));
-        fetchData();
+    if (navigator.onLine) {
+      // Try online, queue on failure
+      Promise.all(
+        entries.map(entryData =>
+          supabase.from('milk_entries').upsert(entryData, { onConflict: 'supplier_id,date,time_of_day' })
+        )
+      ).then(async results => {
+        const hasError = results.some(r => r.error);
+        if (hasError) {
+          console.error('Error saving milk entries:', results.filter(r => r.error));
+          // Queue failed entries
+          for (const entryData of entries) {
+            await addToSyncQueue({
+              type: 'upsert', table: 'milk_entries',
+              data: entryData, onConflict: 'supplier_id,date,time_of_day',
+            });
+          }
+          setPendingSyncCount(prev => prev + entries.length);
+        }
+      }).catch(async () => {
+        for (const entryData of entries) {
+          await addToSyncQueue({
+            type: 'upsert', table: 'milk_entries',
+            data: entryData, onConflict: 'supplier_id,date,time_of_day',
+          });
+        }
+        setPendingSyncCount(prev => prev + entries.length);
+      });
+    } else {
+      // Queue all entries for sync
+      for (const entryData of entries) {
+        await addToSyncQueue({
+          type: 'upsert', table: 'milk_entries',
+          data: entryData, onConflict: 'supplier_id,date,time_of_day',
+        });
       }
-    }).catch(error => {
-      console.error('Error adding milk entries:', error);
-      fetchData();
-    });
+      setPendingSyncCount(prev => prev + entries.length);
+    }
   };
 
   const updateMilkEntry = async (supplierId: string, date: string, entry: Partial<MilkEntry>) => {
     if (!user?.dairyId) return;
 
-    if (entry.morningMilk !== undefined || entry.morningFat !== undefined) {
-      const { error } = await supabase
-        .from('milk_entries')
-        .upsert({
-          supplier_id: supplierId,
-          dairy_id: user.dairyId,
-          date,
-          time_of_day: 'morning',
-          quantity: entry.morningMilk,
-          fat: entry.morningFat,
-          snf: entry.morningSNF,
-          lr: entry.morningLR,
-        }, {
-          onConflict: 'supplier_id,date,time_of_day',
-        });
-
-      if (error) {
-        console.error('Error updating milk entry:', error);
-        throw error;
+    // Update local state immediately
+    setSuppliers(prev => prev.map(supplier => {
+      if (supplier.id === supplierId) {
+        const existingEntryIndex = supplier.entries.findIndex(e => e.date === date);
+        if (existingEntryIndex >= 0) {
+          const updatedEntries = [...supplier.entries];
+          updatedEntries[existingEntryIndex] = { ...updatedEntries[existingEntryIndex], ...entry };
+          return { ...supplier, entries: updatedEntries };
+        }
       }
+      return supplier;
+    }));
+
+    const upsertAndQueue = async (timeOfDay: string, data: any) => {
+      if (navigator.onLine) {
+        const { error } = await supabase
+          .from('milk_entries')
+          .upsert(data, { onConflict: 'supplier_id,date,time_of_day' });
+        if (error) {
+          console.error('Error updating milk entry:', error);
+          await addToSyncQueue({ type: 'upsert', table: 'milk_entries', data, onConflict: 'supplier_id,date,time_of_day' });
+          setPendingSyncCount(prev => prev + 1);
+        }
+      } else {
+        await addToSyncQueue({ type: 'upsert', table: 'milk_entries', data, onConflict: 'supplier_id,date,time_of_day' });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    };
+
+    if (entry.morningMilk !== undefined || entry.morningFat !== undefined) {
+      await upsertAndQueue('morning', {
+        supplier_id: supplierId, dairy_id: user.dairyId, date,
+        time_of_day: 'morning',
+        quantity: entry.morningMilk, fat: entry.morningFat,
+        snf: entry.morningSNF, lr: entry.morningLR,
+      });
     }
 
     if (entry.eveningMilk !== undefined || entry.eveningFat !== undefined) {
-      const { error } = await supabase
-        .from('milk_entries')
-        .upsert({
-          supplier_id: supplierId,
-          dairy_id: user.dairyId,
-          date,
-          time_of_day: 'evening',
-          quantity: entry.eveningMilk,
-          fat: entry.eveningFat,
-          snf: entry.eveningSNF,
-          lr: entry.eveningLR,
-        }, {
-          onConflict: 'supplier_id,date,time_of_day',
-        });
-
-      if (error) {
-        console.error('Error updating milk entry:', error);
-        throw error;
-      }
+      await upsertAndQueue('evening', {
+        supplier_id: supplierId, dairy_id: user.dairyId, date,
+        time_of_day: 'evening',
+        quantity: entry.eveningMilk, fat: entry.eveningFat,
+        snf: entry.eveningSNF, lr: entry.eveningLR,
+      });
     }
-
-    await fetchData();
   };
 
   const updateRateSettings = async (settings: Partial<RateSettings>) => {
     const newSettings = { ...rateSettings, ...settings };
     setRateSettings(newSettings);
 
-    if (user?.dairyId) {
+    if (!user?.dairyId) return;
+
+    const dbData = {
+      dairy_id: user.dairyId,
+      rate_value: newSettings.fatRate,
+      liter_rate: newSettings.literRate,
+      show_calculations_to_suppliers: newSettings.showCalculationsToSuppliers,
+      calculation_method: newSettings.calculationMethod,
+    };
+
+    if (navigator.onLine) {
       const { error } = await supabase
         .from('rate_settings')
-        .upsert({
-          dairy_id: user.dairyId,
-          rate_value: newSettings.fatRate,
-          liter_rate: newSettings.literRate,
-          show_calculations_to_suppliers: newSettings.showCalculationsToSuppliers,
-          calculation_method: newSettings.calculationMethod,
-        } as any, {
-          onConflict: 'dairy_id',
-        });
+        .upsert(dbData as any, { onConflict: 'dairy_id' });
 
       if (error) {
         console.error('Error updating rate settings:', error);
+        await addToSyncQueue({ type: 'upsert', table: 'rate_settings', data: dbData, onConflict: 'dairy_id' });
+        setPendingSyncCount(prev => prev + 1);
       }
+    } else {
+      await addToSyncQueue({ type: 'upsert', table: 'rate_settings', data: dbData, onConflict: 'dairy_id' });
+      setPendingSyncCount(prev => prev + 1);
     }
   };
+
+  const addAnnouncement = async (message: string) => {
+    if (!user?.dairyId) return;
+
+    const tempId = crypto.randomUUID();
+    const newAnnouncement: Announcement = {
+      id: tempId,
+      dairyId: user.dairyId,
+      message,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Update local state immediately
+    setAnnouncements(prev => [newAnnouncement, ...prev]);
+
+    const dbData = { id: tempId, dairy_id: user.dairyId, message };
+
+    if (navigator.onLine) {
+      const { error } = await supabase.from('announcements').insert(dbData);
+      if (error) {
+        console.error('Error adding announcement:', error);
+        await addToSyncQueue({ type: 'insert', table: 'announcements', data: dbData });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    } else {
+      await addToSyncQueue({ type: 'insert', table: 'announcements', data: dbData });
+      setPendingSyncCount(prev => prev + 1);
+    }
+  };
+
+  const deleteAnnouncement = async (id: string) => {
+    // Update local state immediately
+    setAnnouncements(prev => prev.filter(a => a.id !== id));
+
+    if (navigator.onLine) {
+      const { error } = await supabase.from('announcements').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting announcement:', error);
+        await addToSyncQueue({ type: 'delete', table: 'announcements', matchColumn: 'id', matchValue: id });
+        setPendingSyncCount(prev => prev + 1);
+      }
+    } else {
+      await addToSyncQueue({ type: 'delete', table: 'announcements', matchColumn: 'id', matchValue: id });
+      setPendingSyncCount(prev => prev + 1);
+    }
+  };
+
+  const updateDairy = async (name: string) => {
+    if (!user?.dairyId) return false;
+
+    if (navigator.onLine) {
+      const { error } = await supabase.from('dairies').update({ name }).eq('id', user.dairyId);
+      if (error) {
+        console.error('Error updating dairy:', error);
+        await addToSyncQueue({ type: 'update', table: 'dairies', data: { name }, matchColumn: 'id', matchValue: user.dairyId });
+        setPendingSyncCount(prev => prev + 1);
+        return true; // Optimistic
+      }
+    } else {
+      await addToSyncQueue({ type: 'update', table: 'dairies', data: { name }, matchColumn: 'id', matchValue: user.dairyId });
+      setPendingSyncCount(prev => prev + 1);
+    }
+
+    return true;
+  };
+
+  // ==================== READ-ONLY COMPUTED DATA ====================
 
   const getSupplierStats = (supplierId: string, days: number) => {
     const supplier = suppliers.find(s => s.id === supplierId);
@@ -571,8 +754,6 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
 
     const avgFat = fatEntryCount > 0 ? totalFat / fatEntryCount : 0;
-    
-    // For buyers, use liter rate
     const isBuyer = supplier.animalType === 'buyer';
     const totalAmount = isBuyer 
       ? totalMilk * (rateSettings.literRate || 50)
@@ -598,98 +779,26 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const todayEntry = supplier.entries.find(e => e.date === today);
       if (todayEntry) {
         let hasData = false;
-        if (todayEntry.morningMilk) {
-          morningMilk += todayEntry.morningMilk;
-          totalMilk += todayEntry.morningMilk;
-          hasData = true;
-        }
-        if (todayEntry.eveningMilk) {
-          eveningMilk += todayEntry.eveningMilk;
-          totalMilk += todayEntry.eveningMilk;
-          hasData = true;
-        }
-        if (todayEntry.morningFat) {
-          morningFatSum += todayEntry.morningFat;
-          morningFatCount++;
-          totalFat += todayEntry.morningFat;
-        }
-        if (todayEntry.eveningFat) {
-          eveningFatSum += todayEntry.eveningFat;
-          eveningFatCount++;
-          totalFat += todayEntry.eveningFat;
-        }
+        if (todayEntry.morningMilk) { morningMilk += todayEntry.morningMilk; totalMilk += todayEntry.morningMilk; hasData = true; }
+        if (todayEntry.eveningMilk) { eveningMilk += todayEntry.eveningMilk; totalMilk += todayEntry.eveningMilk; hasData = true; }
+        if (todayEntry.morningFat) { morningFatSum += todayEntry.morningFat; morningFatCount++; totalFat += todayEntry.morningFat; }
+        if (todayEntry.eveningFat) { eveningFatSum += todayEntry.eveningFat; eveningFatCount++; totalFat += todayEntry.eveningFat; }
         if (hasData) activeSuppliers++;
       }
     });
 
     const fatCount = morningFatCount + eveningFatCount;
-    const avgFat = fatCount > 0 ? totalFat / fatCount : 0;
-    const morningAvgFat = morningFatCount > 0 ? morningFatSum / morningFatCount : 0;
-    const eveningAvgFat = eveningFatCount > 0 ? eveningFatSum / eveningFatCount : 0;
-
     return {
-      totalMilk,
-      totalFat,
-      avgFat,
-      morningMilk,
-      eveningMilk,
-      morningAvgFat,
-      eveningAvgFat,
+      totalMilk, totalFat,
+      avgFat: fatCount > 0 ? totalFat / fatCount : 0,
+      morningMilk, eveningMilk,
+      morningAvgFat: morningFatCount > 0 ? morningFatSum / morningFatCount : 0,
+      eveningAvgFat: eveningFatCount > 0 ? eveningFatSum / eveningFatCount : 0,
       suppliers: activeSuppliers,
     };
   };
 
-  const getSupplierByPhone = (phone: string) => {
-    return suppliers.find(s => s.phone === phone);
-  };
-
-  const addAnnouncement = async (message: string) => {
-    if (!user?.dairyId) return;
-
-    const { error } = await supabase
-      .from('announcements')
-      .insert({
-        dairy_id: user.dairyId,
-        message,
-      });
-
-    if (error) {
-      console.error('Error adding announcement:', error);
-      throw error;
-    }
-
-    await fetchData();
-  };
-
-  const deleteAnnouncement = async (id: string) => {
-    const { error } = await supabase
-      .from('announcements')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting announcement:', error);
-      throw error;
-    }
-
-    await fetchData();
-  };
-
-  const updateDairy = async (name: string) => {
-    if (!user?.dairyId) return false;
-
-    const { error } = await supabase
-      .from('dairies')
-      .update({ name })
-      .eq('id', user.dairyId);
-
-    if (error) {
-      console.error('Error updating dairy:', error);
-      return false;
-    }
-
-    return true;
-  };
+  const getSupplierByPhone = (phone: string) => suppliers.find(s => s.phone === phone);
 
   const enableNotifications = async () => {
     const granted = await requestNotificationPermission();
@@ -702,23 +811,13 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const value: DairyContextType = {
-    suppliers,
-    addSupplier,
-    updateSupplier,
-    deleteSupplier,
-    addMilkEntry,
-    updateMilkEntry,
-    rateSettings,
-    updateRateSettings,
-    getSupplierStats,
-    getTodayStats,
-    getSupplierByPhone,
-    announcements,
-    addAnnouncement,
-    deleteAnnouncement,
+    suppliers, addSupplier, updateSupplier, deleteSupplier,
+    addMilkEntry, updateMilkEntry,
+    rateSettings, updateRateSettings,
+    getSupplierStats, getTodayStats, getSupplierByPhone,
+    announcements, addAnnouncement, deleteAnnouncement,
     updateDairy,
-    loading,
-    isOnline,
+    loading, isOnline, pendingSyncCount,
     refreshData: fetchData,
     enableNotifications,
   };

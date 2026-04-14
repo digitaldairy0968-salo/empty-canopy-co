@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { DairyProvider } from "@/contexts/DairyContext";
 import React, { Suspense, useState, useEffect, lazy } from "react";
+import OfflineIndicator from "@/components/OfflineIndicator";
 
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -291,6 +292,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <OfflineIndicator />
               <AppRoutes />
             </BrowserRouter>
           </TooltipProvider>
