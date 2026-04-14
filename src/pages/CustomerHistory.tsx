@@ -40,6 +40,7 @@ const CustomerHistory: React.FC = () => {
   const { suppliers, refreshData } = useDairy();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings: ownerSettings } = useOwnerSettings();
 
   const [searchCode, setSearchCode] = useState('');
   const [searchType, setSearchType] = useState<'code' | 'name'>('code');
