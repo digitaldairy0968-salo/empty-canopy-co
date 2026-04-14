@@ -486,7 +486,7 @@ const CustomerHistory: React.FC = () => {
                 </div>
 
 
-                {/* Print Receipt Button */}
+                {ownerSettings.bluetoothPrinterConnected && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -511,6 +511,7 @@ const CustomerHistory: React.FC = () => {
                   <Printer className="h-4 w-4" />
                   {language === 'hi' ? 'रसीद प्रिंट करें' : 'Print Receipt'}
                 </Button>
+                )}
 
                 {/* Add to History Button */}
                 <Button
