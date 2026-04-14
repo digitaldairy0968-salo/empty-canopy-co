@@ -156,26 +156,32 @@ const Reports: React.FC = () => {
 
           {supplierReportData && showSupplierList && (
             <div className="space-y-3 animate-fade-in">
+              {/* Supplier Stats */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="text-center p-4 bg-primary/10 rounded-xl">
-                  <p className="text-sm text-muted-foreground">{t('totalMilk')}</p>
-                  <p className="text-2xl font-bold text-primary">{supplierReportData.grandTotalMilk.toFixed(1)} L</p>
+                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'सप्लायर दूध' : 'Supplier Milk'}</p>
+                  <p className="text-2xl font-bold text-primary">{supplierReportData.supplierTotalMilk.toFixed(1)} L</p>
                 </div>
                 <div className="text-center p-4 bg-accent/10 rounded-xl">
                   <p className="text-sm text-muted-foreground">{language === 'hi' ? 'सप्लायर राशि' : 'Supplier Amount'}</p>
-                  <p className="text-2xl font-bold text-accent">₹{supplierReportData.grandTotalAmount.toFixed(0)}</p>
+                  <p className="text-2xl font-bold text-accent">₹{supplierReportData.supplierTotalAmount.toFixed(0)}</p>
                 </div>
               </div>
-              {/* Buyer Amount (liter rate based) */}
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <div className="text-center p-4 bg-green-500/10 rounded-xl">
+              {/* Buyer Stats */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-4 bg-secondary/10 rounded-xl">
+                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'खरीदार दूध' : 'Buyer Milk'}</p>
+                  <p className="text-2xl font-bold text-secondary-foreground">{supplierReportData.buyerTotalMilk.toFixed(1)} L</p>
+                </div>
+                <div className="text-center p-4 bg-secondary/10 rounded-xl">
                   <p className="text-sm text-muted-foreground">{language === 'hi' ? 'खरीदार राशि' : 'Buyer Amount'}</p>
-                  <p className="text-2xl font-bold text-green-600">₹{(supplierReportData.grandTotalMilk * (rateSettings.literRate || 50)).toFixed(0)}</p>
+                  <p className="text-2xl font-bold text-secondary-foreground">₹{supplierReportData.buyerTotalAmount.toFixed(0)}</p>
                 </div>
-                <div className="text-center p-4 bg-amber-500/10 rounded-xl">
-                  <p className="text-sm text-muted-foreground">{language === 'hi' ? 'मुनाफा' : 'Profit'}</p>
-                  <p className="text-2xl font-bold text-amber-600">₹{((supplierReportData.grandTotalMilk * (rateSettings.literRate || 50)) - supplierReportData.grandTotalAmount).toFixed(0)}</p>
-                </div>
+              </div>
+              {/* Profit */}
+              <div className="text-center p-4 bg-accent/10 rounded-xl">
+                <p className="text-sm text-muted-foreground">{language === 'hi' ? 'मुनाफा' : 'Profit'}</p>
+                <p className="text-2xl font-bold text-accent">₹{(supplierReportData.buyerTotalAmount - supplierReportData.supplierTotalAmount).toFixed(0)}</p>
               </div>
 
               <div className="space-y-2 mt-4">
