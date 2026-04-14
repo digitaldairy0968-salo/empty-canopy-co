@@ -121,7 +121,7 @@ export function calculateSupplierStats(params: CalculationParams): SupplierStats
 
   const avgFat = fatCount > 0 ? totalFatSum / fatCount : 0;
 
-  const totalAmount = calculationMethod === 'daily_total'
+  const totalAmount = (calculationMethod === 'daily_total' || animalType === 'buyer')
     ? dailyTotalAmount
     : avgFat * totalMilk * rate;
 
