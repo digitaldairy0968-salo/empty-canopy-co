@@ -575,11 +575,8 @@ const MilkEntry: React.FC = () => {
       setLrValue('');
       setBuyerPrice('');
 
-      // Show receipt dialog: always show if printer connected (for auto-print) or if receipt enabled
-      if (ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled) {
-        // Auto print mode: show dialog which will auto-trigger print
-        setShowReceiptDialog(true);
-      } else if (showReceiptEnabled) {
+      // Only show receipt if printer is connected - direct print, no UI
+      if (ownerSettings.bluetoothPrinterConnected) {
         setShowReceiptDialog(true);
       }
       
@@ -1099,37 +1096,30 @@ const MilkEntry: React.FC = () => {
       <BottomNav />
 
       {/* Receipt Dialog */}
-      <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Printer className="h-5 w-5" />
-              {t('printReceipt')}
-            </DialogTitle>
-          </DialogHeader>
-          {savedEntryData && (
-            <MilkReceipt
-              data={{
-                date: savedEntryData.date,
-                supplierName: savedEntryData.supplierName,
-                supplierId: savedEntryData.supplierId,
-                supplierCode: suppliers.find(s => s.id === savedEntryData.supplierId)?.code,
-                villageName: suppliers.find(s => s.id === savedEntryData.supplierId)?.villageName,
-                animalType: suppliers.find(s => s.id === savedEntryData.supplierId)?.animalType,
-                timeOfDay: savedEntryData.timeOfDay,
-                quantity: savedEntryData.quantity,
-                fat: savedEntryData.fat,
-                snf: savedEntryData.snf,
-                lr: savedEntryData.lr,
-                rate: rate,
-                dairyName: user?.dairyName,
-              }}
-              onClose={() => setShowReceiptDialog(false)}
-              autoPrint={ownerSettings.bluetoothPrinterConnected && ownerSettings.autoPrintEnabled}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Hidden Receipt - auto prints and closes when printer connected */}
+      {showReceiptDialog && savedEntryData && (
+        <div className="fixed -left-[9999px] top-0">
+          <MilkReceipt
+            data={{
+              date: savedEntryData.date,
+              supplierName: savedEntryData.supplierName,
+              supplierId: savedEntryData.supplierId,
+              supplierCode: suppliers.find(s => s.id === savedEntryData.supplierId)?.code,
+              villageName: suppliers.find(s => s.id === savedEntryData.supplierId)?.villageName,
+              animalType: suppliers.find(s => s.id === savedEntryData.supplierId)?.animalType,
+              timeOfDay: savedEntryData.timeOfDay,
+              quantity: savedEntryData.quantity,
+              fat: savedEntryData.fat,
+              snf: savedEntryData.snf,
+              lr: savedEntryData.lr,
+              rate: rate,
+              dairyName: user?.dairyName,
+            }}
+            onClose={() => setShowReceiptDialog(false)}
+            autoPrint={true}
+          />
+        </div>
+      )}
     </div>
   );
 };
