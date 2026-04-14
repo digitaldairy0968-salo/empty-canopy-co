@@ -50,12 +50,14 @@ const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = fa
   const fields = getEntryReceiptFields();
   const hasPrinted = useRef(false);
 
-  // Auto-print on mount when autoPrint is true
+  // Auto-print on mount when autoPrint is true, then auto-close
   useEffect(() => {
     if (autoPrint && !hasPrinted.current) {
       hasPrinted.current = true;
       const timer = setTimeout(() => {
         handlePrint();
+        // Auto-close after print
+        setTimeout(() => onClose(), 1500);
       }, 500);
       return () => clearTimeout(timer);
     }
