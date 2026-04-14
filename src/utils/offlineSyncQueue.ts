@@ -126,19 +126,22 @@ async function executeSyncAction(action: SyncAction): Promise<boolean> {
 
     let result: { error: any };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabase as any;
+
     switch (action.type) {
       case 'insert':
-        result = await (supabase.from(action.table) as any).insert(action.data);
+        result = await db.from(action.table).insert(action.data);
         break;
       
       case 'upsert':
-        result = await (supabase.from(action.table) as any).upsert(action.data, {
+        result = await db.from(action.table).upsert(action.data, {
           onConflict: action.onConflict || '',
         });
         break;
       
       case 'update': {
-        let q = (supabase.from(action.table) as any).update(action.data);
+        let q = db.from(action.table).update(action.data);
         if (action.matchColumn && action.matchValue) q = q.eq(action.matchColumn, action.matchValue);
         if (action.matchColumn2 && action.matchValue2) q = q.eq(action.matchColumn2, action.matchValue2);
         result = await q;
@@ -146,7 +149,7 @@ async function executeSyncAction(action: SyncAction): Promise<boolean> {
       }
       
       case 'delete': {
-        let q = (supabase.from(action.table) as any).delete();
+        let q = db.from(action.table).delete();
         if (action.matchColumn && action.matchValue) q = q.eq(action.matchColumn, action.matchValue);
         if (action.matchColumn2 && action.matchValue2) q = q.eq(action.matchColumn2, action.matchValue2);
         result = await q;
