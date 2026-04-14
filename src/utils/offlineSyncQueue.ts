@@ -12,7 +12,7 @@ export interface SyncAction {
   timestamp: number;
   type: 'insert' | 'upsert' | 'update' | 'delete';
   table: string;
-  data: any | null;
+  data?: any;
   // For updates/deletes
   matchColumn?: string;
   matchValue?: string;
