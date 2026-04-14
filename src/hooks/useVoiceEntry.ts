@@ -218,17 +218,19 @@ export const useVoiceEntry = ({
 
     onValueDetected(value);
 
-    // Repeat number via speech synthesis if enabled
+    // Repeat number via speech synthesis after 2 seconds if enabled
     const repeatEnabled = localStorage.getItem('voiceRepeatEnabled') === 'true';
     if (repeatEnabled) {
-      try {
-        speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(value.toString());
-        utterance.lang = language === 'gu' ? 'gu-IN' : language === 'en' ? 'en-IN' : 'hi-IN';
-        utterance.rate = 1.1;
-        utterance.volume = 1;
-        speechSynthesis.speak(utterance);
-      } catch { /* silent */ }
+      setTimeout(() => {
+        try {
+          speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(value.toString());
+          utterance.lang = language === 'gu' ? 'gu-IN' : language === 'en' ? 'en-IN' : 'hi-IN';
+          utterance.rate = 0.9;
+          utterance.volume = 1;
+          speechSynthesis.speak(utterance);
+        } catch { /* silent */ }
+      }, 2000);
     }
 
     // Beep feedback
