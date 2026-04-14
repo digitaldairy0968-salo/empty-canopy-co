@@ -17,7 +17,51 @@ interface UseVoiceEntryReturn {
   isSupported: boolean;
 }
 
-// Comprehensive number parsing optimized for milk quantities (0.1 - 99.9 range)
+// Valid milk quantity range: 0.1 to 25.0 liters (step 0.1)
+const MIN_MILK = 0.1;
+const MAX_MILK = 25.0;
+
+const isValidMilkQty = (v: number): boolean => v >= MIN_MILK && v <= MAX_MILK;
+
+// Clamp & round to nearest 0.1
+const snapToValid = (v: number): number | null => {
+  const rounded = Math.round(v * 10) / 10;
+  return isValidMilkQty(rounded) ? rounded : null;
+};
+
+// Common phonetic misheard words → correct number
+const phoneticFixes: Record<string, number> = {
+  // Hindi sounds that get misheard
+  'do': 2, 'doo': 2, 'tu': 2, 'too': 2,
+  'teen': 3, 'tin': 3,
+  'char': 4, 'chaar': 4,
+  'panch': 5, 'paanch': 5, 'punch': 5,
+  'che': 6, 'chhe': 6, 'cheh': 6,
+  'saat': 7, 'sat': 7,
+  'aath': 8, 'aat': 8, 'at': 8,
+  'nau': 9, 'no': 9, 'now': 9, 'know': 9,
+  'das': 10, 'thus': 10,
+  'gyarah': 11, 'gyara': 11,
+  'barah': 12, 'bara': 12, 'baarah': 12,
+  'terah': 13, 'tera': 13,
+  'chaudah': 14, 'chauda': 14,
+  'pandrah': 15, 'pandra': 15,
+  'solah': 16, 'sola': 16,
+  'satrah': 17, 'satra': 17,
+  'atharah': 18, 'athara': 18,
+  'unnis': 19, 'unnees': 19,
+  'bees': 20, 'bis': 20, 'beees': 20,
+  'ikkis': 21, 'ikkees': 21,
+  'bais': 22, 'baais': 22,
+  'teis': 23, 'teeis': 23,
+  'chaubis': 24, 'chaubees': 24,
+  'pachchis': 25, 'pachchees': 25, 'pachees': 25,
+  'dedh': 1.5, 'daidh': 1.5, 'dead': 1.5,
+  'dhaai': 2.5, 'dai': 2.5, 'dhai': 2.5, 'dhaaee': 2.5,
+  'aadha': 0.5, 'adha': 0.5,
+};
+
+// Comprehensive number parsing optimized for milk quantities (0.1 - 25.0 range)
 const parseSpokenNumber = (rawText: string): number | null => {
   let text = rawText.toLowerCase().trim();
 
@@ -33,7 +77,8 @@ const parseSpokenNumber = (rawText: string): number | null => {
   const directNum = text.match(/(\d+\.?\d*)/);
   if (directNum) {
     const val = parseFloat(directNum[1]);
-    if (!isNaN(val) && val >= 0 && val <= 999) return val;
+    const snapped = snapToValid(val);
+    if (snapped !== null) return snapped;
   }
 
   // --- 2. Hindi number words ---
@@ -43,15 +88,7 @@ const parseSpokenNumber = (rawText: string): number | null => {
     'दस': 10, 'ग्यारह': 11, 'बारह': 12, 'तेरह': 13, 'चौदह': 14,
     'पंद्रह': 15, 'सोलह': 16, 'सत्रह': 17, 'अठारह': 18, 'उन्नीस': 19,
     'बीस': 20, 'इक्कीस': 21, 'बाईस': 22, 'तेईस': 23, 'चौबीस': 24,
-    'पच्चीस': 25, 'छब्बीस': 26, 'सत्ताईस': 27, 'अट्ठाईस': 28, 'उनतीस': 29,
-    'तीस': 30, 'इकतीस': 31, 'बत्तीस': 32, 'तैंतीस': 33, 'चौंतीस': 34,
-    'पैंतीस': 35, 'छत्तीस': 36, 'सैंतीस': 37, 'अड़तीस': 38, 'उनतालीस': 39,
-    'चालीस': 40, 'इकतालीस': 41, 'बयालीस': 42, 'तैंतालीस': 43, 'चवालीस': 44,
-    'पैंतालीस': 45, 'छियालीस': 46, 'सैंतालीस': 47, 'अड़तालीस': 48, 'उनचास': 49,
-    'पचास': 50, 'इक्यावन': 51, 'बावन': 52, 'तिरपन': 53, 'चौवन': 54,
-    'पचपन': 55, 'छप्पन': 56, 'सत्तावन': 57, 'अट्ठावन': 58, 'उनसठ': 59,
-    'साठ': 60, 'सत्तर': 70, 'अस्सी': 80, 'नब्बे': 90,
-    'सौ': 100,
+    'पच्चीस': 25,
     'डेढ़': 1.5, 'ढाई': 2.5, 'आधा': 0.5, 'पौना': 0.75,
   };
 
@@ -61,8 +98,7 @@ const parseSpokenNumber = (rawText: string): number | null => {
     'પાંચ': 5, 'છ': 6, 'સાત': 7, 'આઠ': 8, 'નવ': 9,
     'દસ': 10, 'અગિયાર': 11, 'બાર': 12, 'તેર': 13, 'ચૌદ': 14,
     'પંદર': 15, 'સોળ': 16, 'સત્તર': 17, 'અઢાર': 18, 'ઓગણીસ': 19,
-    'વીસ': 20, 'ત્રીસ': 30, 'ચાલીસ': 40, 'પચાસ': 50,
-    'સાઠ': 60, 'સીત્તેર': 70, 'એંશી': 80, 'નેવું': 90, 'સો': 100,
+    'વીસ': 20, 'પચીસ': 25,
   };
 
   // English number words
@@ -71,25 +107,25 @@ const parseSpokenNumber = (rawText: string): number | null => {
     'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
     'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14,
     'fifteen': 15, 'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19,
-    'twenty': 20, 'thirty': 30, 'forty': 40, 'fifty': 50,
-    'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90,
-    'hundred': 100, 'half': 0.5, 'quarter': 0.25,
+    'twenty': 20, 'twenty one': 21, 'twenty two': 22, 'twenty three': 23,
+    'twenty four': 24, 'twenty five': 25,
+    'half': 0.5, 'quarter': 0.25,
   };
 
-  const allWords = { ...hindiMap, ...gujaratiMap, ...englishMap };
+  const allWords = { ...hindiMap, ...gujaratiMap, ...englishMap, ...phoneticFixes };
 
   // --- 3. Handle "साढ़े X" (X + 0.5) pattern ---
-  if (text.includes('साढ़े')) {
-    const rest = text.replace('साढ़े', '').trim();
+  if (text.includes('साढ़े') || text.includes('saadhe') || text.includes('sadhe')) {
+    const rest = text.replace(/साढ़े|saadhe|sadhe/g, '').trim();
     const base = parseSpokenNumber(rest);
-    if (base !== null) return base + 0.5;
+    if (base !== null) return snapToValid(base + 0.5);
   }
 
-  // --- 4. Handle "सवा X" (X * 1.25) pattern ---
-  if (text.includes('सवा')) {
-    const rest = text.replace('सवा', '').trim();
+  // --- 4. Handle "सवा X" (X + 0.25) pattern ---
+  if (text.includes('सवा') || text.includes('sawa') || text.includes('sava')) {
+    const rest = text.replace(/सवा|sawa|sava/g, '').trim();
     const base = parseSpokenNumber(rest);
-    if (base !== null) return base + 0.25;
+    if (base !== null) return snapToValid(base + 0.25);
   }
 
   // --- 5. Handle decimal spoken as "X point Y" / "X पॉइंट Y" ---
@@ -99,36 +135,39 @@ const parseSpokenNumber = (rawText: string): number | null => {
     const intPart = lookupWord(pointMatch[1].trim(), allWords);
     const decPart = lookupWord(pointMatch[2].trim(), allWords);
     if (intPart !== null && decPart !== null) {
-      // "6 point 5" = 6.5, "14 point 8" = 14.8
-      // If decPart is a single digit (0-9), treat as tenths
       if (decPart >= 0 && decPart <= 9) {
-        return intPart + decPart / 10;
+        return snapToValid(intPart + decPart / 10);
       }
-      // "6 point 45" = 6.45
       const decStr = decPart.toString();
-      return intPart + decPart / Math.pow(10, decStr.length);
+      return snapToValid(intPart + decPart / Math.pow(10, decStr.length));
     }
   }
 
   // --- 6. Direct word lookup ---
   const wordVal = lookupWord(text, allWords);
-  if (wordVal !== null) return wordVal;
+  if (wordVal !== null) return snapToValid(wordVal);
 
-  // --- 7. Handle compound like "twenty one" / "बीस एक" ---
+  // --- 7. Handle compound like "twenty one" / "बीस एक" or "X Y" → X.Y ---
   const words = text.split(/\s+/);
   if (words.length >= 2) {
-    // Try combining first and second word
     const first = lookupWord(words[0], allWords);
     const second = lookupWord(words[1], allWords);
     if (first !== null && second !== null) {
-      // "twenty one" = 21, but "six five" should be 6.5
+      // "twenty one" = 21
       if (first >= 20 && first % 10 === 0 && second >= 1 && second <= 9) {
-        return first + second;
+        return snapToValid(first + second);
       }
-      // Likely "X Y" meaning X.Y for milk quantities
-      if (first >= 1 && first <= 99 && second >= 0 && second <= 9) {
-        return first + second / 10;
+      // "6 5" → 6.5, "14 8" → 14.8 (common milk speech pattern: whole + decimal digit)
+      if (first >= 1 && first <= 25 && second >= 0 && second <= 9) {
+        return snapToValid(first + second / 10);
       }
+    }
+  }
+
+  // --- 8. Fuzzy: find closest phonetic match ---
+  for (const [key, val] of Object.entries(phoneticFixes)) {
+    if (text.includes(key)) {
+      return snapToValid(val);
     }
   }
 
