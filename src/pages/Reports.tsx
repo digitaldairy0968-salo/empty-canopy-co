@@ -178,11 +178,6 @@ const Reports: React.FC = () => {
                   <p className="text-2xl font-bold text-secondary-foreground">₹{supplierReportData.buyerTotalAmount.toFixed(0)}</p>
                 </div>
               </div>
-              {/* Profit */}
-              <div className="text-center p-4 bg-accent/10 rounded-xl">
-                <p className="text-sm text-muted-foreground">{language === 'hi' ? 'मुनाफा' : 'Profit'}</p>
-                <p className="text-2xl font-bold text-accent">₹{(supplierReportData.buyerTotalAmount - supplierReportData.supplierTotalAmount).toFixed(0)}</p>
-              </div>
 
               <div className="space-y-2 mt-4">
                 <h4 className="font-semibold text-sm text-muted-foreground">
