@@ -32,6 +32,7 @@ const SupplierDashboard: React.FC = () => {
   const { getSupplierByPhone, getSupplierStats, rateSettings, suppliers, refreshData } = useDairy();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { settings: fatSnfSettings } = useFatSnfRateSettings();
 
   const supplier = user ? getSupplierByPhone(user.phone) : undefined;
   const stats = supplier ? getSupplierStats(supplier.id, 10) : null;
