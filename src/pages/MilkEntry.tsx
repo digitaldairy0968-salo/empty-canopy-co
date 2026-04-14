@@ -872,10 +872,11 @@ const MilkEntry: React.FC = () => {
                   {language === 'hi' ? '🔊 नंबर को वापिस बोले' : '🔊 Repeat number'}
                 </span>
                 <Switch
-                  checked={localStorage.getItem('voiceRepeatEnabled') === 'true'}
+                  checked={voiceRepeatEnabled}
                   onCheckedChange={(checked) => {
                     speechSynthesis.cancel();
                     localStorage.setItem('voiceRepeatEnabled', checked.toString());
+                    setVoiceRepeatEnabled(checked);
                   }}
                   className="scale-75 transition-all duration-300"
                 />
