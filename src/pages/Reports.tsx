@@ -46,8 +46,10 @@ const Reports: React.FC = () => {
     const startStr = format(startDate, 'yyyy-MM-dd');
     const endStr = format(endDate, 'yyyy-MM-dd');
     
-    let grandTotalMilk = 0;
-    let grandTotalAmount = 0;
+    let supplierTotalMilk = 0;
+    let supplierTotalAmount = 0;
+    let buyerTotalMilk = 0;
+    let buyerTotalAmount = 0;
     
     const data = suppliers.map(supplier => {
       const stats = calculateSupplierStats({
@@ -62,13 +64,18 @@ const Reports: React.FC = () => {
         literRate: rateSettings.literRate || 50,
       });
       
-      grandTotalMilk += stats.totalMilk;
-      grandTotalAmount += stats.totalAmount;
+      if (supplier.animalType === 'buyer') {
+        buyerTotalMilk += stats.totalMilk;
+        buyerTotalAmount += stats.totalAmount;
+      } else {
+        supplierTotalMilk += stats.totalMilk;
+        supplierTotalAmount += stats.totalAmount;
+      }
       
       return { supplier, totalMilk: stats.totalMilk, avgFat: stats.avgFat, totalAmount: stats.totalAmount, entryCount: stats.entryCount };
-    }).filter(d => d.totalMilk > 0);
+    }).filter(d => d.totalMilk > 0 || d.totalAmount > 0);
     
-    return { data, grandTotalMilk, grandTotalAmount };
+    return { data, supplierTotalMilk, supplierTotalAmount, buyerTotalMilk, buyerTotalAmount };
   }, [suppliers, startDate, endDate, shiftFilter, defaultRate, fatSnfSettings, rateSettings]);
 
   
