@@ -228,13 +228,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let isMounted = true;
     let authSubscription: { unsubscribe: () => void } | null = null;
 
+    // If we have valid cached data, mark auth ready immediately for instant UI
+    if (cacheUserIsValid && initialAuthUser && initialUser) {
+      setIsAuthReady(true);
+    }
+
     const initializeSession = async () => {
-      const preAuthOk = await runPreAuthFetchTest();
-      if (!preAuthOk) {
-        clearAllCache();
-        if (isMounted) setIsAuthReady(true);
-        return;
-      }
+      // Run pre-auth test in background — don't block initialization
+      runPreAuthFetchTest().then((ok) => {
+        if (!ok && isMounted) {
+          console.warn('[AUTH] Pre-auth fetch failed, but continuing with cached data if available');
+        }
+      });
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, currentSession) => {
@@ -264,25 +269,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authSubscription = subscription;
 
       try {
-        const sessionUrl = `${SUPABASE_URL_RUNTIME}/auth/v1/user`;
-        updateLastAuthRequest(sessionUrl);
-        console.log('[AUTH_DIAG] Session check URL:', sessionUrl);
-
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('[AUTH_DIAG] getSession error:', error);
-          updateLastAuthRequest(
-            sessionUrl,
-            (error as any)?.status,
-            error.message,
-            detectBlockingHint(error.message)
-          );
+          console.error('[AUTH] getSession error:', error);
           clearAllCache();
           return;
         }
-
-        updateLastAuthRequest(sessionUrl, 200);
 
         if (!currentSession) {
           if (cachedAuth || cachedUser) {
@@ -295,14 +288,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setAuthUser(currentSession.user);
         await fetchUserProfile(currentSession.user.id, currentSession.user.email, currentSession.user.user_metadata);
       } catch (error: any) {
-        const rawMessage = error?.message || String(error);
-        console.error('[AUTH_DIAG] Error restoring auth session:', error);
-        updateLastAuthRequest(
-          `${SUPABASE_URL_RUNTIME}/auth/v1/user`,
-          undefined,
-          rawMessage,
-          detectBlockingHint(rawMessage)
-        );
+        console.error('[AUTH] Error restoring auth session:', error);
         clearAllCache();
       } finally {
         if (isMounted) setIsAuthReady(true);
@@ -336,98 +322,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const metaPhone = (userMetadata?.phone as string | undefined) ?? '';
       const metaRole = (userMetadata?.role as UserRole | undefined) ?? undefined;
 
-      // Get profile
-      let { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Run profile, role, and dairy queries IN PARALLEL
+      const [profileResult, roleResult, ownedDairyResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+        supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
+        email !== ADMIN_EMAIL
+          ? supabase.from('dairies').select('id, name, code').eq('owner_id', userId).maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
+      ]);
 
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
+      let profileData = profileResult.data;
+      let roleData = roleResult.data;
+
+      if (profileResult.error) {
+        console.error('Error fetching profile:', profileResult.error);
         profileData = null;
       }
+      if (roleResult.error) {
+        console.error('Error fetching role:', roleResult.error);
+      }
 
-      // Some environments may not have the signup trigger running; ensure profile exists.
+      // Backfill profile if missing (rare — signup trigger usually handles it)
       if (!profileData) {
         const { error: insertProfileError } = await supabase
           .from('profiles')
-          .insert({
-            user_id: userId,
-            name: metaName,
-            phone: metaPhone,
-          });
+          .insert({ user_id: userId, name: metaName, phone: metaPhone });
 
-        // Ignore duplicates; re-fetch.
         if (insertProfileError && !String(insertProfileError.message).toLowerCase().includes('duplicate')) {
           console.error('Error creating profile:', insertProfileError);
         }
 
-        const retry = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', userId)
-          .maybeSingle();
+        const retry = await supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle();
         profileData = retry.data ?? null;
       }
 
-      // Get role
-      let { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (roleError) {
-        console.error('Error fetching role:', roleError);
-      }
-
-      // Ensure role row exists (fallback) if missing.
+      // Backfill role if missing
       if (!roleData && metaRole) {
         const { error: upsertRoleError } = await supabase
           .from('user_roles')
-          .upsert(
-            { user_id: userId, role: metaRole as any },
-            { onConflict: 'user_id,role' }
-          );
+          .upsert({ user_id: userId, role: metaRole as any }, { onConflict: 'user_id,role' });
 
         if (upsertRoleError && !String(upsertRoleError.message).toLowerCase().includes('duplicate')) {
           console.error('Error creating role:', upsertRoleError);
         }
 
-        const retryRole = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .maybeSingle();
+        const retryRole = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
         roleData = retryRole.data ?? null;
       }
 
-      // Determine role - admin if email matches
+      // Determine role
       let role: UserRole = (roleData?.role as UserRole) || metaRole || 'owner';
       if (email === ADMIN_EMAIL) {
         role = 'admin';
       }
 
-      // Get dairy info (as owner or supplier)
+      // Dairy info
       let dairyId: string | undefined;
       let dairyName: string | undefined;
       let dairyCode: string | undefined;
 
       if (role !== 'admin') {
-        // Check if user is dairy owner
-        const { data: ownedDairy } = await supabase
-          .from('dairies')
-          .select('id, name, code')
-          .eq('owner_id', userId)
-          .maybeSingle();
-
+        const ownedDairy = ownedDairyResult.data;
         if (ownedDairy) {
           dairyId = ownedDairy.id;
           dairyName = ownedDairy.name;
           dairyCode = ownedDairy.code;
         } else {
-          // Check if user is a supplier with linked account
+          // Check supplier link
           const { data: supplierData } = await supabase
             .from('suppliers')
             .select('dairy_id, dairies(name, code)')
@@ -440,7 +401,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             dairyName = dairy?.name;
             dairyCode = dairy?.code;
           } else if (role === 'supplier' && profileData?.phone) {
-            // Auto-link supplier by phone number if not already linked
             const { data: unlinkedSupplier } = await supabase
               .from('suppliers')
               .select('id, dairy_id, dairies(name, code)')
@@ -449,12 +409,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               .maybeSingle();
 
             if (unlinkedSupplier) {
-              // Link the supplier record to this user
-              await supabase
-                .from('suppliers')
-                .update({ user_id: userId })
-                .eq('id', unlinkedSupplier.id);
-
+              await supabase.from('suppliers').update({ user_id: userId }).eq('id', unlinkedSupplier.id);
               dairyId = unlinkedSupplier.dairy_id;
               const dairy = unlinkedSupplier.dairies as unknown as { name: string; code: string };
               dairyName = dairy?.name;
@@ -464,7 +419,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       }
 
-      // Check if user has seen onboarding
       const hasSeenOnboarding = localStorage.getItem(CACHE_KEY_ONBOARDING) === 'true';
 
       setUser({
