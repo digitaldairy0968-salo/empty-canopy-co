@@ -246,14 +246,14 @@ const Auth: React.FC = () => {
   if (showResetPassword) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col items-center justify-center px-4">
-        <div className="dairy-card max-w-md w-full p-6 animate-slide-up">
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Lock className="w-8 h-8 text-primary-foreground" />
+        <div className="dairy-card max-w-md w-full p-5 animate-slide-up">
+          <div className="text-center mb-4">
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Lock className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold">{language === 'hi' ? 'नया पासवर्ड बनाएं' : 'Create New Password'}</h1>
+            <h1 className="text-xl font-bold">{language === 'hi' ? 'नया पासवर्ड बनाएं' : 'Create New Password'}</h1>
           </div>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -288,24 +288,24 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'नया पासवर्ड *' : 'New Password *'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-11 h-11"
                 minLength={6}
                 required
               />
             </div>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="password"
                 placeholder={language === 'hi' ? 'पासवर्ड दोबारा डालें *' : 'Confirm Password *'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-11 h-11"
                 minLength={6}
                 required
               />
             </div>
-            <Button type="submit" variant="dairy" className="w-full h-14 text-lg" disabled={isResettingPassword}>
+            <Button type="submit" variant="dairy" className="w-full h-11 text-base" disabled={isResettingPassword}>
               {isResettingPassword ? (language === 'hi' ? 'बदल रहा है...' : 'Changing...') : (language === 'hi' ? 'पासवर्ड बदलें' : 'Change Password')}
             </Button>
           </form>
