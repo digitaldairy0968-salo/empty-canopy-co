@@ -438,10 +438,10 @@ const Auth: React.FC = () => {
             </button>
           </div>
 
-          <div className="max-w-md mx-auto mt-8 text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/8 rounded-full">
-              <span className="text-lg">🥛</span>
-              <span className="text-sm text-muted-foreground">
+          <div className="max-w-md mx-auto mt-4 text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 rounded-full">
+              <span className="text-sm">🥛</span>
+              <span className="text-xs text-muted-foreground">
                 {language === 'hi' ? 'सही विकल्प चुनें' : language === 'gu' ? 'યોગ્ય વિકલ્પ પસંદ કરો' : 'Choose the right option'}
               </span>
             </div>
@@ -454,18 +454,17 @@ const Auth: React.FC = () => {
   // Auth Form Screen
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
-      <div className="relative pt-6 pb-6 px-4">
+      <div className="relative pt-4 pb-3 px-4">
         <button
           onClick={handleBack}
-          className="absolute left-4 top-6 w-11 h-11 rounded-2xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+          className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowLeft className="w-4 h-4 text-foreground" />
         </button>
         
-        <div className="text-center pt-8">
-          {/* Admin-uploaded auth image on login/signup too */}
-           {authPageImageUrl ? (
-            <div className="mb-3 relative mx-auto w-44 h-44">
+        <div className="text-center pt-6">
+          {authPageImageUrl ? (
+            <div className="mb-2 relative mx-auto w-28 h-28">
               <img 
                 src={authPageImageUrl} 
                 alt="Dairy" 
@@ -473,16 +472,16 @@ const Auth: React.FC = () => {
               />
             </div>
           ) : (
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Droplets className="w-8 h-8 text-primary-foreground" />
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Droplets className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
           )}
-          <h1 className="text-2xl font-bold">{t('appName')}</h1>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-xl">{role === 'owner' ? '👨‍🌾' : '🐄'}</span>
-            <span className="text-muted-foreground">
+          <h1 className="text-xl font-bold">{t('appName')}</h1>
+          <div className="flex items-center justify-center gap-1.5 mt-1">
+            <span className="text-lg">{role === 'owner' ? '👨‍🌾' : '🐄'}</span>
+            <span className="text-sm text-muted-foreground">
               {role === 'owner' 
                 ? (language === 'hi' ? 'डेयरी मालिक' : 'Dairy Owner')
                 : (language === 'hi' ? 'ग्राहक' : 'Customer')}
@@ -491,8 +490,8 @@ const Auth: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-4 pb-8">
-        <div className="dairy-card max-w-md mx-auto animate-slide-up p-6">
+      <div className="flex-1 px-4 pb-4">
+        <div className="dairy-card max-w-md mx-auto animate-slide-up p-4">
 
           {/* Mode Toggle */}
           <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-6">
