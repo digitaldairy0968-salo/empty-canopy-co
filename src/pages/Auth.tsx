@@ -494,12 +494,12 @@ const Auth: React.FC = () => {
         <div className="dairy-card max-w-md mx-auto animate-slide-up p-4">
 
           {/* Mode Toggle */}
-          <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-6">
+          <div className="flex gap-2 p-1 bg-muted rounded-xl mb-4">
             <button
               type="button"
               onClick={() => { setMode('signup'); setPhone(''); }}
               className={cn(
-                'flex-1 py-3 px-4 rounded-xl font-semibold transition-all text-sm',
+                'flex-1 py-2 px-3 rounded-lg font-semibold transition-all text-sm',
                 mode === 'signup' 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground'
@@ -511,7 +511,7 @@ const Auth: React.FC = () => {
               type="button"
               onClick={() => { setMode('login'); setPhone(''); }}
               className={cn(
-                'flex-1 py-3 px-4 rounded-xl font-semibold transition-all text-sm',
+                'flex-1 py-2 px-3 rounded-lg font-semibold transition-all text-sm',
                 mode === 'login' 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground'
