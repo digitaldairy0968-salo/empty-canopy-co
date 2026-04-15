@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getCachedAuthImage, fetchAndCacheAuthImage } from '@/utils/authImageCache';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import LanguageSelect from './LanguageSelect';
