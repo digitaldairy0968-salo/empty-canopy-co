@@ -379,27 +379,27 @@ const Auth: React.FC = () => {
               className="w-full dairy-card p-0 overflow-hidden hover:shadow-xl active:scale-[0.98] transition-all duration-300 border-2 border-transparent hover:border-primary/30 group"
             >
               <div className="flex">
-                <div className="w-28 h-32 flex-shrink-0 overflow-hidden">
+                <div className="w-22 h-24 flex-shrink-0 overflow-hidden" style={{width: '88px', height: '96px'}}>
                   <img 
                     src={farmerImage} 
                     alt="Dairy Owner" 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex-1 p-4 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">👨‍🌾</span>
-                    <h3 className="text-xl font-bold text-foreground">
+                <div className="flex-1 p-3 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-xl">👨‍🌾</span>
+                    <h3 className="text-lg font-bold text-foreground">
                       {language === 'hi' ? 'डेयरी मालिक' : language === 'gu' ? 'ડેરી માલિક' : 'Dairy Owner'}
                     </h3>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {language === 'hi' ? 'डेयरी बनाएं और ग्राहक जोड़ें' : language === 'gu' ? 'ડેરી બનાવો અને ગ્રાહક ઉમેરો' : 'Create dairy and add customers'}
                   </p>
                 </div>
-                <div className="flex items-center pr-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <span>→</span>
+                <div className="flex items-center pr-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <span className="text-sm">→</span>
                   </div>
                 </div>
               </div>
