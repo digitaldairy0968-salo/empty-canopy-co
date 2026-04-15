@@ -340,18 +340,16 @@ const Auth: React.FC = () => {
   if (step === 'role-selection') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
-        <div className="relative pt-6 pb-8 px-4">
-          {/* Back button to go back to language selection */}
+        <div className="relative pt-4 pb-4 px-4">
           <button
             onClick={() => setStep('language-selection')}
-            className="absolute left-4 top-6 w-11 h-11 rounded-2xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors z-10"
+            className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors z-10"
           >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            <ArrowLeft className="w-4 h-4 text-foreground" />
           </button>
-          <div className="text-center pt-4">
-            {/* Admin-uploaded animated image above logo */}
+          <div className="text-center pt-2">
             {authPageImageUrl && (
-              <div className="mb-4 relative mx-auto w-44 h-44">
+              <div className="mb-2 relative mx-auto w-28 h-28">
                 <img 
                   src={authPageImageUrl} 
                   alt="Dairy" 
@@ -360,21 +358,21 @@ const Auth: React.FC = () => {
               </div>
             )}
             {!authPageImageUrl && (
-              <div className="flex justify-center mb-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
-                  <Droplets className="w-8 h-8 text-primary-foreground" />
+              <div className="flex justify-center mb-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
+                  <Droplets className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>
             )}
-            <h1 className="text-2xl font-bold">{t('appName')}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-xl font-bold">{t('appName')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {language === 'hi' ? 'आप कौन हैं?' : language === 'gu' ? 'તમે કોણ છો?' : 'Who are you?'}
             </p>
           </div>
         </div>
 
-        <div className="flex-1 px-4 py-4">
-          <div className="max-w-md mx-auto space-y-4 animate-slide-up">
+        <div className="flex-1 px-4 py-2">
+          <div className="max-w-md mx-auto space-y-3 animate-slide-up">
             {/* Dairy Owner Card */}
             <button
               onClick={() => handleRoleSelect('owner')}
