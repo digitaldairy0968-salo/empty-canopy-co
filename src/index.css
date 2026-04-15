@@ -159,7 +159,7 @@
 
 @layer components {
   .dairy-card {
-    @apply bg-card rounded-3xl p-5 border border-border/50 relative overflow-hidden;
+    @apply bg-card rounded-2xl p-4 border border-border/50 relative overflow-hidden;
     background: var(--gradient-card);
     box-shadow: var(--shadow-card);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -194,7 +194,7 @@
   }
 
   .dairy-button {
-    @apply px-6 py-4 rounded-2xl font-semibold text-lg transition-all duration-200;
+    @apply px-5 py-3 rounded-xl font-semibold text-base transition-all duration-200;
     box-shadow: var(--shadow-button);
   }
 
@@ -207,7 +207,7 @@
   }
 
   .dairy-input {
-    @apply w-full px-4 py-4 text-lg rounded-2xl border-2 border-input bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200;
+    @apply w-full px-3 py-2.5 text-sm rounded-xl border-2 border-input bg-background focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200;
   }
 
   .dairy-header {
