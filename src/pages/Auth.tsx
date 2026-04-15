@@ -280,7 +280,7 @@ const Auth: React.FC = () => {
             } finally {
               setIsResettingPassword(false);
             }
-          }} className="space-y-4">
+          }} className="space-y-3">
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -521,7 +521,7 @@ const Auth: React.FC = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {mode === 'signup' && (
               <>
                 <div className="relative">
@@ -531,7 +531,7 @@ const Auth: React.FC = () => {
                     placeholder={language === 'hi' ? 'नाम *' : 'Name *'}
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="dairy-input pl-12 h-14"
+                    className="dairy-input pl-10 h-11"
                     required
                   />
                 </div>
@@ -543,7 +543,7 @@ const Auth: React.FC = () => {
                     placeholder={language === 'hi' ? 'फोन नंबर (10 अंक) *' : 'Phone (10 digits) *'}
                     value={phone}
                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="dairy-input pl-12 h-14"
+                    className="dairy-input pl-10 h-11"
                     required
                     maxLength={10}
                   />
@@ -568,7 +568,7 @@ const Auth: React.FC = () => {
                       placeholder={language === 'hi' ? 'रेफरल कोड (वैकल्पिक)' : 'Referral Code (optional)'}
                       value={referralCode}
                       onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 9))}
-                      className="dairy-input pl-12 h-14"
+                      className="dairy-input pl-10 h-11"
                       maxLength={9}
                     />
                   </div>
@@ -583,7 +583,7 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'ईमेल *' : 'Email *'}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-10 h-11"
                 required
               />
             </div>
@@ -595,7 +595,7 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'पासवर्ड *' : 'Password *'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="dairy-input pl-12 pr-12 h-14"
+                className="dairy-input pl-10 pr-10 h-11"
                 minLength={6}
                 required
               />
@@ -611,7 +611,7 @@ const Auth: React.FC = () => {
             <Button
               type="submit"
               variant="dairy"
-              className="w-full h-14 text-lg"
+              className="w-full h-11 text-base"
               disabled={isLoading}
             >
               {isLoading ? (
