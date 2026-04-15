@@ -4,6 +4,7 @@ import { LogOut, Settings, Calculator, Menu, Droplets } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getCachedAuthImage, fetchAndCacheAuthImage } from '@/utils/authImageCache';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,19 +17,12 @@ const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [authImageUrl, setAuthImageUrl] = useState<string | null>(() => {
-    return sessionStorage.getItem('auth_page_image_url') || null;
-  });
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(getCachedAuthImage);
 
   useEffect(() => {
     if (!authImageUrl) {
-      import('@/integrations/supabase/client').then(({ supabase }) => {
-        supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle().then(({ data }) => {
-          if (data?.auth_page_image_url) {
-            setAuthImageUrl(data.auth_page_image_url);
-            sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url);
-          }
-        });
+      fetchAndCacheAuthImage().then((url) => {
+        if (url) setAuthImageUrl(url);
       });
     }
   }, []);

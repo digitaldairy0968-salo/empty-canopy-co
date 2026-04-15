@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/integrations/supabase/client';
+import { getCachedAuthImage, fetchAndCacheAuthImage } from '@/utils/authImageCache';
 type Language = 'hi' | 'gu' | 'en';
 
 interface LanguageSelectProps {
@@ -9,29 +9,17 @@ interface LanguageSelectProps {
 
 const LanguageSelect: React.FC<LanguageSelectProps> = ({ onComplete }) => {
   const { setLanguage } = useLanguage();
-  const [authImageUrl, setAuthImageUrl] = useState<string | null>(() => {
-    return sessionStorage.getItem('auth_page_image_url') || null;
-  });
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [authImageUrl, setAuthImageUrl] = useState<string | null>(getCachedAuthImage);
+  const [imageLoaded, setImageLoaded] = useState(!!authImageUrl);
 
   useEffect(() => {
-    const fetchImage = async () => {
-      const { data } = await supabase.from('subscription_settings').select('auth_page_image_url').limit(1).maybeSingle();
-      if (data?.auth_page_image_url) {
-        // Preload image before showing
-        const img = new Image();
-        img.onload = () => {
-          setAuthImageUrl(data.auth_page_image_url);
+    if (!authImageUrl) {
+      fetchAndCacheAuthImage().then((url) => {
+        if (url) {
+          setAuthImageUrl(url);
           setImageLoaded(true);
-          sessionStorage.setItem('auth_page_image_url', data.auth_page_image_url!);
-        };
-        img.src = data.auth_page_image_url;
-      }
-    };
-    if (authImageUrl) {
-      setImageLoaded(true);
-    } else {
-      fetchImage();
+        }
+      });
     }
   }, []);
 

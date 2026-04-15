@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getCachedAuthImage, fetchAndCacheAuthImage } from '@/utils/authImageCache';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import LanguageSelect from './LanguageSelect';
@@ -30,10 +31,7 @@ const Auth: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(() => {
-    const cached = sessionStorage.getItem('auth_page_image_url');
-    return cached || null;
-  });
+  const [authPageImageUrl, setAuthPageImageUrl] = useState<string | null>(getCachedAuthImage);
 
   // Determine initial step based on pending state
   const getInitialStep = (): AuthStep => {
@@ -60,18 +58,11 @@ const Auth: React.FC = () => {
 
   // Fetch admin-uploaded auth page image
   useEffect(() => {
-    const fetchAuthImage = async () => {
-      const { data } = await supabase
-        .from('subscription_settings')
-        .select('auth_page_image_url')
-        .limit(1)
-        .maybeSingle();
-      if ((data as any)?.auth_page_image_url) {
-        setAuthPageImageUrl((data as any).auth_page_image_url);
-        sessionStorage.setItem('auth_page_image_url', (data as any).auth_page_image_url);
-      }
-    };
-    fetchAuthImage();
+    if (!authPageImageUrl) {
+      fetchAndCacheAuthImage().then((url) => {
+        if (url) setAuthPageImageUrl(url);
+      });
+    }
   }, []);
 
   // Check if this is a password recovery redirect
