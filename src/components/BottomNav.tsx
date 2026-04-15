@@ -31,7 +31,7 @@ const BottomNav: React.FC = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/98 backdrop-blur-xl border-t border-border/60 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.08)] z-50">
-      <div className="flex items-center justify-around max-w-lg mx-auto py-2 px-2">
+      <div className="flex items-center justify-around max-w-lg mx-auto py-1.5 px-1">
         {navItems.map((item, index) => {
           const isActive = location.pathname === item.path;
           return (
@@ -39,23 +39,15 @@ const BottomNav: React.FC = () => {
               key={`${item.path}-${index}`}
               onClick={() => navigate(item.path)}
               className={cn(
-                'flex flex-col items-center gap-1 px-3 py-2.5 rounded-2xl transition-all duration-300 min-w-[56px] touch-target',
+                'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-300 min-w-[48px]',
                 isActive
                   ? 'text-primary bg-primary/12'
                   : 'text-muted-foreground hover:text-foreground active:scale-95'
               )}
             >
-              <div className={cn(
-                'relative transition-all duration-300',
-                isActive && 'scale-110'
-              )}>
-                <item.icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
-                )}
-              </div>
+              <item.icon className="h-4.5 w-4.5" strokeWidth={isActive ? 2.5 : 2} style={{ width: 18, height: 18 }} />
               <span className={cn(
-                'text-[10px] font-medium leading-tight',
+                'text-[9px] font-medium leading-tight',
                 isActive && 'font-semibold text-primary'
               )}>
                 {item.label}
@@ -64,7 +56,6 @@ const BottomNav: React.FC = () => {
           );
         })}
       </div>
-      {/* Safe area padding for iOS */}
       <div className="h-safe-area-inset-bottom bg-card" />
     </nav>
   );

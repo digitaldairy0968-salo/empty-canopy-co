@@ -246,14 +246,14 @@ const Auth: React.FC = () => {
   if (showResetPassword) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col items-center justify-center px-4">
-        <div className="dairy-card max-w-md w-full p-6 animate-slide-up">
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Lock className="w-8 h-8 text-primary-foreground" />
+        <div className="dairy-card max-w-md w-full p-5 animate-slide-up">
+          <div className="text-center mb-4">
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Lock className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
-            <h1 className="text-2xl font-bold">{language === 'hi' ? 'नया पासवर्ड बनाएं' : 'Create New Password'}</h1>
+            <h1 className="text-xl font-bold">{language === 'hi' ? 'नया पासवर्ड बनाएं' : 'Create New Password'}</h1>
           </div>
           <form onSubmit={async (e) => {
             e.preventDefault();
@@ -280,7 +280,7 @@ const Auth: React.FC = () => {
             } finally {
               setIsResettingPassword(false);
             }
-          }} className="space-y-4">
+          }} className="space-y-3">
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
@@ -288,24 +288,24 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'नया पासवर्ड *' : 'New Password *'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-11 h-11"
                 minLength={6}
                 required
               />
             </div>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="password"
                 placeholder={language === 'hi' ? 'पासवर्ड दोबारा डालें *' : 'Confirm Password *'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-11 h-11"
                 minLength={6}
                 required
               />
             </div>
-            <Button type="submit" variant="dairy" className="w-full h-14 text-lg" disabled={isResettingPassword}>
+            <Button type="submit" variant="dairy" className="w-full h-11 text-base" disabled={isResettingPassword}>
               {isResettingPassword ? (language === 'hi' ? 'बदल रहा है...' : 'Changing...') : (language === 'hi' ? 'पासवर्ड बदलें' : 'Change Password')}
             </Button>
           </form>
@@ -340,18 +340,16 @@ const Auth: React.FC = () => {
   if (step === 'role-selection') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
-        <div className="relative pt-6 pb-8 px-4">
-          {/* Back button to go back to language selection */}
+        <div className="relative pt-4 pb-4 px-4">
           <button
             onClick={() => setStep('language-selection')}
-            className="absolute left-4 top-6 w-11 h-11 rounded-2xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors z-10"
+            className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors z-10"
           >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
+            <ArrowLeft className="w-4 h-4 text-foreground" />
           </button>
-          <div className="text-center pt-4">
-            {/* Admin-uploaded animated image above logo */}
+          <div className="text-center pt-2">
             {authPageImageUrl && (
-              <div className="mb-4 relative mx-auto w-44 h-44">
+              <div className="mb-2 relative mx-auto w-28 h-28">
                 <img 
                   src={authPageImageUrl} 
                   alt="Dairy" 
@@ -360,48 +358,48 @@ const Auth: React.FC = () => {
               </div>
             )}
             {!authPageImageUrl && (
-              <div className="flex justify-center mb-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
-                  <Droplets className="w-8 h-8 text-primary-foreground" />
+              <div className="flex justify-center mb-2">
+                <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 animate-bounce-gentle">
+                  <Droplets className="w-6 h-6 text-primary-foreground" />
                 </div>
               </div>
             )}
-            <h1 className="text-2xl font-bold">{t('appName')}</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-xl font-bold">{t('appName')}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {language === 'hi' ? 'आप कौन हैं?' : language === 'gu' ? 'તમે કોણ છો?' : 'Who are you?'}
             </p>
           </div>
         </div>
 
-        <div className="flex-1 px-4 py-4">
-          <div className="max-w-md mx-auto space-y-4 animate-slide-up">
+        <div className="flex-1 px-4 py-2">
+          <div className="max-w-md mx-auto space-y-3 animate-slide-up">
             {/* Dairy Owner Card */}
             <button
               onClick={() => handleRoleSelect('owner')}
               className="w-full dairy-card p-0 overflow-hidden hover:shadow-xl active:scale-[0.98] transition-all duration-300 border-2 border-transparent hover:border-primary/30 group"
             >
               <div className="flex">
-                <div className="w-28 h-32 flex-shrink-0 overflow-hidden">
+                <div className="w-22 h-24 flex-shrink-0 overflow-hidden" style={{width: '88px', height: '96px'}}>
                   <img 
                     src={farmerImage} 
                     alt="Dairy Owner" 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex-1 p-4 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">👨‍🌾</span>
-                    <h3 className="text-xl font-bold text-foreground">
+                <div className="flex-1 p-3 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-xl">👨‍🌾</span>
+                    <h3 className="text-lg font-bold text-foreground">
                       {language === 'hi' ? 'डेयरी मालिक' : language === 'gu' ? 'ડેરી માલિક' : 'Dairy Owner'}
                     </h3>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {language === 'hi' ? 'डेयरी बनाएं और ग्राहक जोड़ें' : language === 'gu' ? 'ડેરી બનાવો અને ગ્રાહક ઉમેરો' : 'Create dairy and add customers'}
                   </p>
                 </div>
-                <div className="flex items-center pr-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                    <span>→</span>
+                <div className="flex items-center pr-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-all">
+                    <span className="text-sm">→</span>
                   </div>
                 </div>
               </div>
@@ -413,37 +411,37 @@ const Auth: React.FC = () => {
               className="w-full dairy-card p-0 overflow-hidden hover:shadow-xl active:scale-[0.98] transition-all duration-300 border-2 border-transparent hover:border-accent/30 group"
             >
               <div className="flex">
-                <div className="w-28 h-32 flex-shrink-0 overflow-hidden">
+                <div className="w-22 h-24 flex-shrink-0 overflow-hidden" style={{width: '88px', height: '96px'}}>
                   <img 
                     src={cowImage} 
                     alt="Customer" 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex-1 p-4 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">🐄</span>
-                    <h3 className="text-xl font-bold text-foreground">
+                <div className="flex-1 p-3 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-xl">🐄</span>
+                    <h3 className="text-lg font-bold text-foreground">
                       {language === 'hi' ? 'ग्राहक' : language === 'gu' ? 'ગ્રાહક' : 'Customer'}
                     </h3>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {language === 'hi' ? 'डेयरी से जुड़ें और अपना कार्ड देखें' : language === 'gu' ? 'ડેરી સાથે જોડાવ અને તમારું કાર્ડ જુઓ' : 'Join dairy and view your card'}
                   </p>
                 </div>
-                <div className="flex items-center pr-4">
-                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent group-hover:text-accent-foreground transition-all">
-                    <span>→</span>
+                <div className="flex items-center pr-3">
+                  <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent group-hover:text-accent-foreground transition-all">
+                    <span className="text-sm">→</span>
                   </div>
                 </div>
               </div>
             </button>
           </div>
 
-          <div className="max-w-md mx-auto mt-8 text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/8 rounded-full">
-              <span className="text-lg">🥛</span>
-              <span className="text-sm text-muted-foreground">
+          <div className="max-w-md mx-auto mt-4 text-center animate-fade-in" style={{ animationDelay: '300ms' }}>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/8 rounded-full">
+              <span className="text-sm">🥛</span>
+              <span className="text-xs text-muted-foreground">
                 {language === 'hi' ? 'सही विकल्प चुनें' : language === 'gu' ? 'યોગ્ય વિકલ્પ પસંદ કરો' : 'Choose the right option'}
               </span>
             </div>
@@ -456,18 +454,17 @@ const Auth: React.FC = () => {
   // Auth Form Screen
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-dairy-cream flex flex-col">
-      <div className="relative pt-6 pb-6 px-4">
+      <div className="relative pt-4 pb-3 px-4">
         <button
           onClick={handleBack}
-          className="absolute left-4 top-6 w-11 h-11 rounded-2xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+          className="absolute left-4 top-4 w-9 h-9 rounded-xl bg-card border border-border/50 shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowLeft className="w-4 h-4 text-foreground" />
         </button>
         
-        <div className="text-center pt-8">
-          {/* Admin-uploaded auth image on login/signup too */}
-           {authPageImageUrl ? (
-            <div className="mb-3 relative mx-auto w-44 h-44">
+        <div className="text-center pt-6">
+          {authPageImageUrl ? (
+            <div className="mb-2 relative mx-auto w-28 h-28">
               <img 
                 src={authPageImageUrl} 
                 alt="Dairy" 
@@ -475,16 +472,16 @@ const Auth: React.FC = () => {
               />
             </div>
           ) : (
-            <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
-                <Droplets className="w-8 h-8 text-primary-foreground" />
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <Droplets className="w-6 h-6 text-primary-foreground" />
               </div>
             </div>
           )}
-          <h1 className="text-2xl font-bold">{t('appName')}</h1>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <span className="text-xl">{role === 'owner' ? '👨‍🌾' : '🐄'}</span>
-            <span className="text-muted-foreground">
+          <h1 className="text-xl font-bold">{t('appName')}</h1>
+          <div className="flex items-center justify-center gap-1.5 mt-1">
+            <span className="text-lg">{role === 'owner' ? '👨‍🌾' : '🐄'}</span>
+            <span className="text-sm text-muted-foreground">
               {role === 'owner' 
                 ? (language === 'hi' ? 'डेयरी मालिक' : 'Dairy Owner')
                 : (language === 'hi' ? 'ग्राहक' : 'Customer')}
@@ -493,16 +490,16 @@ const Auth: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-4 pb-8">
-        <div className="dairy-card max-w-md mx-auto animate-slide-up p-6">
+      <div className="flex-1 px-4 pb-4">
+        <div className="dairy-card max-w-md mx-auto animate-slide-up p-4">
 
           {/* Mode Toggle */}
-          <div className="flex gap-2 p-1 bg-muted rounded-2xl mb-6">
+          <div className="flex gap-2 p-1 bg-muted rounded-xl mb-4">
             <button
               type="button"
               onClick={() => { setMode('signup'); setPhone(''); }}
               className={cn(
-                'flex-1 py-3 px-4 rounded-xl font-semibold transition-all text-sm',
+                'flex-1 py-2 px-3 rounded-lg font-semibold transition-all text-sm',
                 mode === 'signup' 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground'
@@ -514,7 +511,7 @@ const Auth: React.FC = () => {
               type="button"
               onClick={() => { setMode('login'); setPhone(''); }}
               className={cn(
-                'flex-1 py-3 px-4 rounded-xl font-semibold transition-all text-sm',
+                'flex-1 py-2 px-3 rounded-lg font-semibold transition-all text-sm',
                 mode === 'login' 
                   ? 'bg-primary text-primary-foreground shadow-md' 
                   : 'text-muted-foreground hover:text-foreground'
@@ -524,7 +521,7 @@ const Auth: React.FC = () => {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {mode === 'signup' && (
               <>
                 <div className="relative">
@@ -534,7 +531,7 @@ const Auth: React.FC = () => {
                     placeholder={language === 'hi' ? 'नाम *' : 'Name *'}
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    className="dairy-input pl-12 h-14"
+                    className="dairy-input pl-10 h-11"
                     required
                   />
                 </div>
@@ -546,7 +543,7 @@ const Auth: React.FC = () => {
                     placeholder={language === 'hi' ? 'फोन नंबर (10 अंक) *' : 'Phone (10 digits) *'}
                     value={phone}
                     onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="dairy-input pl-12 h-14"
+                    className="dairy-input pl-10 h-11"
                     required
                     maxLength={10}
                   />
@@ -571,7 +568,7 @@ const Auth: React.FC = () => {
                       placeholder={language === 'hi' ? 'रेफरल कोड (वैकल्पिक)' : 'Referral Code (optional)'}
                       value={referralCode}
                       onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 9))}
-                      className="dairy-input pl-12 h-14"
+                      className="dairy-input pl-10 h-11"
                       maxLength={9}
                     />
                   </div>
@@ -586,7 +583,7 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'ईमेल *' : 'Email *'}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="dairy-input pl-12 h-14"
+                className="dairy-input pl-10 h-11"
                 required
               />
             </div>
@@ -598,7 +595,7 @@ const Auth: React.FC = () => {
                 placeholder={language === 'hi' ? 'पासवर्ड *' : 'Password *'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="dairy-input pl-12 pr-12 h-14"
+                className="dairy-input pl-10 pr-10 h-11"
                 minLength={6}
                 required
               />
@@ -614,7 +611,7 @@ const Auth: React.FC = () => {
             <Button
               type="submit"
               variant="dairy"
-              className="w-full h-14 text-lg"
+              className="w-full h-11 text-base"
               disabled={isLoading}
             >
               {isLoading ? (
