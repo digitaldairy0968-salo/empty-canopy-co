@@ -58,18 +58,11 @@ const Auth: React.FC = () => {
 
   // Fetch admin-uploaded auth page image
   useEffect(() => {
-    const fetchAuthImage = async () => {
-      const { data } = await supabase
-        .from('subscription_settings')
-        .select('auth_page_image_url')
-        .limit(1)
-        .maybeSingle();
-      if ((data as any)?.auth_page_image_url) {
-        setAuthPageImageUrl((data as any).auth_page_image_url);
-        sessionStorage.setItem('auth_page_image_url', (data as any).auth_page_image_url);
-      }
-    };
-    fetchAuthImage();
+    if (!authPageImageUrl) {
+      fetchAndCacheAuthImage().then((url) => {
+        if (url) setAuthPageImageUrl(url);
+      });
+    }
   }, []);
 
   // Check if this is a password recovery redirect
