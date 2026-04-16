@@ -781,6 +781,7 @@ const MilkEntry: React.FC = () => {
                   placeholder={language === 'hi' ? 'कोड...' : language === 'gu' ? 'કોડ...' : 'Code...'}
                   value={supplierCode}
                   onChange={e => handleSupplierCodeChange(e.target.value)}
+                  onFocus={handleInputFocus}
                   className="h-10 text-lg font-bold text-center rounded-xl border-2 border-border/60 focus:border-primary bg-background pl-8"
                 />
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -922,6 +923,7 @@ const MilkEntry: React.FC = () => {
                 placeholder="0.0"
                 value={milkQty}
                 onChange={e => setMilkQty(e.target.value)}
+                onFocus={handleInputFocus}
                 className={cn(
                   "h-11 text-lg font-bold text-center rounded-lg border-2 bg-background",
                   voiceEntry.isListening
@@ -941,6 +943,7 @@ const MilkEntry: React.FC = () => {
                   placeholder="0"
                   value={buyerPrice}
                   onChange={e => setBuyerPrice(e.target.value)}
+                  onFocus={handleInputFocus}
                   className="h-11 text-lg font-bold text-center rounded-lg border-2 border-primary/30 focus:border-primary bg-background"
                 />
               </div>
@@ -958,6 +961,7 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={fatValue}
                     onChange={e => setFatValue(e.target.value)}
+                    onFocus={handleInputFocus}
                     className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
@@ -972,6 +976,7 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={snfValue}
                     onChange={e => setSnfValue(e.target.value)}
+                    onFocus={handleInputFocus}
                     className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
@@ -986,6 +991,7 @@ const MilkEntry: React.FC = () => {
                     placeholder="0.0"
                     value={lrValue}
                     onChange={e => setLrValue(e.target.value)}
+                    onFocus={handleInputFocus}
                     className="h-11 text-lg font-bold text-center rounded-lg border-2"
                   />
                 </div>
