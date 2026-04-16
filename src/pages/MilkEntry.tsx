@@ -721,9 +721,9 @@ const MilkEntry: React.FC = () => {
             </div>
           )}
           
-          {/* Header with shift toggle - Compact */}
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">
+          {/* Header with shift toggle - Ultra Compact */}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-bold text-foreground">
               {language === 'hi' ? 'दूध एंट्री' : language === 'gu' ? 'દૂધ એન્ટ્રી' : 'Milk Entry'}
             </h2>
             <div className="flex bg-muted rounded-full p-0.5">
@@ -813,103 +813,68 @@ const MilkEntry: React.FC = () => {
             </Select>
           </div>
 
-          {/* Selected Supplier Badge - Compact */}
+          {/* Selected Supplier Badge - Minimal */}
           {selectedSupplier && (
-            <div className="mb-3 p-2 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border border-primary/20 animate-scale-in">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-sm">👤</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-sm text-foreground">{selectedSupplier.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    #{selectedSupplier.code} {selectedSupplier.villageName && `• ${selectedSupplier.villageName}`}
-                  </p>
-                </div>
-              </div>
+            <div className="mb-2 px-2 py-1.5 bg-primary/10 rounded-lg border border-primary/20 flex items-center gap-2">
+              <span className="text-xs">👤</span>
+              <p className="font-bold text-xs text-foreground flex-1 truncate">{selectedSupplier.name}</p>
+              <p className="text-[10px] text-muted-foreground">#{selectedSupplier.code}</p>
             </div>
           )}
 
-          {/* Voice Entry Microphone Toggle - only show if ownerSettings.showVoiceEntry is true */}
+          {/* Voice Entry - Minimal */}
           {voiceEntry.isSupported && ownerSettings.showVoiceEntry && (
             <div className={cn(
-              "mb-3 p-3 rounded-xl border transition-all duration-300",
+              "mb-2 p-2 rounded-lg border transition-all duration-200",
               voiceEntry.isListening 
-                ? "bg-destructive/5 border-destructive/30 shadow-lg shadow-destructive/10" 
+                ? "bg-destructive/5 border-destructive/30" 
                 : "bg-muted/30 border-border/40"
             )}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   {voiceEntry.isListening ? (
-                    <div className="relative">
-                      <Mic className="h-5 w-5 text-destructive animate-pulse" />
-                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-destructive rounded-full animate-ping" />
-                    </div>
+                    <Mic className="h-4 w-4 text-destructive animate-pulse" />
                   ) : (
-                    <MicOff className="h-5 w-5 text-muted-foreground" />
+                    <MicOff className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <div>
-                    <p className="text-sm font-semibold">
-                      {language === 'hi' ? '🎤 आवाज से एंट्री करें' : language === 'gu' ? '🎤 અવાજથી એન્ટ્રી કરો' : '🎤 Voice Entry'}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {language === 'hi' 
-                        ? 'बोलें: "6.5 लीटर", "4 फैट", "8.5 SNF"' 
-                        : language === 'gu'
-                        ? 'બોલો: "6.5 લીટર", "4 ફેટ", "8.5 SNF"'
-                        : 'Say: "6.5 liters", "4 fat", "8.5 SNF"'}
-                    </p>
-                  </div>
+                  <span className="text-xs font-semibold">
+                    {language === 'hi' ? '🎤 आवाज एंट्री' : '🎤 Voice'}
+                  </span>
                 </div>
-                <Switch
-                  checked={voiceEntry.isListening}
-                  onCheckedChange={(checked) => {
-                    speechSynthesis.cancel();
-                    if (checked) {
-                      voiceEntry.startListening();
-                    } else {
-                      voiceEntry.stopListening();
-                    }
-                  }}
-                  className="transition-all duration-300 data-[state=checked]:bg-destructive"
-                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      speechSynthesis.cancel();
+                      const next = !voiceRepeatEnabled;
+                      localStorage.setItem('voiceRepeatEnabled', next.toString());
+                      setVoiceRepeatEnabled(next);
+                    }}
+                    className={cn("text-[10px] px-1.5 py-0.5 rounded", voiceRepeatEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground")}
+                  >
+                    🔊
+                  </button>
+                  <Switch
+                    checked={voiceEntry.isListening}
+                    onCheckedChange={(checked) => {
+                      speechSynthesis.cancel();
+                      checked ? voiceEntry.startListening() : voiceEntry.stopListening();
+                    }}
+                    className="scale-75 data-[state=checked]:bg-destructive"
+                  />
+                </div>
               </div>
-              
-              {/* Number ko vapis bole toggle */}
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-                <span className="text-xs text-muted-foreground">
-                  {language === 'hi' ? '🔊 नंबर को वापिस बोले' : '🔊 Repeat number'}
-                </span>
-                <Switch
-                  checked={voiceRepeatEnabled}
-                  onCheckedChange={(checked) => {
-                    speechSynthesis.cancel();
-                    localStorage.setItem('voiceRepeatEnabled', checked.toString());
-                    setVoiceRepeatEnabled(checked);
-                  }}
-                  className="scale-75 transition-all duration-300"
-                />
-              </div>
-              
-              {/* Transcript display */}
               {voiceEntry.isListening && voiceEntry.transcript && (
-                <div className="mt-2 p-2 bg-background/80 rounded-lg text-center text-sm text-foreground border border-border/30">
-                  🎙️ "{voiceEntry.transcript}"
-                </div>
+                <p className="mt-1 text-[10px] text-center text-muted-foreground truncate">🎙️ "{voiceEntry.transcript}"</p>
               )}
-              
-              {/* Error display */}
               {voiceEntry.error && (
-                <div className="mt-2 p-2 bg-destructive/10 rounded-lg text-center text-xs text-destructive">
-                  {voiceEntry.error}
-                </div>
+                <p className="mt-1 text-[10px] text-center text-destructive">{voiceEntry.error}</p>
               )}
             </div>
           )}
 
-          {/* Milk & Fat on top, SNF & LR on bottom - 2x2 grid (buyers get milk + price) */}
-          <div className={cn("grid gap-2 mb-3", isBuyer(selectedSupplier) ? "grid-cols-2" : "grid-cols-2")}>
-            <div className="space-y-0.5">
+          {/* Input Grid - Ultra Compact */}
+          <div className={cn("grid gap-1.5 mb-2", "grid-cols-2")}>
+            <div>
               <label className={cn(
                 "text-[10px] font-medium block text-center",
                 voiceEntry.isListening ? "text-accent font-bold" : "text-muted-foreground"
@@ -925,7 +890,7 @@ const MilkEntry: React.FC = () => {
                 onChange={e => setMilkQty(e.target.value)}
                 onFocus={handleInputFocus}
                 className={cn(
-                  "h-11 text-lg font-bold text-center rounded-lg border-2 bg-background",
+                  "h-10 text-base font-bold text-center rounded-lg border-2 bg-background",
                   voiceEntry.isListening
                     ? "border-accent ring-2 ring-accent/30" 
                     : "border-primary/30 focus:border-primary"
@@ -933,7 +898,7 @@ const MilkEntry: React.FC = () => {
               />
             </div>
             {isBuyer(selectedSupplier) && (
-              <div className="space-y-0.5">
+              <div>
                 <label className="text-[10px] font-medium block text-center text-muted-foreground">
                   {language === 'hi' ? 'रकम (₹)' : 'Price (₹)'}
                 </label>
@@ -944,56 +909,23 @@ const MilkEntry: React.FC = () => {
                   value={buyerPrice}
                   onChange={e => setBuyerPrice(e.target.value)}
                   onFocus={handleInputFocus}
-                  className="h-11 text-lg font-bold text-center rounded-lg border-2 border-primary/30 focus:border-primary bg-background"
+                  className="h-10 text-base font-bold text-center rounded-lg border-2 border-primary/30 focus:border-primary bg-background"
                 />
               </div>
             )}
             {!isBuyer(selectedSupplier) && (
               <>
-                <div className="space-y-0.5">
-                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
-                    {t('fat')}
-                  </label>
-                  <Input
-                    ref={fatInputRef}
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0.0"
-                    value={fatValue}
-                    onChange={e => setFatValue(e.target.value)}
-                    onFocus={handleInputFocus}
-                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
-                  />
+                <div>
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">{t('fat')}</label>
+                  <Input ref={fatInputRef} type="number" inputMode="decimal" placeholder="0.0" value={fatValue} onChange={e => setFatValue(e.target.value)} onFocus={handleInputFocus} className="h-10 text-base font-bold text-center rounded-lg border-2" />
                 </div>
-                <div className="space-y-0.5">
-                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
-                    {t('snf')}
-                  </label>
-                  <Input
-                    ref={snfInputRef}
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0.0"
-                    value={snfValue}
-                    onChange={e => setSnfValue(e.target.value)}
-                    onFocus={handleInputFocus}
-                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
-                  />
+                <div>
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">{t('snf')}</label>
+                  <Input ref={snfInputRef} type="number" inputMode="decimal" placeholder="0.0" value={snfValue} onChange={e => setSnfValue(e.target.value)} onFocus={handleInputFocus} className="h-10 text-base font-bold text-center rounded-lg border-2" />
                 </div>
-                <div className="space-y-0.5">
-                  <label className="text-[10px] font-medium block text-center text-muted-foreground">
-                    {t('lr')}
-                  </label>
-                  <Input
-                    ref={lrInputRef}
-                    type="number"
-                    inputMode="decimal"
-                    placeholder="0.0"
-                    value={lrValue}
-                    onChange={e => setLrValue(e.target.value)}
-                    onFocus={handleInputFocus}
-                    className="h-11 text-lg font-bold text-center rounded-lg border-2"
-                  />
+                <div>
+                  <label className="text-[10px] font-medium block text-center text-muted-foreground">{t('lr')}</label>
+                  <Input ref={lrInputRef} type="number" inputMode="decimal" placeholder="0.0" value={lrValue} onChange={e => setLrValue(e.target.value)} onFocus={handleInputFocus} className="h-10 text-base font-bold text-center rounded-lg border-2" />
                 </div>
               </>
             )}
@@ -1079,7 +1011,7 @@ const MilkEntry: React.FC = () => {
           <Button
             onClick={handleSaveEntry}
             disabled={isLoading || !selectedSupplier || (!milkQty && !buyerPrice)}
-            className="w-full h-12 rounded-xl text-base font-semibold bg-primary hover:bg-primary/90 shadow-lg transition-all duration-200 active:scale-[0.98] mb-2"
+            className="w-full h-10 rounded-xl text-sm font-semibold bg-primary hover:bg-primary/90 shadow-lg transition-all duration-200 active:scale-[0.98] mb-1.5"
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
