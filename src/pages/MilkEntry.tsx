@@ -92,6 +92,13 @@ const MilkEntry: React.FC = () => {
   const snfInputRef = useRef<HTMLInputElement>(null);
   const lrInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-scroll focused input into view above keyboard
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 300);
+  };
+
   // Voice: only fills milk input
   const handleVoiceValue = useCallback((value: number) => {
     setMilkQty(value.toString());
