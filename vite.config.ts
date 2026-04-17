@@ -16,14 +16,17 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "placeholder.svg"],
+      devOptions: {
+        enabled: false,
+      },
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,jpeg,webp}"],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
-        name: "DIGITAL DAIRY",
-        short_name: "DIGITAL DAIRY",
+        name: "DairySetu",
+        short_name: "DairySetu",
         description: "Digital dairy management app for rural dairy owners",
         theme_color: "#2d7a4f",
         background_color: "#ffffff",
