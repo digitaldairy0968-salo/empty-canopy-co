@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.digitaldairy',
-  appName: 'DIGITAL DAIRY',
+  appName: 'DairySetu',
   webDir: 'dist',
   server: {
     url: 'https://2b6e8426-d950-4fbf-aca4-216c7b8a3fbd.lovableproject.com?forceHideBadge=true',
