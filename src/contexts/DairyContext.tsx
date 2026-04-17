@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showNotification, requestNotificationPermission } from '@/utils/notifications';
-import { addToSyncQueue, processSyncQueue, getSyncQueueCount } from '@/utils/offlineSyncQueue';
+import { addToSyncQueue, processSyncQueue, getSyncQueueCount, getSyncQueue } from '@/utils/offlineSyncQueue';
 
 export interface MilkEntry {
   date: string;
@@ -140,25 +140,88 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const syncInFlightRef = useRef(false);
 
-  // Monitor online status + auto-sync
-  useEffect(() => {
-    const handleOnline = async () => {
-      setIsOnline(true);
-      // Auto-sync pending changes
-      try {
-        const result = await processSyncQueue();
-        const count = await getSyncQueueCount();
-        setPendingSyncCount(count);
-        if (result.synced > 0 && user?.dairyId) {
-          fetchData(); // Refresh from server after sync
+  const applyPendingSupplierQueue = useCallback(async (baseSuppliers: Supplier[]) => {
+    if (!user?.dairyId) return baseSuppliers;
+
+    try {
+      const queue = await getSyncQueue();
+      const supplierMap = new Map(baseSuppliers.map(supplier => [supplier.id, supplier]));
+
+      for (const action of queue) {
+        if (action.table !== 'suppliers') continue;
+
+        const data = (action.data ?? {}) as Record<string, any>;
+
+        if (action.type === 'insert' || action.type === 'upsert') {
+          if (data.dairy_id !== user.dairyId || !data.id) continue;
+
+          const existing = supplierMap.get(data.id);
+          supplierMap.set(data.id, {
+            id: data.id,
+            dairyId: data.dairy_id,
+            name: data.name ?? existing?.name ?? '',
+            phone: data.phone ?? existing?.phone ?? '',
+            code: data.code ? String(data.code) : existing?.code,
+            animalType: (data.animal_type as Supplier['animalType']) ?? existing?.animalType ?? 'cow',
+            animalName: data.animal_name ?? existing?.animalName,
+            villageName: data.village_name ?? existing?.villageName,
+            address: data.address ?? existing?.address,
+            entries: existing?.entries ?? [],
+            createdAt: data.created_at ?? existing?.createdAt ?? new Date().toISOString(),
+            pendingBalance: Number(data.pending_balance ?? existing?.pendingBalance ?? 0),
+            canSeeCalculations: data.can_see_calculations ?? existing?.canSeeCalculations ?? true,
+          });
+          continue;
         }
-      } catch { /* ignore */ }
-    };
+
+        const targetId = action.matchColumn === 'id' ? action.matchValue : undefined;
+        if (!targetId) continue;
+
+        if (action.type === 'delete') {
+          supplierMap.delete(targetId);
+          continue;
+        }
+
+        if (action.type === 'update') {
+          const existing = supplierMap.get(targetId);
+          if (!existing) continue;
+
+          supplierMap.set(targetId, {
+            ...existing,
+            name: data.name ?? existing.name,
+            phone: data.phone ?? existing.phone,
+            code: data.code !== undefined ? (data.code || undefined) : existing.code,
+            animalType: (data.animal_type as Supplier['animalType']) ?? existing.animalType,
+            animalName: data.animal_name !== undefined ? data.animal_name || undefined : existing.animalName,
+            villageName: data.village_name !== undefined ? data.village_name || undefined : existing.villageName,
+            address: data.address !== undefined ? data.address || undefined : existing.address,
+            pendingBalance: data.pending_balance !== undefined ? Number(data.pending_balance) : existing.pendingBalance,
+            canSeeCalculations: data.can_see_calculations ?? existing.canSeeCalculations,
+          });
+        }
+      }
+
+      return Array.from(supplierMap.values());
+    } catch {
+      return baseSuppliers;
+    }
+  }, [user?.dairyId]);
+
+  // Monitor online status + external sync refreshes
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        setIsOnline(navigator.onLine);
+      }
+    };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Listen for sync-complete events from OfflineIndicator
     const handleSyncComplete = () => {
@@ -169,9 +232,10 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('sync-complete', handleSyncComplete);
     };
-  }, [user?.dairyId]);
+  }, [fetchData, user?.dairyId]);
 
   // Track pending sync count
   useEffect(() => {
@@ -288,8 +352,10 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         };
       });
 
-      setSuppliers(mappedSuppliers);
-      localStorage.setItem(CACHE_KEY_SUPPLIERS, JSON.stringify(mappedSuppliers));
+      const mergedSuppliers = await applyPendingSupplierQueue(mappedSuppliers);
+
+      setSuppliers(mergedSuppliers);
+      localStorage.setItem(CACHE_KEY_SUPPLIERS, JSON.stringify(mergedSuppliers));
 
       // Fetch announcements
       const { data: announcementsData, error: announcementsError } = await supabase
@@ -341,11 +407,65 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } finally {
       setLoading(false);
     }
-  }, [user?.dairyId]);
+  }, [applyPendingSupplierQueue, user?.dairyId]);
+
+  const syncPendingChanges = useCallback(async () => {
+    if (!user?.dairyId || !navigator.onLine || syncInFlightRef.current) return;
+
+    try {
+      const queuedBeforeSync = await getSyncQueueCount();
+      setPendingSyncCount(queuedBeforeSync);
+
+      if (queuedBeforeSync === 0) return;
+
+      syncInFlightRef.current = true;
+      const result = await processSyncQueue();
+      const remaining = await getSyncQueueCount();
+
+      setPendingSyncCount(remaining);
+
+      if (result.synced > 0 || remaining !== queuedBeforeSync) {
+        await fetchData();
+      }
+    } catch (error) {
+      console.error('Error syncing offline changes:', error);
+      try {
+        const remaining = await getSyncQueueCount();
+        setPendingSyncCount(remaining);
+      } catch {
+        // ignore count refresh failure
+      }
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }, [fetchData, user?.dairyId]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (isOnline) {
+      syncPendingChanges();
+    }
+  }, [isOnline, syncPendingChanges]);
+
+  useEffect(() => {
+    if (!isOnline || pendingSyncCount === 0) return;
+
+    const retryTimeout = window.setTimeout(() => {
+      syncPendingChanges();
+    }, 1200);
+
+    const retryInterval = window.setInterval(() => {
+      syncPendingChanges();
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(retryTimeout);
+      window.clearInterval(retryInterval);
+    };
+  }, [isOnline, pendingSyncCount, syncPendingChanges]);
 
   // ==================== OFFLINE-FIRST MUTATIONS ====================
 
