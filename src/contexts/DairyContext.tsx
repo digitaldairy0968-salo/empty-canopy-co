@@ -141,6 +141,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const syncInFlightRef = useRef(false);
+  const fetchDataRef = useRef<(() => void) | null>(null);
 
   const applyPendingSupplierQueue = useCallback(async (baseSuppliers: Supplier[]) => {
     if (!user?.dairyId) return baseSuppliers;
@@ -225,7 +226,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Listen for sync-complete events from OfflineIndicator
     const handleSyncComplete = () => {
-      if (user?.dairyId) fetchData();
+      if (user?.dairyId) fetchDataRef.current?.();
     };
     window.addEventListener('sync-complete', handleSyncComplete);
 
@@ -235,7 +236,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('sync-complete', handleSyncComplete);
     };
-  }, [fetchData, user?.dairyId]);
+  }, [user?.dairyId]);
 
   // Track pending sync count
   useEffect(() => {
@@ -439,6 +440,10 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       syncInFlightRef.current = false;
     }
   }, [fetchData, user?.dairyId]);
+
+  useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
 
   useEffect(() => {
     fetchData();
