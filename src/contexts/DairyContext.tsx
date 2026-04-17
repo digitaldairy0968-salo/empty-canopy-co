@@ -442,6 +442,10 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [fetchData, user?.dairyId]);
 
   useEffect(() => {
+    fetchDataRef.current = fetchData;
+  }, [fetchData]);
+
+  useEffect(() => {
     fetchData();
   }, [fetchData]);
 
