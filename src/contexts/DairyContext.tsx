@@ -141,6 +141,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const syncInFlightRef = useRef(false);
+  const fetchDataRef = useRef<(() => void) | null>(null);
 
   const applyPendingSupplierQueue = useCallback(async (baseSuppliers: Supplier[]) => {
     if (!user?.dairyId) return baseSuppliers;
