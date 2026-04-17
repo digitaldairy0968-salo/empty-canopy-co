@@ -225,7 +225,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Listen for sync-complete events from OfflineIndicator
     const handleSyncComplete = () => {
-      if (user?.dairyId) fetchData();
+      if (user?.dairyId) fetchDataRef.current?.();
     };
     window.addEventListener('sync-complete', handleSyncComplete);
 
@@ -235,7 +235,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('sync-complete', handleSyncComplete);
     };
-  }, [fetchData, user?.dairyId]);
+  }, [user?.dairyId]);
 
   // Track pending sync count
   useEffect(() => {
