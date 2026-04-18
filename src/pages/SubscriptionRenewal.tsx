@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getCachedQRCode, fetchAndCacheQRCode } from '@/utils/qrCodeCache';
 
 const SubscriptionRenewal: React.FC = () => {
   const { language } = useLanguage();
@@ -21,6 +22,7 @@ const SubscriptionRenewal: React.FC = () => {
   const [varPlans, setVarPlans] = useState<any[]>([]);
   const [coinBalance, setCoinBalance] = useState(0);
   const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -37,6 +39,13 @@ const SubscriptionRenewal: React.FC = () => {
       setCoinBalance((coinRes.data as any)?.balance || 0);
       if (subRes.data?.expires_at) {
         setDaysLeft(Math.max(0, Math.ceil((new Date(subRes.data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
+      }
+      // Use cached QR if available; fetch + cache otherwise
+      const qrUrl = (sRes.data as any)?.qr_code_url;
+      if (qrUrl) {
+        const cached = getCachedQRCode(qrUrl);
+        if (cached) setQrDataUrl(cached);
+        else fetchAndCacheQRCode(qrUrl).then((url) => url && setQrDataUrl(url));
       }
     };
     fetch();
@@ -233,7 +242,7 @@ const SubscriptionRenewal: React.FC = () => {
               <div className="text-center">
                 <p className="font-medium text-sm mb-3 text-muted-foreground">{language === 'hi' ? '📱 QR कोड स्कैन करें' : '📱 Scan QR Code'}</p>
                 <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
-                  <img src={settings.qr_code_url} alt="QR" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} />
+                  <img src={qrDataUrl || settings.qr_code_url} alt="QR" width="208" height="208" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} loading="lazy" decoding="async" />
                 </div>
                 <div className="flex gap-2 mt-3 justify-center">
                   <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
@@ -268,7 +277,7 @@ const SubscriptionRenewal: React.FC = () => {
           <DialogHeader><DialogTitle className="text-center">{language === 'hi' ? 'QR कोड' : 'QR Code'}</DialogTitle></DialogHeader>
           {settings?.qr_code_url && (
             <div className="flex flex-col items-center gap-4">
-              <img src={settings.qr_code_url} alt="QR" className="w-full max-w-xs rounded-xl border" />
+              <img src={qrDataUrl || settings.qr_code_url} alt="QR" className="w-full max-w-xs rounded-xl border" loading="lazy" decoding="async" />
               <Button onClick={downloadQR} className="w-full gap-2 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
             </div>
           )}
