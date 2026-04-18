@@ -242,7 +242,8 @@ const SubscriptionRenewal: React.FC = () => {
               <div className="text-center">
                 <p className="font-medium text-sm mb-3 text-muted-foreground">{language === 'hi' ? '📱 QR कोड स्कैन करें' : '📱 Scan QR Code'}</p>
                 <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
-                  <img src={settings.qr_code_url} alt="QR" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} />
+                  <img src={qrDataUrl || settings.qr_code_url} alt="QR" width="208" height="208" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} loading="lazy" decoding="async" />
+                </div>
                 </div>
                 <div className="flex gap-2 mt-3 justify-center">
                   <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
