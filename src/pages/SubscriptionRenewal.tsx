@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getCachedQRCode, fetchAndCacheQRCode } from '@/utils/qrCodeCache';
 
 const SubscriptionRenewal: React.FC = () => {
   const { language } = useLanguage();
@@ -21,6 +22,7 @@ const SubscriptionRenewal: React.FC = () => {
   const [varPlans, setVarPlans] = useState<any[]>([]);
   const [coinBalance, setCoinBalance] = useState(0);
   const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -37,6 +39,13 @@ const SubscriptionRenewal: React.FC = () => {
       setCoinBalance((coinRes.data as any)?.balance || 0);
       if (subRes.data?.expires_at) {
         setDaysLeft(Math.max(0, Math.ceil((new Date(subRes.data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
+      }
+      // Use cached QR if available; fetch + cache otherwise
+      const qrUrl = (sRes.data as any)?.qr_code_url;
+      if (qrUrl) {
+        const cached = getCachedQRCode(qrUrl);
+        if (cached) setQrDataUrl(cached);
+        else fetchAndCacheQRCode(qrUrl).then((url) => url && setQrDataUrl(url));
       }
     };
     fetch();
