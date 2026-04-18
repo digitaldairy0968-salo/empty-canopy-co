@@ -383,6 +383,10 @@ const Auth: React.FC = () => {
                   <img 
                     src={farmerImage} 
                     alt="Dairy Owner" 
+                    width="88"
+                    height="96"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
@@ -415,6 +419,10 @@ const Auth: React.FC = () => {
                   <img 
                     src={cowImage} 
                     alt="Customer" 
+                    width="88"
+                    height="96"
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>

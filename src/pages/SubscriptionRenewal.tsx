@@ -244,7 +244,6 @@ const SubscriptionRenewal: React.FC = () => {
                 <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
                   <img src={qrDataUrl || settings.qr_code_url} alt="QR" width="208" height="208" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} loading="lazy" decoding="async" />
                 </div>
-                </div>
                 <div className="flex gap-2 mt-3 justify-center">
                   <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
                   <Button variant="outline" size="sm" onClick={downloadQR} className="gap-1 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
@@ -278,7 +277,7 @@ const SubscriptionRenewal: React.FC = () => {
           <DialogHeader><DialogTitle className="text-center">{language === 'hi' ? 'QR कोड' : 'QR Code'}</DialogTitle></DialogHeader>
           {settings?.qr_code_url && (
             <div className="flex flex-col items-center gap-4">
-              <img src={settings.qr_code_url} alt="QR" className="w-full max-w-xs rounded-xl border" />
+              <img src={qrDataUrl || settings.qr_code_url} alt="QR" className="w-full max-w-xs rounded-xl border" loading="lazy" decoding="async" />
               <Button onClick={downloadQR} className="w-full gap-2 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
             </div>
           )}
