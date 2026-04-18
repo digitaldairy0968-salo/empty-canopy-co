@@ -455,6 +455,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [isOnline, syncPendingChanges]);
 
+  // Sync pending changes once shortly after coming online (no continuous polling — saves battery & edge requests)
   useEffect(() => {
     if (!isOnline || pendingSyncCount === 0) return;
 
@@ -462,15 +463,23 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       syncPendingChanges();
     }, 1200);
 
-    const retryInterval = window.setInterval(() => {
-      syncPendingChanges();
-    }, 5000);
-
     return () => {
       window.clearTimeout(retryTimeout);
-      window.clearInterval(retryInterval);
     };
   }, [isOnline, pendingSyncCount, syncPendingChanges]);
+
+  // Sync on tab focus (covers cases where user returns to app)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (navigator.onLine) syncPendingChanges();
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [syncPendingChanges]);
 
   // ==================== OFFLINE-FIRST MUTATIONS ====================
 
