@@ -13,8 +13,8 @@ import { z } from 'zod';
 import LanguageSelect from './LanguageSelect';
 import RateSetup from './RateSetup';
 import OwnerOnboarding from './OwnerOnboarding';
-import farmerImage from '@/assets/farmer-welcome.jpg';
-import cowImage from '@/assets/cow-illustration.jpg';
+import farmerImage from '@/assets/farmer-welcome.webp';
+import cowImage from '@/assets/cow-illustration.webp';
 
 type AuthMode = 'login' | 'signup';
 type UserRole = 'owner' | 'supplier';
