@@ -99,6 +99,43 @@ const AdminDashboard: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dairyToDelete, setDairyToDelete] = useState<DairyInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const [dairyForLimit, setDairyForLimit] = useState<DairyInfo | null>(null);
+  const [limitInput, setLimitInput] = useState('');
+  const [savingLimit, setSavingLimit] = useState(false);
+
+  const openLimitDialog = (dairy: DairyInfo) => {
+    setDairyForLimit(dairy);
+    setLimitInput(dairy.customerLimit !== null ? String(dairy.customerLimit) : '');
+    setLimitDialogOpen(true);
+  };
+
+  const saveLimit = async () => {
+    if (!dairyForLimit) return;
+    setSavingLimit(true);
+    try {
+      const trimmed = limitInput.trim();
+      const newLimit = trimmed === '' ? null : parseInt(trimmed, 10);
+      if (newLimit !== null && (isNaN(newLimit) || newLimit < 0)) {
+        toast.error('Invalid number');
+        setSavingLimit(false);
+        return;
+      }
+      const { error } = await supabase
+        .from('dairies')
+        .update({ customer_limit: newLimit } as any)
+        .eq('id', dairyForLimit.id);
+      if (error) throw error;
+      setDairies(prev => prev.map(d => d.id === dairyForLimit.id ? { ...d, customerLimit: newLimit } : d));
+      toast.success(newLimit === null ? 'Limit removed (unlimited)' : `Limit set to ${newLimit}`);
+      setLimitDialogOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update limit');
+    } finally {
+      setSavingLimit(false);
+    }
+  };
 
   const filteredDairies = dairies.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
