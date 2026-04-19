@@ -53,6 +53,11 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+// Notify listeners (UI badges) when queue changes — replaces polling
+function emitQueueChanged() {
+  try { window.dispatchEvent(new CustomEvent('sync-queue-changed')); } catch { /* ignore */ }
+}
+
 export async function addToSyncQueue(action: Omit<SyncAction, 'id' | 'timestamp'>): Promise<string> {
   const db = await openDB();
   const id = crypto.randomUUID();
@@ -65,7 +70,7 @@ export async function addToSyncQueue(action: Omit<SyncAction, 'id' | 'timestamp'
   return new Promise((resolve, reject) => {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     tx.objectStore(QUEUE_STORE).put(syncAction);
-    tx.oncomplete = () => resolve(id);
+    tx.oncomplete = () => { emitQueueChanged(); resolve(id); };
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -90,7 +95,7 @@ export async function removeFromSyncQueue(id: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     tx.objectStore(QUEUE_STORE).delete(id);
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => { emitQueueChanged(); resolve(); };
     tx.onerror = () => reject(tx.error);
   });
 }
