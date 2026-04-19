@@ -526,6 +526,11 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         if (error) {
           console.error('Error adding supplier:', error);
+          // Hard-fail on customer limit — don't queue, revert local state
+          if ((error as any).message?.includes('customer_limit_reached')) {
+            setSuppliers(prev => prev.filter(s => s.id !== tempId));
+            throw new Error('customer_limit_reached');
+          }
           // Queue for later sync
           await addToSyncQueue({ type: 'insert', table: 'suppliers', data: dbData });
           setPendingSyncCount(prev => prev + 1);
