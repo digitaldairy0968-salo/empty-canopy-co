@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { showNotification, requestNotificationPermission } from '@/utils/notifications';
 import { addToSyncQueue, processSyncQueue, getSyncQueueCount, getSyncQueue } from '@/utils/offlineSyncQueue';
+import { toast as sonnerToast } from 'sonner';
 
 export interface MilkEntry {
   date: string;
