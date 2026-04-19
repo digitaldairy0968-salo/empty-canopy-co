@@ -690,6 +690,17 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           supabase.from('milk_entries').upsert(entryData, { onConflict: 'supplier_id,date,time_of_day' })
         )
       ).then(async results => {
+        const beyondLimit = results.some(r => (r.error as any)?.message?.includes('supplier_beyond_limit'));
+        if (beyondLimit) {
+          // Revert local entry — this supplier is beyond dairy customer limit
+          setSuppliers(prev => prev.map(s => s.id === supplierId
+            ? { ...s, entries: s.entries.filter(e => e.date !== entry.date) }
+            : s));
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('supplier-limit-blocked', { detail: { supplierId } }));
+          }
+          return;
+        }
         const hasError = results.some(r => r.error);
         if (hasError) {
           console.error('Error saving milk entries:', results.filter(r => r.error));
