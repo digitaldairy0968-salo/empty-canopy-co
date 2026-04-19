@@ -25,6 +25,7 @@ interface DairyInfo {
   ownerName: string;
   ownerPhone: string;
   supplierCount: number;
+  customerLimit: number | null;
   createdAt: string;
 }
 
