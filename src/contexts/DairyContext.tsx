@@ -527,8 +527,10 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         if (error) {
           console.error('Error adding supplier:', error);
+          const msg = (error as any).message || '';
+          const hint = (error as any).hint || '';
           // Hard-fail on customer limit — don't queue, revert local state
-          if ((error as any).message?.includes('customer_limit_reached')) {
+          if (msg.includes('customer_limit_reached') || hint.includes('customer limit')) {
             setSuppliers(prev => prev.filter(s => s.id !== tempId));
             throw new Error('customer_limit_reached');
           }
@@ -543,7 +545,11 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             createdAt: data.created_at,
           } : s));
         }
-      } catch {
+      } catch (err: any) {
+        // Re-throw limit errors so UI can show error toast
+        if (err?.message === 'customer_limit_reached') {
+          throw err;
+        }
         await addToSyncQueue({ type: 'insert', table: 'suppliers', data: dbData });
         setPendingSyncCount(prev => prev + 1);
       }
