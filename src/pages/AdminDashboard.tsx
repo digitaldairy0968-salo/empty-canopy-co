@@ -78,6 +78,7 @@ const AdminDashboard: React.FC = () => {
           ownerName: profileData?.name || 'Unknown',
           ownerPhone: profileData?.phone || 'N/A',
           supplierCount: count || 0,
+          customerLimit: (dairy as any).customer_limit ?? null,
           createdAt: dairy.created_at,
         });
       }
