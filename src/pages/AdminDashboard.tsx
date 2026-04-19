@@ -301,14 +301,27 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
-                    <span className="inline-flex items-center gap-1 text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
+                    <span className={`inline-flex items-center gap-1 text-sm px-2 py-1 rounded ${
+                      dairy.customerLimit !== null && dairy.supplierCount > dairy.customerLimit
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
                       <Users className="w-3 h-3" />
-                      {dairy.supplierCount} suppliers
+                      {dairy.supplierCount}{dairy.customerLimit !== null ? ` / ${dairy.customerLimit}` : ''}
                     </span>
                     <p className="text-xs text-muted-foreground">
                       {new Date(dairy.createdAt).toLocaleDateString()}
                     </p>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openLimitDialog(dairy)}
+                        className="gap-1"
+                      >
+                        <UserCog className="w-3 h-3" />
+                        Limit
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
