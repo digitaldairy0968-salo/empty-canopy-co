@@ -20,7 +20,7 @@ const OfflineIndicator: React.FC = () => {
     };
   }, []);
 
-  // Poll pending count
+  // Event-driven count updates (no polling — saves CPU/battery)
   useEffect(() => {
     const updateCount = async () => {
       try {
@@ -29,8 +29,15 @@ const OfflineIndicator: React.FC = () => {
       } catch { /* ignore */ }
     };
     updateCount();
-    const interval = setInterval(updateCount, 3000);
-    return () => clearInterval(interval);
+    const onQueueChanged = () => updateCount();
+    window.addEventListener('sync-queue-changed', onQueueChanged);
+    window.addEventListener('focus', onQueueChanged);
+    window.addEventListener('online', onQueueChanged);
+    return () => {
+      window.removeEventListener('sync-queue-changed', onQueueChanged);
+      window.removeEventListener('focus', onQueueChanged);
+      window.removeEventListener('online', onQueueChanged);
+    };
   }, []);
 
   // Auto-sync when coming online

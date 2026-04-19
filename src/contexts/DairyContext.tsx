@@ -239,7 +239,7 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [user?.dairyId]);
 
-  // Track pending sync count
+  // Event-driven sync count (no polling)
   useEffect(() => {
     const updateCount = async () => {
       try {
@@ -248,8 +248,15 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       } catch { /* ignore */ }
     };
     updateCount();
-    const interval = setInterval(updateCount, 5000);
-    return () => clearInterval(interval);
+    const onQueueChanged = () => updateCount();
+    window.addEventListener('sync-queue-changed', onQueueChanged);
+    window.addEventListener('focus', onQueueChanged);
+    window.addEventListener('online', onQueueChanged);
+    return () => {
+      window.removeEventListener('sync-queue-changed', onQueueChanged);
+      window.removeEventListener('focus', onQueueChanged);
+      window.removeEventListener('online', onQueueChanged);
+    };
   }, []);
 
   // Save to cache whenever data changes
