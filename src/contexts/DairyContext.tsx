@@ -697,9 +697,9 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setSuppliers(prev => prev.map(s => s.id === supplierId
             ? { ...s, entries: s.entries.filter(e => e.date !== entry.date) }
             : s));
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('supplier-limit-blocked', { detail: { supplierId } }));
-          }
+          sonnerToast.error('ग्राहक सीमा से बाहर — एडमिन से संपर्क करें', {
+            description: 'This customer is beyond the dairy limit. Milk entry blocked.',
+          });
           return;
         }
         const hasError = results.some(r => r.error);
