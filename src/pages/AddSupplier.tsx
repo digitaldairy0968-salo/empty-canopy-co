@@ -59,8 +59,15 @@ const AddSupplier: React.FC = () => {
 
       toast({ title: language === 'hi' ? 'सफल' : 'Success', description: 'ग्राहक जोड़ा गया! / Customer added!' });
       navigate('/suppliers');
-    } catch (error) {
-      toast({ title: language === 'hi' ? 'त्रुटि' : 'Error', description: 'ग्राहक जोड़ने में विफल / Failed to add customer', variant: 'destructive' });
+    } catch (error: any) {
+      const isLimit = error?.message === 'customer_limit_reached';
+      toast({
+        title: language === 'hi' ? 'त्रुटि' : 'Error',
+        description: isLimit
+          ? (language === 'hi' ? 'ग्राहक सीमा पूरी हो गई। एडमिन से संपर्क करें।' : 'Customer limit reached. Contact admin.')
+          : (language === 'hi' ? 'ग्राहक जोड़ने में विफल' : 'Failed to add customer'),
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

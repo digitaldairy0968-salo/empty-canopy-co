@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Users, Milk, RefreshCw, LogOut, Search, CreditCard, Trash2, Phone, Shield, Package } from 'lucide-react';
+import { Building2, Users, Milk, RefreshCw, LogOut, Search, CreditCard, Trash2, Phone, Shield, Package, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,7 @@ interface DairyInfo {
   ownerName: string;
   ownerPhone: string;
   supplierCount: number;
+  customerLimit: number | null;
   createdAt: string;
 }
 
@@ -77,6 +78,7 @@ const AdminDashboard: React.FC = () => {
           ownerName: profileData?.name || 'Unknown',
           ownerPhone: profileData?.phone || 'N/A',
           supplierCount: count || 0,
+          customerLimit: (dairy as any).customer_limit ?? null,
           createdAt: dairy.created_at,
         });
       }
@@ -97,6 +99,43 @@ const AdminDashboard: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [dairyToDelete, setDairyToDelete] = useState<DairyInfo | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const [dairyForLimit, setDairyForLimit] = useState<DairyInfo | null>(null);
+  const [limitInput, setLimitInput] = useState('');
+  const [savingLimit, setSavingLimit] = useState(false);
+
+  const openLimitDialog = (dairy: DairyInfo) => {
+    setDairyForLimit(dairy);
+    setLimitInput(dairy.customerLimit !== null ? String(dairy.customerLimit) : '');
+    setLimitDialogOpen(true);
+  };
+
+  const saveLimit = async () => {
+    if (!dairyForLimit) return;
+    setSavingLimit(true);
+    try {
+      const trimmed = limitInput.trim();
+      const newLimit = trimmed === '' ? null : parseInt(trimmed, 10);
+      if (newLimit !== null && (isNaN(newLimit) || newLimit < 0)) {
+        toast.error('Invalid number');
+        setSavingLimit(false);
+        return;
+      }
+      const { error } = await supabase
+        .from('dairies')
+        .update({ customer_limit: newLimit } as any)
+        .eq('id', dairyForLimit.id);
+      if (error) throw error;
+      setDairies(prev => prev.map(d => d.id === dairyForLimit.id ? { ...d, customerLimit: newLimit } : d));
+      toast.success(newLimit === null ? 'Limit removed (unlimited)' : `Limit set to ${newLimit}`);
+      setLimitDialogOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to update limit');
+    } finally {
+      setSavingLimit(false);
+    }
+  };
 
   const filteredDairies = dairies.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -262,14 +301,27 @@ const AdminDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
-                    <span className="inline-flex items-center gap-1 text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
+                    <span className={`inline-flex items-center gap-1 text-sm px-2 py-1 rounded ${
+                      dairy.customerLimit !== null && dairy.supplierCount > dairy.customerLimit
+                        ? 'bg-destructive/10 text-destructive'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
                       <Users className="w-3 h-3" />
-                      {dairy.supplierCount} suppliers
+                      {dairy.supplierCount}{dairy.customerLimit !== null ? ` / ${dairy.customerLimit}` : ''}
                     </span>
                     <p className="text-xs text-muted-foreground">
                       {new Date(dairy.createdAt).toLocaleDateString()}
                     </p>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openLimitDialog(dairy)}
+                        className="gap-1"
+                      >
+                        <UserCog className="w-3 h-3" />
+                        Limit
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -326,6 +378,38 @@ const AdminDashboard: React.FC = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? 'Deleting...' : 'Delete Dairy'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Customer Limit Dialog */}
+      <AlertDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Customer Limit</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Dairy: <strong>{dairyForLimit?.name}</strong></p>
+                <p>Current customers: <strong>{dairyForLimit?.supplierCount}</strong></p>
+                <p className="text-sm">
+                  Enter the maximum number of customers this dairy can have. Leave empty for unlimited.
+                  If existing customers exceed the limit, the oldest ones stay active and the newest ones cannot have milk entries.
+                </p>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 50 (empty = unlimited)"
+                  value={limitInput}
+                  onChange={(e) => setLimitInput(e.target.value)}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingLimit}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={saveLimit} disabled={savingLimit}>
+              {savingLimit ? 'Saving...' : 'Save'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
