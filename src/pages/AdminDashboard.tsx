@@ -382,6 +382,38 @@ const AdminDashboard: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Customer Limit Dialog */}
+      <AlertDialog open={limitDialogOpen} onOpenChange={setLimitDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set Customer Limit</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Dairy: <strong>{dairyForLimit?.name}</strong></p>
+                <p>Current customers: <strong>{dairyForLimit?.supplierCount}</strong></p>
+                <p className="text-sm">
+                  Enter the maximum number of customers this dairy can have. Leave empty for unlimited.
+                  If existing customers exceed the limit, the oldest ones stay active and the newest ones cannot have milk entries.
+                </p>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="e.g. 50 (empty = unlimited)"
+                  value={limitInput}
+                  onChange={(e) => setLimitInput(e.target.value)}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingLimit}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={saveLimit} disabled={savingLimit}>
+              {savingLimit ? 'Saving...' : 'Save'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
