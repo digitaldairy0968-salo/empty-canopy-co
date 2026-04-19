@@ -115,6 +115,7 @@ export type Database = {
         Row: {
           code: string | null
           created_at: string
+          customer_limit: number | null
           id: string
           name: string
           owner_id: string
@@ -123,6 +124,7 @@ export type Database = {
         Insert: {
           code?: string | null
           created_at?: string
+          customer_limit?: number | null
           id?: string
           name: string
           owner_id: string
@@ -131,6 +133,7 @@ export type Database = {
         Update: {
           code?: string | null
           created_at?: string
+          customer_limit?: number | null
           id?: string
           name?: string
           owner_id?: string
@@ -969,6 +972,7 @@ export type Database = {
           owner_id: string
         }[]
       }
+      get_dairy_customer_limit: { Args: { _dairy_id: string }; Returns: number }
       get_supplier_dairy_id: { Args: { _user_id: string }; Returns: string }
       get_user_dairy_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
@@ -979,6 +983,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_supplier_within_limit: {
+        Args: { _supplier_id: string }
+        Returns: boolean
+      }
       link_supplier_to_dairy_by_code: {
         Args: { _dairy_code: string }
         Returns: {
