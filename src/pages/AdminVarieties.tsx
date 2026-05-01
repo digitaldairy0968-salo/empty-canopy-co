@@ -47,29 +47,23 @@ const AdminVarieties: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
-      const { data: vData } = await supabase
-        .from('subscription_varieties')
-        .select('*')
-        .order('created_at', { ascending: true });
-      
-      setVarieties((vData || []).map((v: any) => ({
+      const [vRes, pRes] = await Promise.all([
+        supabase.from('subscription_varieties').select('*').order('created_at', { ascending: true }),
+        supabase.from('variety_plans').select('*').order('price', { ascending: true }),
+      ]);
+
+      setVarieties((vRes.data || []).map((v: any) => ({
         ...v,
         features: Array.isArray(v.features) ? v.features : []
       })));
-
-      const { data: pData } = await supabase
-        .from('variety_plans')
-        .select('*')
-        .order('price', { ascending: true });
-      
-      setPlans(pData || []);
+      setPlans(pRes.data || []);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
