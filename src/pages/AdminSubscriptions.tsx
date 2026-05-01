@@ -332,7 +332,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success('Code deleted');
-      fetchData();
+      await refreshCodes();
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error('Failed to delete');
@@ -355,7 +355,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} has been banned permanently`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error banning dairy:', error);
       toast.error('Failed to ban dairy');
@@ -379,7 +379,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${months} month(s)`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
@@ -400,7 +400,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${days} days`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
@@ -441,7 +441,7 @@ const AdminSubscriptions: React.FC = () => {
       </header>
 
       <main className="px-4 py-6 max-w-2xl mx-auto">
-        <Tabs defaultValue="settings">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings" className="gap-1 text-xs">
               <Settings className="h-3 w-3" />
