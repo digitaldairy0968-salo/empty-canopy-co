@@ -47,29 +47,23 @@ const AdminVarieties: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     try {
-      const { data: vData } = await supabase
-        .from('subscription_varieties')
-        .select('*')
-        .order('created_at', { ascending: true });
-      
-      setVarieties((vData || []).map((v: any) => ({
+      const [vRes, pRes] = await Promise.all([
+        supabase.from('subscription_varieties').select('*').order('created_at', { ascending: true }),
+        supabase.from('variety_plans').select('*').order('price', { ascending: true }),
+      ]);
+
+      setVarieties((vRes.data || []).map((v: any) => ({
         ...v,
         features: Array.isArray(v.features) ? v.features : []
       })));
-
-      const { data: pData } = await supabase
-        .from('variety_plans')
-        .select('*')
-        .order('price', { ascending: true });
-      
-      setPlans(pData || []);
+      setPlans(pRes.data || []);
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
@@ -86,7 +80,7 @@ const AdminVarieties: React.FC = () => {
       if (error) throw error;
       toast.success('Variety added');
       setNewName(''); setNewDesc(''); setNewFeatures('');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed to add variety');
     } finally {
@@ -99,7 +93,7 @@ const AdminVarieties: React.FC = () => {
     try {
       await supabase.from('subscription_varieties').delete().eq('id', id);
       toast.success('Variety deleted');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed');
     }
@@ -107,7 +101,7 @@ const AdminVarieties: React.FC = () => {
 
   const toggleVariety = async (id: string, active: boolean) => {
     await supabase.from('subscription_varieties').update({ is_active: active }).eq('id', id);
-    fetchData();
+    fetchData(false);
   };
 
   const addPlan = async () => {
@@ -123,7 +117,7 @@ const AdminVarieties: React.FC = () => {
       if (error) throw error;
       toast.success('Plan added');
       setPlanName(''); setPlanPrice(''); setPlanDays('30');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed');
     } finally {
@@ -133,7 +127,7 @@ const AdminVarieties: React.FC = () => {
 
   const deletePlan = async (id: string) => {
     await supabase.from('variety_plans').delete().eq('id', id);
-    fetchData();
+    fetchData(false);
   };
 
   if (loading) {

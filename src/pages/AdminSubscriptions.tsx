@@ -52,6 +52,7 @@ const AdminSubscriptions: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('settings');
 
   // Form state
   const [monthlyPrice, setMonthlyPrice] = useState('');
@@ -76,16 +77,71 @@ const AdminSubscriptions: React.FC = () => {
     fetchData();
   }, []);
 
+  // Granular refresh helpers — avoid full reload + loading screen after small actions
+  const refreshCodes = async () => {
+    const { data } = await supabase
+      .from('activation_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setCodes(data || []);
+  };
+
+  const refreshPlans = async () => {
+    const { data } = await supabase
+      .from('payment_plans')
+      .select('*')
+      .order('price', { ascending: true });
+    setPlans(data || []);
+  };
+
+  const refreshSubscriptions = async () => {
+    const { data: subsData } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!subsData) { setSubscriptions([]); return; }
+    const dairyIds = subsData.map(s => s.dairy_id);
+    const { data: dairies } = await supabase
+      .from('dairies')
+      .select('id, name')
+      .in('id', dairyIds);
+    const dairyMap = new Map(dairies?.map(d => [d.id, d.name]));
+    setSubscriptions(subsData.map(s => ({
+      ...s,
+      dairy_name: dairyMap.get(s.dairy_id) || 'Unknown'
+    })));
+  };
+
+  const refreshSettings = async () => {
+    const { data: settingsData } = await supabase
+      .from('subscription_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (settingsData) {
+      setSettings(settingsData);
+      setMonthlyPrice(settingsData.monthly_price.toString());
+      setUpiId(settingsData.upi_id);
+      setAdminPhone(settingsData.admin_phone);
+      const days = settingsData.default_validity_days?.toString() || '30';
+      setDefaultValidityDays(days);
+      setDefaultValidityPreset(['1', '7', '15', '30', '90', '180', '365'].includes(days) ? days : 'custom');
+      setDemoDays((settingsData as any).demo_days?.toString() || '9');
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch settings
-      const { data: settingsData } = await supabase
-        .from('subscription_settings')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+      // Run all 4 base queries in parallel
+      const [settingsRes, codesRes, plansRes, subsRes] = await Promise.all([
+        supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
+        supabase.from('activation_codes').select('*').order('created_at', { ascending: false }),
+        supabase.from('payment_plans').select('*').order('price', { ascending: true }),
+        supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
+      ]);
 
+      const settingsData = settingsRes.data;
       if (settingsData) {
         setSettings(settingsData);
         setMonthlyPrice(settingsData.monthly_price.toString());
@@ -97,40 +153,23 @@ const AdminSubscriptions: React.FC = () => {
         setDemoDays((settingsData as any).demo_days?.toString() || '9');
       }
 
-      // Fetch codes
-      const { data: codesData } = await supabase
-        .from('activation_codes')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setCodes(codesRes.data || []);
+      setPlans(plansRes.data || []);
 
-      setCodes(codesData || []);
-
-      // Fetch payment plans
-      const { data: plansData } = await supabase
-        .from('payment_plans')
-        .select('*')
-        .order('price', { ascending: true });
-      setPlans(plansData || []);
-
-      // Fetch subscriptions with dairy names
-      const { data: subsData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (subsData) {
-        // Get dairy names
+      const subsData = subsRes.data;
+      if (subsData && subsData.length > 0) {
         const dairyIds = subsData.map(s => s.dairy_id);
         const { data: dairies } = await supabase
           .from('dairies')
           .select('id, name')
           .in('id', dairyIds);
-
         const dairyMap = new Map(dairies?.map(d => [d.id, d.name]));
         setSubscriptions(subsData.map(s => ({
           ...s,
           dairy_name: dairyMap.get(s.dairy_id) || 'Unknown'
         })));
+      } else {
+        setSubscriptions([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -167,7 +206,7 @@ const AdminSubscriptions: React.FC = () => {
       }
 
       toast.success('Settings saved');
-      fetchData();
+      await refreshSettings();
     } catch (error) {
       console.error('Error saving:', error);
       toast.error('Failed to save');
@@ -202,7 +241,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (updateError) throw updateError;
       toast.success('QR Code uploaded');
-      fetchData();
+      await refreshSettings();
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload');
@@ -249,7 +288,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${count} code${count > 1 ? 's' : ''} generated (${validity} days each)`);
-      fetchData();
+      await refreshCodes();
     } catch (error) {
       console.error('Error generating codes:', error);
       toast.error('Failed to generate codes');
@@ -311,7 +350,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success('Code deleted');
-      fetchData();
+      await refreshCodes();
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error('Failed to delete');
@@ -334,7 +373,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} has been banned permanently`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error banning dairy:', error);
       toast.error('Failed to ban dairy');
@@ -358,7 +397,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${months} month(s)`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
@@ -379,7 +418,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${days} days`);
-      fetchData();
+      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
@@ -420,7 +459,7 @@ const AdminSubscriptions: React.FC = () => {
       </header>
 
       <main className="px-4 py-6 max-w-2xl mx-auto">
-        <Tabs defaultValue="settings">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="settings" className="gap-1 text-xs">
               <Settings className="h-3 w-3" />
@@ -517,7 +556,7 @@ const AdminSubscriptions: React.FC = () => {
                         .eq('id', settings.id);
                       if (updateError) throw updateError;
                       toast.success('Auth page image uploaded');
-                      fetchData();
+                      await refreshSettings();
                     } catch (error) {
                       console.error('Upload error:', error);
                       toast.error('Failed to upload');
@@ -591,7 +630,7 @@ const AdminSubscriptions: React.FC = () => {
                     if (error) throw error;
                     toast.success('Plan added');
                     setNewPlanName(''); setNewPlanPrice(''); setNewPlanDays('30'); setNewPlanDesc('');
-                    fetchData();
+                    await refreshPlans();
                   } catch (e) { toast.error('Failed to add plan'); }
                   finally { setSavingPlan(false); }
                 }}
@@ -623,7 +662,7 @@ const AdminSubscriptions: React.FC = () => {
                           size="icon"
                           onClick={async () => {
                             await supabase.from('payment_plans').update({ is_active: !plan.is_active }).eq('id', plan.id);
-                            fetchData();
+                            await refreshPlans();
                           }}
                         >
                           {plan.is_active ? <Check className="h-4 w-4 text-green-600" /> : <Ban className="h-4 w-4 text-muted-foreground" />}
@@ -634,7 +673,7 @@ const AdminSubscriptions: React.FC = () => {
                           onClick={async () => {
                             if (confirm(`Delete plan "${plan.name}"?`)) {
                               await supabase.from('payment_plans').delete().eq('id', plan.id);
-                              fetchData();
+                              await refreshPlans();
                             }
                           }}
                         >
