@@ -1,18 +1,14 @@
 // Cache auth image as base64 data URL in localStorage for instant rendering
 // Uses Supabase image transformation to fetch a small, optimized version (saves ~80% bandwidth)
-const CACHE_KEY = 'auth_image_data_url';
-const URL_KEY = 'auth_page_image_url';
+const CACHE_KEY = 'auth_image_data_url_v2';
+const URL_KEY = 'auth_page_image_url_v2';
 
 let memoryCache: string | null = null;
 
-// Append Supabase image transform params to dramatically shrink the download
-// Docs: https://supabase.com/docs/guides/storage/serving/image-transformations
-function withTransform(url: string, width = 300, quality = 70): string {
-  if (!url || !url.includes('/storage/v1/')) return url;
-  // Convert /object/public/ to /render/image/public/ for transformations
-  const transformedUrl = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-  const sep = transformedUrl.includes('?') ? '&' : '?';
-  return `${transformedUrl}${sep}width=${width}&quality=${quality}`;
+// Use the original storage URL — image transformations don't reliably
+// support all formats (e.g. .ico) and can return cropped/broken output.
+function withTransform(url: string): string {
+  return url;
 }
 
 export function getCachedAuthImage(): string | null {
@@ -45,7 +41,7 @@ export async function fetchAndCacheAuthImage(): Promise<string | null> {
     if (!data?.auth_page_image_url) return null;
 
     // Use transformed URL — fetches a 300px wide, quality-70 version (~80% smaller)
-    const optimizedUrl = withTransform(data.auth_page_image_url, 300, 70);
+    const optimizedUrl = withTransform(data.auth_page_image_url);
     sessionStorage.setItem(URL_KEY, optimizedUrl);
 
     try {
