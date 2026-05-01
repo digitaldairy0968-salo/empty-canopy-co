@@ -612,7 +612,7 @@ const AdminSubscriptions: React.FC = () => {
                     if (error) throw error;
                     toast.success('Plan added');
                     setNewPlanName(''); setNewPlanPrice(''); setNewPlanDays('30'); setNewPlanDesc('');
-                    fetchData();
+                    await refreshPlans();
                   } catch (e) { toast.error('Failed to add plan'); }
                   finally { setSavingPlan(false); }
                 }}
@@ -644,7 +644,7 @@ const AdminSubscriptions: React.FC = () => {
                           size="icon"
                           onClick={async () => {
                             await supabase.from('payment_plans').update({ is_active: !plan.is_active }).eq('id', plan.id);
-                            fetchData();
+                            await refreshPlans();
                           }}
                         >
                           {plan.is_active ? <Check className="h-4 w-4 text-green-600" /> : <Ban className="h-4 w-4 text-muted-foreground" />}
@@ -655,7 +655,7 @@ const AdminSubscriptions: React.FC = () => {
                           onClick={async () => {
                             if (confirm(`Delete plan "${plan.name}"?`)) {
                               await supabase.from('payment_plans').delete().eq('id', plan.id);
-                              fetchData();
+                              await refreshPlans();
                             }
                           }}
                         >
