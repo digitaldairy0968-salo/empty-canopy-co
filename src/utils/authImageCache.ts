@@ -41,7 +41,7 @@ export async function fetchAndCacheAuthImage(): Promise<string | null> {
     if (!data?.auth_page_image_url) return null;
 
     // Use transformed URL — fetches a 300px wide, quality-70 version (~80% smaller)
-    const optimizedUrl = withTransform(data.auth_page_image_url, 300, 70);
+    const optimizedUrl = withTransform(data.auth_page_image_url);
     sessionStorage.setItem(URL_KEY, optimizedUrl);
 
     try {
