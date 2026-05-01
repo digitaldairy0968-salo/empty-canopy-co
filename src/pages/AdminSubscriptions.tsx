@@ -206,7 +206,7 @@ const AdminSubscriptions: React.FC = () => {
       }
 
       toast.success('Settings saved');
-      fetchData();
+      await refreshSettings();
     } catch (error) {
       console.error('Error saving:', error);
       toast.error('Failed to save');
@@ -241,7 +241,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (updateError) throw updateError;
       toast.success('QR Code uploaded');
-      fetchData();
+      await refreshSettings();
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload');
@@ -556,7 +556,7 @@ const AdminSubscriptions: React.FC = () => {
                         .eq('id', settings.id);
                       if (updateError) throw updateError;
                       toast.success('Auth page image uploaded');
-                      fetchData();
+                      await refreshSettings();
                     } catch (error) {
                       console.error('Upload error:', error);
                       toast.error('Failed to upload');
