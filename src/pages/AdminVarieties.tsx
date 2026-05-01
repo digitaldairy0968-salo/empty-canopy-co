@@ -80,7 +80,7 @@ const AdminVarieties: React.FC = () => {
       if (error) throw error;
       toast.success('Variety added');
       setNewName(''); setNewDesc(''); setNewFeatures('');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed to add variety');
     } finally {
@@ -93,7 +93,7 @@ const AdminVarieties: React.FC = () => {
     try {
       await supabase.from('subscription_varieties').delete().eq('id', id);
       toast.success('Variety deleted');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed');
     }
@@ -101,7 +101,7 @@ const AdminVarieties: React.FC = () => {
 
   const toggleVariety = async (id: string, active: boolean) => {
     await supabase.from('subscription_varieties').update({ is_active: active }).eq('id', id);
-    fetchData();
+    fetchData(false);
   };
 
   const addPlan = async () => {
@@ -117,7 +117,7 @@ const AdminVarieties: React.FC = () => {
       if (error) throw error;
       toast.success('Plan added');
       setPlanName(''); setPlanPrice(''); setPlanDays('30');
-      fetchData();
+      fetchData(false);
     } catch (e) {
       toast.error('Failed');
     } finally {
@@ -127,7 +127,7 @@ const AdminVarieties: React.FC = () => {
 
   const deletePlan = async (id: string) => {
     await supabase.from('variety_plans').delete().eq('id', id);
-    fetchData();
+    fetchData(false);
   };
 
   if (loading) {
