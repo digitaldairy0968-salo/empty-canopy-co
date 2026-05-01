@@ -5,14 +5,10 @@ const URL_KEY = 'auth_page_image_url';
 
 let memoryCache: string | null = null;
 
-// Append Supabase image transform params to dramatically shrink the download
-// Docs: https://supabase.com/docs/guides/storage/serving/image-transformations
-function withTransform(url: string, width = 300, quality = 70): string {
-  if (!url || !url.includes('/storage/v1/')) return url;
-  // Convert /object/public/ to /render/image/public/ for transformations
-  const transformedUrl = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-  const sep = transformedUrl.includes('?') ? '&' : '?';
-  return `${transformedUrl}${sep}width=${width}&quality=${quality}`;
+// Use the original storage URL — image transformations don't reliably
+// support all formats (e.g. .ico) and can return cropped/broken output.
+function withTransform(url: string): string {
+  return url;
 }
 
 export function getCachedAuthImage(): string | null {
