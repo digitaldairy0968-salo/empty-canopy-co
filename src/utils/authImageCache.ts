@@ -1,7 +1,7 @@
 // Cache auth image as base64 data URL in localStorage for instant rendering
 // Uses Supabase image transformation to fetch a small, optimized version (saves ~80% bandwidth)
-const CACHE_KEY = 'auth_image_data_url';
-const URL_KEY = 'auth_page_image_url';
+const CACHE_KEY = 'auth_image_data_url_v2';
+const URL_KEY = 'auth_page_image_url_v2';
 
 let memoryCache: string | null = null;
 
