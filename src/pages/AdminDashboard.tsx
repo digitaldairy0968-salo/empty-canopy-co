@@ -44,7 +44,7 @@ const AdminDashboard: React.FC = () => {
   const fetchAllDairies = async () => {
     setLoading(true);
     try {
-      // Fetch all dairies with owner info
+      // 1. Fetch all dairies
       const { data: dairiesData, error: dairiesError } = await supabase
         .from('dairies')
         .select('*')
@@ -55,33 +55,44 @@ const AdminDashboard: React.FC = () => {
         return;
       }
 
-      // Fetch supplier counts for each dairy
-      const dairyInfos: DairyInfo[] = [];
-      
-      for (const dairy of dairiesData || []) {
-        const { count } = await supabase
-          .from('suppliers')
-          .select('*', { count: 'exact', head: true })
-          .eq('dairy_id', dairy.id);
+      const dairyList = dairiesData || [];
+      if (dairyList.length === 0) {
+        setDairies([]);
+        return;
+      }
 
-        // Get owner profile with phone
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('name, phone')
-          .eq('user_id', dairy.owner_id)
-          .maybeSingle();
+      const ownerIds = Array.from(new Set(dairyList.map(d => d.owner_id)));
+      const dairyIds = dairyList.map(d => d.id);
 
-        dairyInfos.push({
+      // 2. Fetch ALL profiles + ALL suppliers in parallel (just 2 queries instead of 2*N)
+      const [profilesRes, suppliersRes] = await Promise.all([
+        supabase.from('profiles').select('user_id, name, phone').in('user_id', ownerIds),
+        supabase.from('suppliers').select('dairy_id').in('dairy_id', dairyIds),
+      ]);
+
+      const profileMap = new Map<string, { name: string; phone: string }>();
+      (profilesRes.data || []).forEach((p: any) => {
+        profileMap.set(p.user_id, { name: p.name || 'Unknown', phone: p.phone || 'N/A' });
+      });
+
+      const countMap = new Map<string, number>();
+      (suppliersRes.data || []).forEach((s: any) => {
+        countMap.set(s.dairy_id, (countMap.get(s.dairy_id) || 0) + 1);
+      });
+
+      const dairyInfos: DairyInfo[] = dairyList.map(dairy => {
+        const profile = profileMap.get(dairy.owner_id);
+        return {
           id: dairy.id,
           name: dairy.name,
           code: dairy.code,
-          ownerName: profileData?.name || 'Unknown',
-          ownerPhone: profileData?.phone || 'N/A',
-          supplierCount: count || 0,
+          ownerName: profile?.name || 'Unknown',
+          ownerPhone: profile?.phone || 'N/A',
+          supplierCount: countMap.get(dairy.id) || 0,
           customerLimit: (dairy as any).customer_limit ?? null,
           createdAt: dairy.created_at,
-        });
-      }
+        };
+      });
 
       setDairies(dairyInfos);
     } catch (error) {
