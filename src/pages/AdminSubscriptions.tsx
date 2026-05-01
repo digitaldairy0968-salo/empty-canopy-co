@@ -112,6 +112,24 @@ const AdminSubscriptions: React.FC = () => {
     })));
   };
 
+  const refreshSettings = async () => {
+    const { data: settingsData } = await supabase
+      .from('subscription_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (settingsData) {
+      setSettings(settingsData);
+      setMonthlyPrice(settingsData.monthly_price.toString());
+      setUpiId(settingsData.upi_id);
+      setAdminPhone(settingsData.admin_phone);
+      const days = settingsData.default_validity_days?.toString() || '30';
+      setDefaultValidityDays(days);
+      setDefaultValidityPreset(['1', '7', '15', '30', '90', '180', '365'].includes(days) ? days : 'custom');
+      setDemoDays((settingsData as any).demo_days?.toString() || '9');
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
