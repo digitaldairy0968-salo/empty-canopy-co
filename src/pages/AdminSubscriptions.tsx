@@ -52,6 +52,7 @@ const AdminSubscriptions: React.FC = () => {
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('settings');
 
   // Form state
   const [monthlyPrice, setMonthlyPrice] = useState('');
@@ -76,16 +77,53 @@ const AdminSubscriptions: React.FC = () => {
     fetchData();
   }, []);
 
+  // Granular refresh helpers — avoid full reload + loading screen after small actions
+  const refreshCodes = async () => {
+    const { data } = await supabase
+      .from('activation_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setCodes(data || []);
+  };
+
+  const refreshPlans = async () => {
+    const { data } = await supabase
+      .from('payment_plans')
+      .select('*')
+      .order('price', { ascending: true });
+    setPlans(data || []);
+  };
+
+  const refreshSubscriptions = async () => {
+    const { data: subsData } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!subsData) { setSubscriptions([]); return; }
+    const dairyIds = subsData.map(s => s.dairy_id);
+    const { data: dairies } = await supabase
+      .from('dairies')
+      .select('id, name')
+      .in('id', dairyIds);
+    const dairyMap = new Map(dairies?.map(d => [d.id, d.name]));
+    setSubscriptions(subsData.map(s => ({
+      ...s,
+      dairy_name: dairyMap.get(s.dairy_id) || 'Unknown'
+    })));
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch settings
-      const { data: settingsData } = await supabase
-        .from('subscription_settings')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+      // Run all 4 base queries in parallel
+      const [settingsRes, codesRes, plansRes, subsRes] = await Promise.all([
+        supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
+        supabase.from('activation_codes').select('*').order('created_at', { ascending: false }),
+        supabase.from('payment_plans').select('*').order('price', { ascending: true }),
+        supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
+      ]);
 
+      const settingsData = settingsRes.data;
       if (settingsData) {
         setSettings(settingsData);
         setMonthlyPrice(settingsData.monthly_price.toString());
@@ -97,40 +135,23 @@ const AdminSubscriptions: React.FC = () => {
         setDemoDays((settingsData as any).demo_days?.toString() || '9');
       }
 
-      // Fetch codes
-      const { data: codesData } = await supabase
-        .from('activation_codes')
-        .select('*')
-        .order('created_at', { ascending: false });
+      setCodes(codesRes.data || []);
+      setPlans(plansRes.data || []);
 
-      setCodes(codesData || []);
-
-      // Fetch payment plans
-      const { data: plansData } = await supabase
-        .from('payment_plans')
-        .select('*')
-        .order('price', { ascending: true });
-      setPlans(plansData || []);
-
-      // Fetch subscriptions with dairy names
-      const { data: subsData } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (subsData) {
-        // Get dairy names
+      const subsData = subsRes.data;
+      if (subsData && subsData.length > 0) {
         const dairyIds = subsData.map(s => s.dairy_id);
         const { data: dairies } = await supabase
           .from('dairies')
           .select('id, name')
           .in('id', dairyIds);
-
         const dairyMap = new Map(dairies?.map(d => [d.id, d.name]));
         setSubscriptions(subsData.map(s => ({
           ...s,
           dairy_name: dairyMap.get(s.dairy_id) || 'Unknown'
         })));
+      } else {
+        setSubscriptions([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
