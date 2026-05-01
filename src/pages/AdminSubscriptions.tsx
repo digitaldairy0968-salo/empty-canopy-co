@@ -270,7 +270,7 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success(`${count} code${count > 1 ? 's' : ''} generated (${validity} days each)`);
-      fetchData();
+      await refreshCodes();
     } catch (error) {
       console.error('Error generating codes:', error);
       toast.error('Failed to generate codes');
