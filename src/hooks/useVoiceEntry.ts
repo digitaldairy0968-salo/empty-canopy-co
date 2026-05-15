@@ -367,14 +367,54 @@ export const useVoiceEntry = ({
     return recognition;
   }, [language, applyValue]);
 
-  const startListening = useCallback(() => {
-    if (!isSupported) { setError('Voice recognition not supported'); return; }
+  const startListening = useCallback(async () => {
+    if (!isSupported) {
+      setError(language === 'hi' ? 'इस ब्राउज़र में वॉइस सपोर्ट नहीं है' : 'Voice not supported in this browser');
+      return;
+    }
+    setError(null);
+
+    // Explicitly request mic permission so user gets a clear prompt / error
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately stop the tracks — SpeechRecognition will open its own
+        stream.getTracks().forEach(t => t.stop());
+      }
+    } catch (err: any) {
+      const name = err?.name || '';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        setError(language === 'hi' ? 'माइक की अनुमति दें (Settings में जाकर allow करें)' : 'Allow microphone access in browser settings');
+      } else if (name === 'NotFoundError') {
+        setError(language === 'hi' ? 'माइक नहीं मिला' : 'No microphone found');
+      } else {
+        setError(language === 'hi' ? 'माइक access नहीं मिला' : 'Could not access microphone');
+      }
+      return;
+    }
+
+    isListeningRef.current = true;
     recognitionRef.current = initRecognition();
     if (recognitionRef.current) {
-      try { recognitionRef.current.start(); setIsListening(true); }
-      catch { setError('Failed to start voice recognition'); }
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (e: any) {
+        // InvalidStateError if already started — try fresh
+        if (e?.name === 'InvalidStateError') {
+          try {
+            recognitionRef.current.stop();
+            setTimeout(() => {
+              try { recognitionRef.current?.start(); setIsListening(true); } catch { /* ignore */ }
+            }, 200);
+          } catch { /* ignore */ }
+        } else {
+          isListeningRef.current = false;
+          setError(language === 'hi' ? 'वॉइस शुरू नहीं हो पाया' : 'Failed to start voice recognition');
+        }
+      }
     }
-  }, [isSupported, initRecognition]);
+  }, [isSupported, initRecognition, language]);
 
   const stopListening = useCallback(() => {
     isListeningRef.current = false;
