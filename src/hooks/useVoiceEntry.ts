@@ -284,7 +284,7 @@ export const useVoiceEntry = ({
     recognition.lang = langMap[language] || 'hi-IN';
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 5;
+    recognition.maxAlternatives = 8;
 
     recognition.onstart = () => { setIsListening(true); setError(null); };
 
