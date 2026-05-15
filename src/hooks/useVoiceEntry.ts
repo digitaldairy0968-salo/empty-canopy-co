@@ -296,25 +296,39 @@ export const useVoiceEntry = ({
         const result = event.results[i];
 
         if (result.isFinal) {
-          let bestValue: number | null = null;
-
+          // Collect ALL parsed candidates across every alternative
+          const candidates: { value: number; txt: string }[] = [];
           for (let alt = 0; alt < result.length; alt++) {
             const txt = result[alt].transcript;
             const parsed = parseSpokenNumber(txt);
             if (parsed !== null && parsed > 0) {
-              bestValue = parsed;
-              setTranscript(txt);
-              break;
+              candidates.push({ value: parsed, txt });
             }
           }
 
-          if (bestValue !== null) {
-            applyValueRef.current(bestValue);
+          // Prefer candidates in typical milk range (0.1 – 25 L)
+          const inRange = candidates.find(c => c.value >= 0.1 && c.value <= 25);
+          const best = inRange || candidates[0];
+
+          if (best) {
+            setTranscript(best.txt);
+            applyValueRef.current(best.value);
           } else {
             setTranscript(result[0]?.transcript || '');
           }
         } else {
-          interimText += result[0].transcript;
+          const interim = result[0].transcript;
+          interimText += interim;
+          // Fast-fill on short confident interim (e.g. user just says "5" or "do")
+          const trimmed = interim.trim();
+          const wordCount = trimmed.split(/\s+/).length;
+          if (wordCount <= 2) {
+            const quickParsed = parseSpokenNumber(trimmed);
+            if (quickParsed !== null && quickParsed >= 0.1 && quickParsed <= 25) {
+              setTranscript(interim);
+              applyValueRef.current(quickParsed);
+            }
+          }
         }
       }
 
