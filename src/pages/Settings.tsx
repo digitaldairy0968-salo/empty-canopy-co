@@ -737,14 +737,18 @@ const Settings: React.FC = () => {
   // Owner settings
   const { settings: ownerSettings, updateSettings: updateOwnerSettings, saving: savingOwnerSettings } = useOwnerSettings();
 
-  // Load customer visibility settings
+  // Load customer visibility settings — only fill missing keys, preserve user's in-progress toggles
   useEffect(() => {
     if (suppliers.length > 0) {
-      const visibility: Record<string, boolean> = {};
-      suppliers.forEach(s => {
-        visibility[s.id] = s.canSeeCalculations ?? true;
+      setCustomerVisibility(prev => {
+        const next = { ...prev };
+        suppliers.forEach(s => {
+          if (!(s.id in next)) {
+            next[s.id] = s.canSeeCalculations ?? true;
+          }
+        });
+        return next;
       });
-      setCustomerVisibility(visibility);
     }
   }, [suppliers]);
 
