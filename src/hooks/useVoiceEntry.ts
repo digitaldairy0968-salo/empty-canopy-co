@@ -102,9 +102,40 @@ const fuzzyLookupWord = (token: string, dict: Record<string, number>): number | 
   return bestMatch?.value ?? null;
 };
 
+const extractSpokenNumberCandidates = (rawText: string): string[] => {
+  const normalized = normalizeNumberScripts(rawText.toLowerCase())
+    .replace(/[“”"'`´।!?]+/g, ' ')
+    .replace(/[,:;|/\\()[\]{}]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalized) return [];
+
+  const words = normalized.split(' ');
+  const candidates = new Set<string>([
+    normalized,
+    words.slice(-1).join(' '),
+    words.slice(-2).join(' '),
+    words.slice(-3).join(' '),
+  ]);
+
+  return [...candidates].filter(Boolean);
+};
+
 // Comprehensive number parsing optimized for milk quantities (0.1 - 25.0 range)
 const parseSpokenNumber = (rawText: string): number | null => {
-  let text = normalizeNumberScripts(rawText.toLowerCase().trim());
+  const candidates = extractSpokenNumberCandidates(rawText);
+
+  for (const candidateText of candidates) {
+    const parsed = parseSpokenNumberCandidate(candidateText);
+    if (parsed !== null) return parsed;
+  }
+
+  return null;
+};
+
+const parseSpokenNumberCandidate = (candidateText: string): number | null => {
+  let text = normalizeNumberScripts(candidateText.toLowerCase().trim());
 
   // Remove common noise words/fillers (do NOT strip "do"/"to" — they mean 2 in Hindi)
   text = text
@@ -250,6 +281,26 @@ const parseSpokenNumber = (rawText: string): number | null => {
   return null;
 };
 
+const pickBestSpeechCandidate = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  result: any,
+): { value: number; txt: string } | null => {
+  const candidates: { value: number; txt: string }[] = [];
+
+  for (let alt = 0; alt < result.length; alt++) {
+    const txt = result[alt]?.transcript || '';
+    for (const candidateText of extractSpokenNumberCandidates(txt)) {
+      const parsed = parseSpokenNumber(candidateText);
+      if (parsed !== null && parsed > 0) {
+        candidates.push({ value: parsed, txt: candidateText });
+      }
+    }
+  }
+
+  const inRange = candidates.find(c => c.value >= 0.1 && c.value <= 25);
+  return inRange || candidates[0] || null;
+};
+
 // Look up a single token - try numeric first, then word dictionary
 const lookupWord = (token: string, dict: Record<string, number>): number | null => {
   const t = token.trim();
@@ -375,19 +426,7 @@ export const useVoiceEntry = ({
         const result = event.results[i];
 
         if (result.isFinal) {
-          // Collect ALL parsed candidates across every alternative
-          const candidates: { value: number; txt: string }[] = [];
-          for (let alt = 0; alt < result.length; alt++) {
-            const txt = result[alt].transcript;
-            const parsed = parseSpokenNumber(txt);
-            if (parsed !== null && parsed > 0) {
-              candidates.push({ value: parsed, txt });
-            }
-          }
-
-          // Prefer candidates in typical milk range (0.1 – 25 L)
-          const inRange = candidates.find(c => c.value >= 0.1 && c.value <= 25);
-          const best = inRange || candidates[0];
+          const best = pickBestSpeechCandidate(result);
 
           if (best) {
             setTranscript(best.txt);
@@ -396,16 +435,15 @@ export const useVoiceEntry = ({
             setTranscript(result[0]?.transcript || '');
           }
         } else {
-          const interim = result[0].transcript;
+          const interim = result[0]?.transcript || '';
           interimText += interim;
-          // Fast-fill on short confident interim (e.g. user just says "5" or "do")
-          const trimmed = interim.trim();
-          const wordCount = trimmed.split(/\s+/).length;
-          if (wordCount <= 2) {
-            const quickParsed = parseSpokenNumber(trimmed);
-            if (quickParsed !== null && quickParsed >= 0.1 && quickParsed <= 25) {
-              setTranscript(interim);
-              applyValueRef.current(quickParsed);
+
+          const quickBest = pickBestSpeechCandidate(result);
+          if (quickBest && quickBest.value >= 0.1 && quickBest.value <= 25) {
+            const wordCount = quickBest.txt.trim().split(/\s+/).filter(Boolean).length;
+            if (wordCount <= 3) {
+              setTranscript(quickBest.txt);
+              applyValueRef.current(quickBest.value);
             }
           }
         }
