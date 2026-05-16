@@ -58,13 +58,58 @@ const phoneticFixes: Record<string, number> = {
   'aadha': 0.5, 'adha': 0.5,
 };
 
+const normalizeNumberScripts = (text: string) => text
+  .replace(/[०-९]/g, d => String('०१२३४५६७८९'.indexOf(d)))
+  .replace(/[૦-૯]/g, d => String('૦૧૨૩૪૫૬૭૮૯'.indexOf(d)));
+
+const levenshteinDistance = (a: string, b: string): number => {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const dp = Array.from({ length: rows }, () => Array(cols).fill(0));
+
+  for (let i = 0; i < rows; i++) dp[i][0] = i;
+  for (let j = 0; j < cols; j++) dp[0][j] = j;
+
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1,
+        dp[i][j - 1] + 1,
+        dp[i - 1][j - 1] + cost
+      );
+    }
+  }
+
+  return dp[a.length][b.length];
+};
+
+const fuzzyLookupWord = (token: string, dict: Record<string, number>): number | null => {
+  const t = token.trim();
+  if (!t) return null;
+
+  let bestMatch: { distance: number; value: number } | null = null;
+
+  for (const [word, value] of Object.entries(dict)) {
+    const distance = levenshteinDistance(t, word);
+    const maxDistance = t.length <= 4 ? 1 : 2;
+
+    if (distance <= maxDistance && (!bestMatch || distance < bestMatch.distance)) {
+      bestMatch = { distance, value };
+    }
+  }
+
+  return bestMatch?.value ?? null;
+};
+
 // Comprehensive number parsing optimized for milk quantities (0.1 - 25.0 range)
 const parseSpokenNumber = (rawText: string): number | null => {
-  let text = rawText.toLowerCase().trim();
+  let text = normalizeNumberScripts(rawText.toLowerCase().trim());
 
   // Remove common noise words/fillers (do NOT strip "do"/"to" — they mean 2 in Hindi)
   text = text
     .replace(/\b(the|a|is|it|of|he|hi|ok|huh|ha|hmm|uh|um|yeah|yes|हां|जी|और|and|लीटर|लिटर|liters?|litres?|દૂધ|दूध|milk|doodh|લીટર)\b/gi, '')
+    .replace(/[“”"'`´।!?]+/g, ' ')
     .replace(/[,\s]+/g, ' ')
     .trim();
 
@@ -109,7 +154,23 @@ const parseSpokenNumber = (rawText: string): number | null => {
     'half': 0.5, 'quarter': 0.25,
   };
 
-  const allWords = { ...hindiMap, ...gujaratiMap, ...englishMap, ...phoneticFixes };
+  const allWords = {
+    ...hindiMap,
+    ...gujaratiMap,
+    ...englishMap,
+    ...phoneticFixes,
+    'team': 3,
+    'teem': 3,
+    'tiin': 3,
+    'thing': 3,
+    'tree': 3,
+    'free': 3,
+    'tho': 2,
+    'tuu': 2,
+    'panchh': 5,
+    'chee': 6,
+    'aatth': 8,
+  };
 
   // --- 3. Handle "साढ़े X" (X + 0.5) pattern ---
   if (text.includes('साढ़े') || text.includes('saadhe') || text.includes('sadhe')) {
@@ -161,7 +222,25 @@ const parseSpokenNumber = (rawText: string): number | null => {
     }
   }
 
-  // --- 8. Fuzzy: find closest phonetic match ---
+  // --- 8. Fuzzy: find closest phonetic or STT match ---
+  const fuzzyWhole = fuzzyLookupWord(text, allWords);
+  if (fuzzyWhole !== null) return snapValue(fuzzyWhole);
+
+  if (words.length >= 1 && words.length <= 2) {
+    const fuzzyParts = words.map(word => fuzzyLookupWord(word, allWords));
+    if (fuzzyParts[0] !== null && words.length === 1) {
+      return snapValue(fuzzyParts[0]);
+    }
+    if (fuzzyParts[0] !== null && fuzzyParts[1] !== null) {
+      if (fuzzyParts[0] >= 20 && fuzzyParts[0] % 10 === 0 && fuzzyParts[1] >= 1 && fuzzyParts[1] <= 9) {
+        return snapValue(fuzzyParts[0] + fuzzyParts[1]);
+      }
+      if (fuzzyParts[0] >= 1 && fuzzyParts[0] <= 25 && fuzzyParts[1] >= 0 && fuzzyParts[1] <= 9) {
+        return snapValue(fuzzyParts[0] + fuzzyParts[1] / 10);
+      }
+    }
+  }
+
   for (const [key, val] of Object.entries(phoneticFixes)) {
     if (text.includes(key)) {
       return snapValue(val);
