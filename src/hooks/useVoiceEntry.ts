@@ -62,9 +62,9 @@ const phoneticFixes: Record<string, number> = {
 const parseSpokenNumber = (rawText: string): number | null => {
   let text = rawText.toLowerCase().trim();
 
-  // Remove common noise words/fillers
+  // Remove common noise words/fillers (do NOT strip "do"/"to" — they mean 2 in Hindi)
   text = text
-    .replace(/\b(the|a|is|it|of|to|do|he|hi|ok|huh|ha|hmm|uh|um|yeah|yes|हां|जी|और|and|लीटर|लिटर|liters?|litres?|દૂધ|दूध|milk|doodh|લીટર)\b/gi, '')
+    .replace(/\b(the|a|is|it|of|he|hi|ok|huh|ha|hmm|uh|um|yeah|yes|हां|जी|और|and|लीटर|लिटर|liters?|litres?|દૂધ|दूध|milk|doodh|લીટર)\b/gi, '')
     .replace(/[,\s]+/g, ' ')
     .trim();
 
