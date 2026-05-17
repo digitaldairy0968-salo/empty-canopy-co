@@ -146,8 +146,15 @@ const parseSpokenNumberCandidate = (candidateText: string): number | null => {
 
   if (!text) return null;
 
-  // --- 1. Try direct numeric parse first (handles "6.5", "14", "0.8" etc.) ---
-  const directNum = text.match(/(\d+\.?\d*)/);
+  // Normalize all "point" variants to a single token ".point."
+  const pointRegex = /\s*(?:point|points|पॉइंट|पाइंट|पॉइन्ट|पाईंट|पाॅइंट|पोइंट|पॉंइट|पॉइट|पाइन्ट|paint|poin|poinT|paॉइंट|डॉट|दॉट|डाट|dot|बिंदु|बिन्दु|दशमलव)\s*/gi;
+  if (pointRegex.test(text)) {
+    text = text.replace(pointRegex, ' . ').replace(/\s+/g, ' ').trim();
+  }
+
+  // --- 1. Try direct numeric parse first (handles "6.5", "14", "0.8", "4 . 3" etc.) ---
+  const joinedNumeric = text.replace(/(\d)\s*\.\s*(\d)/g, '$1.$2');
+  const directNum = joinedNumeric.match(/(\d+\.?\d*)/);
   if (directNum) {
     const val = parseFloat(directNum[1]);
     const snapped = snapValue(val);
