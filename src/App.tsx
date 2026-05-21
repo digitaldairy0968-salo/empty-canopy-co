@@ -72,17 +72,18 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, authUser, isAdmin } = useAuth();
   
-  // Initialize from cache immediately — no loading state
-  const [subStatus, setSubStatus] = useState<'active' | 'expired' | 'none'>(() => {
+  // Initialize from cache. If no cache exists (e.g. fresh signup), use 'checking'
+  // so we don't briefly render the dashboard before redirecting to /payment-required.
+  const [subStatus, setSubStatus] = useState<'active' | 'expired' | 'none' | 'checking'>(() => {
     if (isAdmin) return 'active';
     const cached = localStorage.getItem('subscription_cache');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        return parsed.status || 'active';
+        return parsed.status || 'checking';
       } catch {}
     }
-    return 'active'; // Assume active, verify in background
+    return 'checking'; // No cache — verify before rendering
   });
 
   useEffect(() => {
@@ -132,6 +133,11 @@ const OwnerRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Wait until we know subscription status before rendering (prevents dashboard flash for new signups)
+  if (subStatus === 'checking') {
+    return null;
   }
 
   if (subStatus === 'expired' || subStatus === 'none') {
