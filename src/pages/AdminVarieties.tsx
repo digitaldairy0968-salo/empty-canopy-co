@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Plus, Trash2, Check, Ban, Edit3 } from 'lucide-react';
+import { ArrowLeft, Package, Plus, Trash2, Check, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { FEATURE_CATALOG, getFeatureDef } from '@/lib/featureCatalog';
+
 
 interface Variety {
   id: string;
@@ -35,7 +37,8 @@ const AdminVarieties: React.FC = () => {
   // New variety form
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [newFeatures, setNewFeatures] = useState('');
+  const [newFeatures, setNewFeatures] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
 
   // New plan form
@@ -71,16 +74,16 @@ const AdminVarieties: React.FC = () => {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const featuresArr = newFeatures.split('\n').map(f => f.trim()).filter(Boolean);
       const { error } = await supabase.from('subscription_varieties').insert({
         name: newName.trim(),
         description: newDesc.trim() || null,
-        features: featuresArr,
+        features: newFeatures,
       });
       if (error) throw error;
       toast.success('Variety added');
-      setNewName(''); setNewDesc(''); setNewFeatures('');
+      setNewName(''); setNewDesc(''); setNewFeatures([]);
       fetchData(false);
+
     } catch (e) {
       toast.error('Failed to add variety');
     } finally {
@@ -166,9 +169,29 @@ const AdminVarieties: React.FC = () => {
           <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Variety Name (e.g. Basic, Pro, Premium)" />
           <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short description (optional)" />
           <div>
-            <Label className="text-xs">Features (one per line)</Label>
-            <Textarea value={newFeatures} onChange={e => setNewFeatures(e.target.value)} placeholder="Milk Entry&#10;Reports&#10;Calculator" rows={4} />
+            <Label className="text-xs mb-2 block">Features (select from list)</Label>
+            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/30">
+              {FEATURE_CATALOG.map(f => {
+                const Icon = f.icon;
+                const checked = newFeatures.includes(f.key);
+                return (
+                  <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(c) => {
+                        setNewFeatures(prev => c ? [...prev, f.key] : prev.filter(k => k !== f.key));
+                      }}
+                    />
+                    <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${f.color} flex items-center justify-center`}>
+                      <Icon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="text-sm">{f.labelEn}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
+
           <Button onClick={addVariety} disabled={saving || !newName.trim()} className="w-full gap-2">
             <Plus className="h-4 w-4" />
             {saving ? 'Adding...' : 'Add Variety'}
@@ -183,12 +206,20 @@ const AdminVarieties: React.FC = () => {
                 <h3 className="font-bold text-lg">{v.name}</h3>
                 {v.description && <p className="text-sm text-muted-foreground">{v.description}</p>}
                 {v.features.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {v.features.map((f: string, i: number) => (
-                      <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">{f}</span>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {v.features.map((f: string, i: number) => {
+                      const def = getFeatureDef(f);
+                      const Icon = def?.icon;
+                      return (
+                        <span key={i} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${def ? `bg-gradient-to-r ${def.color} text-white` : 'bg-primary/10 text-primary'}`}>
+                          {Icon && <Icon className="h-3 w-3" />}
+                          {def ? def.labelEn : f}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
+
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={() => toggleVariety(v.id, !v.is_active)}>
