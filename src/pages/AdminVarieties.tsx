@@ -206,12 +206,20 @@ const AdminVarieties: React.FC = () => {
                 <h3 className="font-bold text-lg">{v.name}</h3>
                 {v.description && <p className="text-sm text-muted-foreground">{v.description}</p>}
                 {v.features.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {v.features.map((f: string, i: number) => (
-                      <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">{f}</span>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {v.features.map((f: string, i: number) => {
+                      const def = getFeatureDef(f);
+                      const Icon = def?.icon;
+                      return (
+                        <span key={i} className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${def ? `bg-gradient-to-r ${def.color} text-white` : 'bg-primary/10 text-primary'}`}>
+                          {Icon && <Icon className="h-3 w-3" />}
+                          {def ? def.labelEn : f}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
+
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon" onClick={() => toggleVariety(v.id, !v.is_active)}>
