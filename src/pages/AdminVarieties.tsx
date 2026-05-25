@@ -169,9 +169,29 @@ const AdminVarieties: React.FC = () => {
           <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Variety Name (e.g. Basic, Pro, Premium)" />
           <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short description (optional)" />
           <div>
-            <Label className="text-xs">Features (one per line)</Label>
-            <Textarea value={newFeatures} onChange={e => setNewFeatures(e.target.value)} placeholder="Milk Entry&#10;Reports&#10;Calculator" rows={4} />
+            <Label className="text-xs mb-2 block">Features (select from list)</Label>
+            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/30">
+              {FEATURE_CATALOG.map(f => {
+                const Icon = f.icon;
+                const checked = newFeatures.includes(f.key);
+                return (
+                  <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded">
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={(c) => {
+                        setNewFeatures(prev => c ? [...prev, f.key] : prev.filter(k => k !== f.key));
+                      }}
+                    />
+                    <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${f.color} flex items-center justify-center`}>
+                      <Icon className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="text-sm">{f.labelEn}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
+
           <Button onClick={addVariety} disabled={saving || !newName.trim()} className="w-full gap-2">
             <Plus className="h-4 w-4" />
             {saving ? 'Adding...' : 'Add Variety'}
