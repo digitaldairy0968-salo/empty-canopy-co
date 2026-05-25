@@ -162,27 +162,41 @@ const AdminVarieties: React.FC = () => {
 
       <main className="px-4 py-6 max-w-2xl mx-auto space-y-6">
         {/* Add Variety */}
-        <div className="dairy-card space-y-3">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Plus className="h-4 w-4" /> Add Variety
+        <div className="dairy-card space-y-4">
+          <h3 className="font-semibold flex items-center gap-2 text-base">
+            <Plus className="h-4 w-4" /> Add New Variety
           </h3>
-          <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Variety Name (e.g. Basic, Pro, Premium)" />
-          <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short description (optional)" />
-          <div>
-            <Label className="text-xs mb-2 block">Features (select from list)</Label>
-            <div className="space-y-2 max-h-64 overflow-y-auto border rounded-lg p-3 bg-muted/30">
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Variety Name *</Label>
+            <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Basic, Pro, Premium" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Description</Label>
+            <Input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Short description (optional)" />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium block">
+              Features <span className="text-muted-foreground">({newFeatures.length} selected)</span>
+            </Label>
+            <div className="space-y-1 max-h-72 overflow-y-auto border rounded-lg p-3 bg-muted/30">
+              {FEATURE_CATALOG.length === 0 && (
+                <p className="text-xs text-muted-foreground">No features available</p>
+              )}
               {FEATURE_CATALOG.map(f => {
                 const Icon = f.icon;
                 const checked = newFeatures.includes(f.key);
                 return (
-                  <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded">
+                  <label key={f.key} className="flex items-center gap-2 cursor-pointer hover:bg-muted/60 p-1.5 rounded">
                     <Checkbox
                       checked={checked}
                       onCheckedChange={(c) => {
                         setNewFeatures(prev => c ? [...prev, f.key] : prev.filter(k => k !== f.key));
                       }}
                     />
-                    <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${f.color} flex items-center justify-center`}>
+                    <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${f.color} flex items-center justify-center shrink-0`}>
                       <Icon className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className="text-sm">{f.labelEn}</span>
