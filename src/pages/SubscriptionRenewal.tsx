@@ -173,17 +173,24 @@ const SubscriptionRenewal: React.FC = () => {
               </div>
               
               {features.length > 0 && (
-                <div className="px-4 py-3 space-y-2">
-                  {features.map((f: string, i: number) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="h-3 w-3 text-primary" />
+                <div className="px-4 py-3 grid grid-cols-2 gap-2">
+                  {features.map((f: string, i: number) => {
+                    const def = getFeatureDef(f);
+                    const Icon = def?.icon ?? Sparkles;
+                    const label = def ? (language === 'hi' ? def.labelHi : def.labelEn) : f;
+                    const grad = def?.color ?? 'from-primary to-primary/70';
+                    return (
+                      <div key={i} className="relative overflow-hidden rounded-xl border border-border/40 bg-card p-2.5 flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                          <Icon className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-xs font-semibold text-foreground leading-tight">{label}</span>
                       </div>
-                      <span className="text-sm text-foreground">{f}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
+
               
               {vp.length > 0 && (
                 <div className="p-4 pt-0 space-y-2">
