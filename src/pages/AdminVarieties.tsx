@@ -74,16 +74,16 @@ const AdminVarieties: React.FC = () => {
     if (!newName.trim()) return;
     setSaving(true);
     try {
-      const featuresArr = newFeatures.split('\n').map(f => f.trim()).filter(Boolean);
       const { error } = await supabase.from('subscription_varieties').insert({
         name: newName.trim(),
         description: newDesc.trim() || null,
-        features: featuresArr,
+        features: newFeatures,
       });
       if (error) throw error;
       toast.success('Variety added');
-      setNewName(''); setNewDesc(''); setNewFeatures('');
+      setNewName(''); setNewDesc(''); setNewFeatures([]);
       fetchData(false);
+
     } catch (e) {
       toast.error('Failed to add variety');
     } finally {
