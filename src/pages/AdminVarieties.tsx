@@ -37,7 +37,8 @@ const AdminVarieties: React.FC = () => {
   // New variety form
   const [newName, setNewName] = useState('');
   const [newDesc, setNewDesc] = useState('');
-  const [newFeatures, setNewFeatures] = useState('');
+  const [newFeatures, setNewFeatures] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
 
   // New plan form
