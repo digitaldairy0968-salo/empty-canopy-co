@@ -583,9 +583,41 @@ const MilkEntry: React.FC = () => {
       setLrValue('');
       setBuyerPrice('');
 
-      // Only show receipt if printer is connected - direct print, no UI
+      // Silent thermal print if printer is connected
       if (ownerSettings.bluetoothPrinterConnected) {
-        setShowReceiptDialog(true);
+        try {
+          const { printMilkReceipt, isPrinterReady } = await import('@/lib/thermalPrinter');
+          if (!isPrinterReady()) {
+            toast({
+              title: language === 'hi' ? 'प्रिंटर रीकनेक्ट करें' : 'Reconnect Printer',
+              description: language === 'hi' ? 'सेटिंग्स में जाकर प्रिंटर दोबारा कनेक्ट करें।' : 'Open Settings and reconnect the printer.',
+              variant: 'destructive',
+            });
+          } else {
+            const sup = selectedSupplier;
+            const amount = (fatValue ? parseFloat(fatValue) : 0) * parseFloat(milkQty) * rate;
+            const res = await printMilkReceipt({
+              dairyName: user?.dairyName,
+              date: today,
+              time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+              supplierCode: sup.code || sup.id.slice(0, 6).toUpperCase(),
+              supplierName: sup.name,
+              milkType: sup.animalType,
+              shift,
+              quantity: parseFloat(milkQty),
+              fat: fatValue ? parseFloat(fatValue) : null,
+              snf: snfValue ? parseFloat(snfValue) : null,
+              lr: lrValue ? parseFloat(lrValue) : null,
+              rate,
+              amount,
+            });
+            if (!res.ok) {
+              toast({ title: language === 'hi' ? 'प्रिंट विफल' : 'Print Failed', description: res.error, variant: 'destructive' });
+            }
+          }
+        } catch (e) {
+          console.error('Print error:', e);
+        }
       }
       
       // Auto-select next supplier
@@ -1042,31 +1074,6 @@ const MilkEntry: React.FC = () => {
 
       <BottomNav />
 
-      {/* Receipt Dialog */}
-      {/* Hidden Receipt - auto prints and closes when printer connected */}
-      {showReceiptDialog && savedEntryData && (
-        <div className="fixed -left-[9999px] top-0">
-          <MilkReceipt
-            data={{
-              date: savedEntryData.date,
-              supplierName: savedEntryData.supplierName,
-              supplierId: savedEntryData.supplierId,
-              supplierCode: suppliers.find(s => s.id === savedEntryData.supplierId)?.code,
-              villageName: suppliers.find(s => s.id === savedEntryData.supplierId)?.villageName,
-              animalType: suppliers.find(s => s.id === savedEntryData.supplierId)?.animalType,
-              timeOfDay: savedEntryData.timeOfDay,
-              quantity: savedEntryData.quantity,
-              fat: savedEntryData.fat,
-              snf: savedEntryData.snf,
-              lr: savedEntryData.lr,
-              rate: rate,
-              dairyName: user?.dairyName,
-            }}
-            onClose={() => setShowReceiptDialog(false)}
-            autoPrint={true}
-          />
-        </div>
-      )}
     </div>
   );
 };
