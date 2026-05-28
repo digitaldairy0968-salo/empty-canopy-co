@@ -1074,31 +1074,6 @@ const MilkEntry: React.FC = () => {
 
       <BottomNav />
 
-      {/* Receipt Dialog */}
-      {/* Hidden Receipt - auto prints and closes when printer connected */}
-      {showReceiptDialog && savedEntryData && (
-        <div className="fixed -left-[9999px] top-0">
-          <MilkReceipt
-            data={{
-              date: savedEntryData.date,
-              supplierName: savedEntryData.supplierName,
-              supplierId: savedEntryData.supplierId,
-              supplierCode: suppliers.find(s => s.id === savedEntryData.supplierId)?.code,
-              villageName: suppliers.find(s => s.id === savedEntryData.supplierId)?.villageName,
-              animalType: suppliers.find(s => s.id === savedEntryData.supplierId)?.animalType,
-              timeOfDay: savedEntryData.timeOfDay,
-              quantity: savedEntryData.quantity,
-              fat: savedEntryData.fat,
-              snf: savedEntryData.snf,
-              lr: savedEntryData.lr,
-              rate: rate,
-              dairyName: user?.dairyName,
-            }}
-            onClose={() => setShowReceiptDialog(false)}
-            autoPrint={true}
-          />
-        </div>
-      )}
     </div>
   );
 };
