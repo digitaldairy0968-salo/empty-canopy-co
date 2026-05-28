@@ -5,22 +5,13 @@
 // that expose the common nordic/printer service.
 
 // Common BLE printer services (we attempt them in order)
-const PRINTER_SERVICES: BluetoothServiceUUID[] = [
+const PRINTER_SERVICES: any[] = [
   0x18f0,                                  // common ESC/POS printer service
   0xff00,
   0xfee7,
   '49535343-fe7d-4ae5-8fa9-9fafd205e455',  // ISSC
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '000018f0-0000-1000-8000-00805f9b34fb',
-];
-
-const WRITE_CHARS: BluetoothCharacteristicUUID[] = [
-  0x2af1,
-  0xff02,
-  0xff01,
-  '49535343-8841-43f4-a8d4-ecbe34729bb3',
-  '0000ff02-0000-1000-8000-00805f9b34fb',
-  '00002af1-0000-1000-8000-00805f9b34fb',
 ];
 
 interface PrinterRef {
