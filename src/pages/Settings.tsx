@@ -1113,19 +1113,6 @@ const Settings: React.FC = () => {
                 <Switch checked={ownerSettings.usesPrinter} onCheckedChange={(checked) => updateOwnerSettings({ usesPrinter: checked })} disabled={savingOwnerSettings} />
               </div>
 
-              {ownerSettings.usesPrinter && (
-                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl ml-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">🖨️</span>
-                    <div>
-                      <span className="font-medium">{language === 'hi' ? 'ऑटो प्रिंट' : 'Auto Print'}</span>
-                      <p className="text-xs text-muted-foreground">{language === 'hi' ? 'एंट्री के बाद ऑटो प्रिंट' : 'Auto print after entry'}</p>
-                    </div>
-                  </div>
-                  <Switch checked={ownerSettings.autoPrintEnabled} onCheckedChange={(checked) => updateOwnerSettings({ autoPrintEnabled: checked })} disabled={savingOwnerSettings} />
-                </div>
-              )}
-
               {/* Bluetooth Fat/SNF Machine - admin feature controlled */}
               <FatMachineConnect language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
 
@@ -1135,7 +1122,7 @@ const Settings: React.FC = () => {
                   <Bluetooth className="h-5 w-5 text-blue-500" />
                   <div>
                     <span className="font-medium">{language === 'hi' ? 'ब्लूटूथ प्रिंटर' : 'Bluetooth Printer'}</span>
-                    <p className="text-xs text-muted-foreground">{language === 'hi' ? 'प्रिंटर से कनेक्ट करें' : 'Connect printer'}</p>
+                    <p className="text-xs text-muted-foreground">{language === 'hi' ? 'थर्मल प्रिंटर से कनेक्ट करें (साइलेंट प्रिंट)' : 'Connect thermal printer (silent print)'}</p>
                   </div>
                 </div>
                 <Button
@@ -1143,20 +1130,17 @@ const Settings: React.FC = () => {
                   size="sm"
                   className="rounded-xl"
                   onClick={async () => {
-                    try {
-                      if (!(navigator as any).bluetooth) {
-                        toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र उपयोग करें।' : 'Use Chrome browser.', variant: 'destructive' });
-                        return;
-                      }
-                      const device = await (navigator as any).bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['battery_service'] });
-                      if (device) {
-                        updateOwnerSettings({ bluetoothPrinterConnected: true });
-                        toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!' });
-                      }
-                    } catch (err: any) {
-                      if (err.name !== 'NotFoundError') {
-                        toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
-                      }
+                    const { connectThermalPrinter } = await import('@/lib/thermalPrinter');
+                    const res = await connectThermalPrinter();
+                    if (res.ok) {
+                      updateOwnerSettings({ bluetoothPrinterConnected: true });
+                      toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!', description: res.name });
+                    } else if (res.error === 'bluetooth_unsupported') {
+                      toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या ऐप का उपयोग करें।' : 'Use Chrome browser or the app.', variant: 'destructive' });
+                    } else if (res.error === 'no_writable_characteristic') {
+                      toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस थर्मल प्रिंटर नहीं है।' : 'This device is not a thermal printer.', variant: 'destructive' });
+                    } else if (res.error !== 'cancelled') {
+                      toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
                     }
                   }}
                 >
