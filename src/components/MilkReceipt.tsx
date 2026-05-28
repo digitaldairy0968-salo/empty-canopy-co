@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 import { Printer } from 'lucide-react';
 
 interface ReceiptData {
@@ -45,6 +46,7 @@ const getEntryReceiptFields = () => {
 
 const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = false }) => {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [paymentMode, setPaymentMode] = useState<'cash' | 'bank'>('cash');
   const receiptRef = useRef<HTMLDivElement>(null);
   const fields = getEntryReceiptFields();
@@ -55,13 +57,13 @@ const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = fa
     if (autoPrint && !hasPrinted.current) {
       hasPrinted.current = true;
       const timer = setTimeout(() => {
-        handlePrint();
-        // Auto-close after print
-        setTimeout(() => onClose(), 1500);
+        void handlePrint().finally(() => {
+          setTimeout(() => onClose(), 800);
+        });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [autoPrint]);
+  }, [autoPrint, onClose]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -86,55 +88,48 @@ const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = fa
     }
   };
 
-  const handlePrint = () => {
-    const printContent = receiptRef.current;
-    if (!printContent) return;
+  const handlePrint = async () => {
+    try {
+      const { isPrinterReady, printMilkReceipt } = await import('@/lib/thermalPrinter');
 
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = 'none';
-    document.body.appendChild(printFrame);
-    
-    const frameDoc = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (frameDoc) {
-      frameDoc.open();
-      frameDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Milk Receipt</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; max-width: 80mm; margin: 0 auto; }
-            .receipt { border: 2px solid #000; padding: 10px; }
-            .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .header h1 { font-size: 16px; font-weight: bold; }
-            .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-            .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; margin: 10px 0; }
-            .footer { text-align: center; font-size: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #000; }
-            @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
-          </style>
-        </head>
-        <body>${printContent.innerHTML}</body>
-        </html>
-      `);
-      frameDoc.close();
-      
-      printFrame.onload = () => {
-        setTimeout(() => {
-          try { printFrame.contentWindow?.focus(); printFrame.contentWindow?.print(); } catch (e) {}
-          setTimeout(() => { document.body.removeChild(printFrame); }, 1000);
-        }, 300);
-      };
-      
-      setTimeout(() => {
-        try { printFrame.contentWindow?.focus(); printFrame.contentWindow?.print(); } catch (e) {}
-        setTimeout(() => { if (document.body.contains(printFrame)) document.body.removeChild(printFrame); }, 1000);
-      }, 500);
+      if (!isPrinterReady()) {
+        toast({
+          title: t('error'),
+          description: 'प्रिंटर कनेक्ट नहीं है / Printer is not connected',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const result = await printMilkReceipt({
+        dairyName: data.dairyName,
+        date: data.date,
+        time: formatTime(),
+        supplierCode: data.supplierCode || data.supplierId.slice(0, 8).toUpperCase(),
+        supplierName: data.supplierName,
+        milkType: data.animalType,
+        shift: data.timeOfDay,
+        quantity: data.quantity,
+        fat: data.fat,
+        snf: data.snf,
+        lr: data.lr,
+        rate: data.rate,
+        amount: calculateAmount(),
+      });
+
+      if (!result.ok) {
+        toast({
+          title: t('error'),
+          description: 'रसीद प्रिंट नहीं हो पाई / Receipt print failed',
+          variant: 'destructive',
+        });
+      }
+    } catch {
+      toast({
+        title: t('error'),
+        description: 'ब्राउज़र प्रिंट बंद है / Browser print is disabled',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -247,7 +242,7 @@ const MilkReceipt: React.FC<MilkReceiptProps> = ({ data, onClose, autoPrint = fa
         </div>
       </div>
 
-      <Button onClick={handlePrint} className="w-full" variant="dairy">
+      <Button onClick={() => void handlePrint()} className="w-full" variant="dairy">
         <Printer className="mr-2 h-5 w-5" />
         {t('printReceipt')}
       </Button>
