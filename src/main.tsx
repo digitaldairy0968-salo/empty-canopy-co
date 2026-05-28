@@ -2,7 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-if (typeof window !== "undefined" && window.location.hostname.endsWith(".lovable.app")) {
+if (
+  typeof window !== "undefined" &&
+  (window.location.hostname.endsWith(".lovable.app") || window.location.hostname.endsWith(".lovableproject.com"))
+) {
   try {
     void navigator.serviceWorker?.getRegistrations?.().then((registrations) => {
       registrations.forEach((registration) => {
