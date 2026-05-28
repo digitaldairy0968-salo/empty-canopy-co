@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 import { Printer, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -66,6 +67,7 @@ const getBhugtanReceiptFields = () => {
 
 const ReportReceipt: React.FC<ReportReceiptProps> = ({ data, onClose, outputType = 'print', autoPrint = false }) => {
   const { t, language } = useLanguage();
+  const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const fields = getBhugtanReceiptFields();
 
@@ -75,56 +77,13 @@ const ReportReceipt: React.FC<ReportReceiptProps> = ({ data, onClose, outputType
   };
 
   const handlePrint = () => {
-    const printContent = receiptRef.current;
-    if (!printContent) return;
+    if (autoPrint) return;
 
-    const printFrame = document.createElement('iframe');
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = 'none';
-    document.body.appendChild(printFrame);
-    
-    const frameDoc = printFrame.contentDocument || printFrame.contentWindow?.document;
-    if (frameDoc) {
-      frameDoc.open();
-      frameDoc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Report Receipt</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; max-width: 80mm; margin: 0 auto; }
-            .receipt { border: 2px solid #000; padding: 10px; }
-            .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-            .header h1 { font-size: 16px; font-weight: bold; }
-            .row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-            .divider { border-top: 1px dashed #000; margin: 10px 0; }
-            .total-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; margin: 10px 0; }
-            .footer { text-align: center; font-size: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #000; }
-            @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
-          </style>
-        </head>
-        <body>${printContent.innerHTML}</body>
-        </html>
-      `);
-      frameDoc.close();
-      
-      printFrame.onload = () => {
-        setTimeout(() => {
-          try { printFrame.contentWindow?.focus(); printFrame.contentWindow?.print(); } catch (e) {}
-          setTimeout(() => { document.body.removeChild(printFrame); }, 1000);
-        }, 300);
-      };
-      
-      setTimeout(() => {
-        try { printFrame.contentWindow?.focus(); printFrame.contentWindow?.print(); } catch (e) {}
-        setTimeout(() => { if (document.body.contains(printFrame)) document.body.removeChild(printFrame); }, 1000);
-      }, 500);
-    }
+    toast({
+      title: language === 'hi' ? 'ब्राउज़र प्रिंट बंद है' : 'Browser print disabled',
+      description: language === 'hi' ? 'प्रिंट प्रीव्यू खोलना बंद कर दिया गया है। PDF इस्तेमाल करें।' : 'Print preview has been disabled. Please use PDF.',
+      variant: 'destructive',
+    });
   };
 
   const handleDownloadPDF = () => {
