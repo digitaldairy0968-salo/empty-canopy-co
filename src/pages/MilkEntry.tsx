@@ -586,11 +586,21 @@ const MilkEntry: React.FC = () => {
       // Silent thermal print if printer is connected
       if (ownerSettings.bluetoothPrinterConnected) {
         try {
-          const { printMilkReceipt, isPrinterReady } = await import('@/lib/thermalPrinter');
-          if (!isPrinterReady()) {
+          const { printMilkReceipt, isPrinterReady, isPrinterPaired } = await import('@/lib/thermalPrinter');
+          if (!isPrinterPaired()) {
             toast({
               title: language === 'hi' ? 'प्रिंटर रीकनेक्ट करें' : 'Reconnect Printer',
-              description: language === 'hi' ? 'सेटिंग्स में जाकर प्रिंटर दोबारा कनेक्ट करें।' : 'Open Settings and reconnect the printer.',
+              description: language === 'hi'
+                ? 'पेज रिफ्रेश के कारण कनेक्शन टूट गया। Settings > Bluetooth Printer > Connect दबाएँ।'
+                : 'Connection lost on refresh. Open Settings > Bluetooth Printer > Connect.',
+              variant: 'destructive',
+            });
+          } else if (!isPrinterReady()) {
+            toast({
+              title: language === 'hi' ? 'प्रिंटर ऑफ़लाइन' : 'Printer Offline',
+              description: language === 'hi'
+                ? 'प्रिंटर चालू है? Settings में जाकर दोबारा Connect करें।'
+                : 'Is the printer ON? Reconnect from Settings.',
               variant: 'destructive',
             });
           } else {
@@ -612,11 +622,26 @@ const MilkEntry: React.FC = () => {
               amount,
             });
             if (!res.ok) {
-              toast({ title: language === 'hi' ? 'प्रिंट विफल' : 'Print Failed', description: res.error, variant: 'destructive' });
+              console.error('[printer] print failed', res.error);
+              toast({
+                title: language === 'hi' ? 'प्रिंट विफल' : 'Print Failed',
+                description: res.error || (language === 'hi' ? 'अज्ञात त्रुटि' : 'Unknown error'),
+                variant: 'destructive',
+              });
+            } else {
+              toast({
+                title: language === 'hi' ? '🖨️ प्रिंट हो गया' : '🖨️ Printed',
+                description: language === 'hi' ? 'रसीद प्रिंटर पर भेज दी गई।' : 'Receipt sent to printer.',
+              });
             }
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('Print error:', e);
+          toast({
+            title: language === 'hi' ? 'प्रिंट त्रुटि' : 'Print Error',
+            description: e?.message || String(e),
+            variant: 'destructive',
+          });
         }
       }
       
