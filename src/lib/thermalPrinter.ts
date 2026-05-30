@@ -112,12 +112,17 @@ async function ensureConnected(): Promise<boolean> {
       printerRef.characteristic = await findWritableCharacteristic(server);
     }
     return !!printerRef.characteristic;
-  } catch {
+  } catch (e) {
+    console.error('[printer] ensureConnected failed', e);
     return false;
   }
 }
 
 export function isPrinterReady(): boolean {
+  return !!printerRef && !!printerRef.device?.gatt?.connected;
+}
+
+export function isPrinterPaired(): boolean {
   return !!printerRef;
 }
 
