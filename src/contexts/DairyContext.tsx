@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/supabasePagination';
 import { showNotification, requestNotificationPermission } from '@/utils/notifications';
 import { addToSyncQueue, processSyncQueue, getSyncQueueCount, getSyncQueue } from '@/utils/offlineSyncQueue';
 import { toast as sonnerToast } from 'sonner';
@@ -94,32 +95,6 @@ const CACHE_KEY_SUPPLIERS = 'dairy_app_suppliers_cache';
 const CACHE_KEY_ANNOUNCEMENTS = 'dairy_app_announcements_cache';
 const CACHE_KEY_RATES = 'dairy_app_rates_cache';
 const CACHE_KEY_TIMESTAMP = 'dairy_app_cache_timestamp';
-
-// Helper to fetch all rows from a table, bypassing the 1000-row limit
-async function fetchAllRows(query: any) {
-  const PAGE_SIZE = 1000;
-  let allData: any[] = [];
-  let from = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
-    if (error) {
-      console.error('Error fetching paginated data:', error);
-      break;
-    }
-    if (data) {
-      allData = allData.concat(data);
-    }
-    if (!data || data.length < PAGE_SIZE) {
-      hasMore = false;
-    } else {
-      from += PAGE_SIZE;
-    }
-  }
-
-  return allData;
-}
 
 export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user, authUser } = useAuth();
