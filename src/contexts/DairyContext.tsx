@@ -268,14 +268,12 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     try {
       // Fetch suppliers
-      const { data: suppliersData, error: suppliersError } = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('dairy_id', user.dairyId);
-
-      if (suppliersError) {
-        console.error('Error fetching suppliers:', suppliersError);
-      }
+      const suppliersData = await fetchAllRows(
+        supabase
+          .from('suppliers')
+          .select('*')
+          .eq('dairy_id', user.dairyId)
+      );
 
       // Fetch ALL milk entries using pagination
       const supplierIds = suppliersData?.map(s => s.id) || [];
@@ -342,15 +340,13 @@ export const DairyProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem(CACHE_KEY_SUPPLIERS, JSON.stringify(mergedSuppliers));
 
       // Fetch announcements
-      const { data: announcementsData, error: announcementsError } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('dairy_id', user.dairyId)
-        .order('created_at', { ascending: false });
-
-      if (announcementsError) {
-        console.error('Error fetching announcements:', announcementsError);
-      }
+      const announcementsData = await fetchAllRows(
+        supabase
+          .from('announcements')
+          .select('*')
+          .eq('dairy_id', user.dairyId)
+          .order('created_at', { ascending: false })
+      );
 
       const mappedAnnouncements = (announcementsData || []).map(a => ({
         id: a.id,
