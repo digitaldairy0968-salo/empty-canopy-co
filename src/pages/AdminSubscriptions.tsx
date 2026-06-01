@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/supabasePagination';
 import { toast } from 'sonner';
 
 interface SubscriptionSettings {
@@ -79,11 +80,13 @@ const AdminSubscriptions: React.FC = () => {
 
   // Granular refresh helpers — avoid full reload + loading screen after small actions
   const refreshCodes = async () => {
-    const { data } = await supabase
-      .from('activation_codes')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setCodes(data || []);
+    const data = await fetchAllRows(
+      supabase
+        .from('activation_codes')
+        .select('*')
+        .order('created_at', { ascending: false })
+    );
+    setCodes(data);
   };
 
   const refreshPlans = async () => {
@@ -95,11 +98,13 @@ const AdminSubscriptions: React.FC = () => {
   };
 
   const refreshSubscriptions = async () => {
-    const { data: subsData } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (!subsData) { setSubscriptions([]); return; }
+    const subsData = await fetchAllRows(
+      supabase
+        .from('subscriptions')
+        .select('*')
+        .order('created_at', { ascending: false })
+    );
+    if (subsData.length === 0) { setSubscriptions([]); return; }
     const dairyIds = subsData.map(s => s.dairy_id);
     const { data: dairies } = await supabase
       .from('dairies')
@@ -136,9 +141,13 @@ const AdminSubscriptions: React.FC = () => {
       // Run all 4 base queries in parallel
       const [settingsRes, codesRes, plansRes, subsRes] = await Promise.all([
         supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
-        supabase.from('activation_codes').select('*').order('created_at', { ascending: false }),
+        fetchAllRows(
+          supabase.from('activation_codes').select('*').order('created_at', { ascending: false })
+        ),
         supabase.from('payment_plans').select('*').order('price', { ascending: true }),
-        supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
+        fetchAllRows(
+          supabase.from('subscriptions').select('*').order('created_at', { ascending: false })
+        ),
       ]);
 
       const settingsData = settingsRes.data;
@@ -153,10 +162,10 @@ const AdminSubscriptions: React.FC = () => {
         setDemoDays((settingsData as any).demo_days?.toString() || '9');
       }
 
-      setCodes(codesRes.data || []);
+      setCodes(codesRes || []);
       setPlans(plansRes.data || []);
 
-      const subsData = subsRes.data;
+      const subsData = subsRes;
       if (subsData && subsData.length > 0) {
         const dairyIds = subsData.map(s => s.dairy_id);
         const { data: dairies } = await supabase
