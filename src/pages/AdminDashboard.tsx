@@ -63,18 +63,22 @@ const AdminDashboard: React.FC = () => {
       const dairyIds = dairyList.map(d => d.id);
 
       // 2. Fetch ALL profiles + ALL suppliers in parallel (just 2 queries instead of 2*N)
-      const [profilesRes, suppliersRes] = await Promise.all([
-        supabase.from('profiles').select('user_id, name, phone').in('user_id', ownerIds),
-        supabase.from('suppliers').select('dairy_id').in('dairy_id', dairyIds),
+      const [profilesData, suppliersData] = await Promise.all([
+        fetchAllRows(
+          supabase.from('profiles').select('user_id, name, phone').in('user_id', ownerIds)
+        ),
+        fetchAllRows(
+          supabase.from('suppliers').select('dairy_id').in('dairy_id', dairyIds)
+        ),
       ]);
 
       const profileMap = new Map<string, { name: string; phone: string }>();
-      (profilesRes.data || []).forEach((p: any) => {
+      (profilesData || []).forEach((p: any) => {
         profileMap.set(p.user_id, { name: p.name || 'Unknown', phone: p.phone || 'N/A' });
       });
 
       const countMap = new Map<string, number>();
-      (suppliersRes.data || []).forEach((s: any) => {
+      (suppliersData || []).forEach((s: any) => {
         countMap.set(s.dairy_id, (countMap.get(s.dairy_id) || 0) + 1);
       });
 
