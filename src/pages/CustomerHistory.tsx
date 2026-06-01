@@ -19,6 +19,7 @@ import BottomNav from '@/components/BottomNav';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useOwnerSettings } from '@/hooks/useOwnerSettings';
+import { fetchAllRows } from '@/lib/supabasePagination';
 
 interface PaymentHistoryEntry {
   id: string;
@@ -145,15 +146,16 @@ const CustomerHistory: React.FC = () => {
   const fetchPaymentHistory = async (supplierId: string) => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('payment_history')
-        .select('*')
-        .eq('supplier_id', supplierId)
-        .order('transaction_date', { ascending: false })
-        .order('created_at', { ascending: false });
+      const data = await fetchAllRows(
+        supabase
+          .from('payment_history')
+          .select('*')
+          .eq('supplier_id', supplierId)
+          .order('transaction_date', { ascending: false })
+          .order('created_at', { ascending: false })
+      );
 
-      if (error) throw error;
-      setHistory(data || []);
+      setHistory(data);
     } catch (error) {
       console.error('Error fetching payment history:', error);
       toast({
