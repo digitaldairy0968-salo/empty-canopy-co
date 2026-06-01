@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/supabasePagination';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -45,15 +46,12 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     try {
       // 1. Fetch all dairies
-      const { data: dairiesData, error: dairiesError } = await supabase
-        .from('dairies')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (dairiesError) {
-        console.error('Error fetching dairies:', dairiesError);
-        return;
-      }
+      const dairiesData = await fetchAllRows(
+        supabase
+          .from('dairies')
+          .select('*')
+          .order('created_at', { ascending: false })
+      );
 
       const dairyList = dairiesData || [];
       if (dairyList.length === 0) {
