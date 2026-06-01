@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useDairy } from '@/contexts/DairyContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { fetchAllRows } from '@/lib/supabasePagination';
 
 type Language = 'hi' | 'gu' | 'en';
 
@@ -58,32 +59,35 @@ const SupplierSettings: React.FC = () => {
       setLoading(true);
       try {
         // Fetch pending edit requests for this supplier
-        const { data: requests } = await supabase
-          .from('entry_edit_requests')
-          .select('*, milk_entries!entry_edit_requests_entry_id_fkey(date, time_of_day)')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
+        const requests = await fetchAllRows(
+          supabase
+            .from('entry_edit_requests')
+            .select('*, milk_entries!entry_edit_requests_entry_id_fkey(date, time_of_day)')
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false })
+        );
 
-        if (requests) {
+        if (requests.length > 0) {
           const mapped = (requests as any[]).map(r => ({
             ...r,
             entry_date: r.milk_entries?.date,
             entry_shift: r.milk_entries?.time_of_day,
           }));
           setEditRequests(mapped);
+        } else {
+          setEditRequests([]);
         }
 
         // Fetch payments needing confirmation
-        const { data: payments } = await supabase
-          .from('payment_history')
-          .select('*')
-          .is('supplier_confirmed', null)
-          .order('transaction_date', { ascending: false });
+        const payments = await fetchAllRows(
+          supabase
+            .from('payment_history')
+            .select('*')
+            .is('supplier_confirmed', null)
+            .order('transaction_date', { ascending: false })
+        );
 
-        if (payments) {
-          // Only show notifications for actual bhugtan (amount_paid > 0), not bakaya additions
-          setPendingPayments((payments as any[]).filter(p => (p.amount_paid || 0) > 0));
-        }
+        setPendingPayments((payments as any[]).filter(p => (p.amount_paid || 0) > 0));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
