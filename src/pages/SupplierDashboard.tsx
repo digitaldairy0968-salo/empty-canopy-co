@@ -12,6 +12,7 @@ import { useDairy, MilkEntry } from '@/contexts/DairyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllRows } from '@/lib/supabasePagination';
 import { useFatSnfRateSettings } from '@/hooks/useFatSnfRateSettings';
 import { calculateRatePerLiterWithSnf } from '@/utils/fatSnfCalculation';
 import { calculateSupplierStats } from '@/utils/supplierCalculation';
@@ -98,13 +99,15 @@ const SupplierDashboard: React.FC = () => {
 
       // Re-fetch payment history to get updated balance_after values
       if (supplierData?.id) {
-        const { data } = await supabase
-          .from('payment_history')
-          .select('*')
-          .eq('supplier_id', supplierData.id)
-          .order('transaction_date', { ascending: false })
-          .order('created_at', { ascending: false });
-        if (data) setPaymentHistory(data);
+        const data = await fetchAllRows(
+          supabase
+            .from('payment_history')
+            .select('*')
+            .eq('supplier_id', supplierData.id)
+            .order('transaction_date', { ascending: false })
+            .order('created_at', { ascending: false })
+        );
+        setPaymentHistory(data);
       }
     } catch (error) {
       console.error('Error confirming payment:', error);
@@ -156,15 +159,15 @@ const SupplierDashboard: React.FC = () => {
       if (!supplierData?.id) return;
       setLoadingHistory(true);
       try {
-        const { data, error } = await supabase
-          .from('payment_history')
-          .select('*')
-          .eq('supplier_id', supplierData.id)
-          .order('transaction_date', { ascending: false })
-          .order('created_at', { ascending: false });
-        if (!error && data) {
-          setPaymentHistory(data);
-        }
+        const data = await fetchAllRows(
+          supabase
+            .from('payment_history')
+            .select('*')
+            .eq('supplier_id', supplierData.id)
+            .order('transaction_date', { ascending: false })
+            .order('created_at', { ascending: false })
+        );
+        setPaymentHistory(data);
       } catch (error) {
         console.error('Error fetching payment history:', error);
       } finally {
