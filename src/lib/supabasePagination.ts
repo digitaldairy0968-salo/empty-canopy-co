@@ -1,5 +1,5 @@
 type QueryWithRange<T = any> = {
-  range: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }> | { then: (onfulfilled?: any, onrejected?: any) => any };
+  range: (from: number, to: number) => any;
 };
 
 export async function fetchAllRows<T = any>(query: QueryWithRange<T>, pageSize = 1000): Promise<T[]> {
