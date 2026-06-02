@@ -713,6 +713,98 @@ const FatMachineConnect: React.FC<{
   );
 };
 
+const PrinterConnect: React.FC<{
+  language: string;
+  ownerSettings: any;
+  updateOwnerSettings: (updates: any) => void;
+  toast: any;
+}> = ({ language, ownerSettings, updateOwnerSettings, toast }) => {
+  const [live, setLive] = useState<{ paired: boolean; ready: boolean; name: string | null }>(
+    { paired: false, ready: false, name: null }
+  );
+
+  const refresh = async () => {
+    const { isPrinterPaired, isPrinterReady, getStoredPrinterName } = await import('@/lib/thermalPrinter');
+    setLive({ paired: isPrinterPaired(), ready: isPrinterReady(), name: getStoredPrinterName() });
+  };
+
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 3000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Reconcile DB flag with reality: if app says "connected" but actually disconnected, clear flag
+  useEffect(() => {
+    if (ownerSettings.bluetoothPrinterConnected && !live.ready && !live.paired) {
+      updateOwnerSettings({ bluetoothPrinterConnected: false });
+    }
+  }, [live.ready, live.paired, ownerSettings.bluetoothPrinterConnected]);
+
+  const status = live.ready
+    ? (language === 'hi' ? 'कनेक्टेड' : 'Connected')
+    : live.paired
+      ? (language === 'hi' ? 'ऑफलाइन' : 'Offline')
+      : (language === 'hi' ? 'कनेक्ट करें' : 'Connect');
+
+  const handleConnect = async () => {
+    const { connectThermalPrinter } = await import('@/lib/thermalPrinter');
+    const res = await connectThermalPrinter();
+    if (res.ok) {
+      updateOwnerSettings({ bluetoothPrinterConnected: true });
+      toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!', description: res.name });
+      refresh();
+    } else if (res.error === 'bluetooth_unsupported') {
+      toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या published app उपयोग करें।' : 'Use Chrome or the published app.', variant: 'destructive' });
+    } else if (res.error === 'no_writable_characteristic') {
+      toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस BLE थर्मल प्रिंटर नहीं है। Classic Bluetooth (SPP) प्रिंटर ब्राउज़र में नहीं दिखते।' : 'Not a BLE thermal printer. Classic Bluetooth (SPP) printers do not appear in the browser.', variant: 'destructive' });
+    } else if (res.error !== 'cancelled') {
+      toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', description: res.error, variant: 'destructive' });
+    }
+  };
+
+  const handleDisconnect = async () => {
+    const { forgetPrinter } = await import('@/lib/thermalPrinter');
+    forgetPrinter();
+    updateOwnerSettings({ bluetoothPrinterConnected: false });
+    toast({ title: language === 'hi' ? 'डिस्कनेक्ट हो गया' : 'Disconnected' });
+    refresh();
+  };
+
+  return (
+    <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+      <div className="flex items-center gap-3 min-w-0">
+        <Bluetooth className={cn("h-5 w-5", live.ready ? "text-green-500" : "text-blue-500")} />
+        <div className="min-w-0">
+          <span className="font-medium">{language === 'hi' ? 'ब्लूटूथ प्रिंटर' : 'Bluetooth Printer'}</span>
+          <p className="text-xs text-muted-foreground truncate">
+            {live.ready
+              ? (live.name || 'Printer') + ' • ' + (language === 'hi' ? 'तैयार' : 'ready')
+              : live.paired
+                ? (language === 'hi' ? 'पेयर्ड पर ऑफलाइन — दोबारा कनेक्ट करें' : 'Paired but offline — reconnect')
+                : (language === 'hi' ? 'थर्मल प्रिंटर से कनेक्ट करें (BLE only)' : 'Connect thermal printer (BLE only)')}
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-2 shrink-0">
+        {(live.paired || live.ready) && (
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleDisconnect}>
+            {language === 'hi' ? 'भूलें' : 'Forget'}
+          </Button>
+        )}
+        <Button
+          variant={live.ready ? "default" : "outline"}
+          size="sm"
+          className="rounded-xl"
+          onClick={handleConnect}
+        >
+          {status}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const Settings: React.FC = () => {
   const { t, language, setLanguage } = useLanguage();
   const { rateSettings, updateRateSettings, updateDairy, suppliers } = useDairy();
@@ -1116,37 +1208,8 @@ const Settings: React.FC = () => {
               {/* Bluetooth Fat/SNF Machine - admin feature controlled */}
               <FatMachineConnect language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
 
-              {/* Bluetooth Printer */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Bluetooth className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <span className="font-medium">{language === 'hi' ? 'ब्लूटूथ प्रिंटर' : 'Bluetooth Printer'}</span>
-                    <p className="text-xs text-muted-foreground">{language === 'hi' ? 'थर्मल प्रिंटर से कनेक्ट करें (साइलेंट प्रिंट)' : 'Connect thermal printer (silent print)'}</p>
-                  </div>
-                </div>
-                <Button
-                  variant={ownerSettings.bluetoothPrinterConnected ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={async () => {
-                    const { connectThermalPrinter } = await import('@/lib/thermalPrinter');
-                    const res = await connectThermalPrinter();
-                    if (res.ok) {
-                      updateOwnerSettings({ bluetoothPrinterConnected: true });
-                      toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!', description: res.name });
-                    } else if (res.error === 'bluetooth_unsupported') {
-                      toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या ऐप का उपयोग करें।' : 'Use Chrome browser or the app.', variant: 'destructive' });
-                    } else if (res.error === 'no_writable_characteristic') {
-                      toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस थर्मल प्रिंटर नहीं है।' : 'This device is not a thermal printer.', variant: 'destructive' });
-                    } else if (res.error !== 'cancelled') {
-                      toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
-                    }
-                  }}
-                >
-                  {ownerSettings.bluetoothPrinterConnected ? (language === 'hi' ? 'कनेक्टेड' : 'Connected') : (language === 'hi' ? 'कनेक्ट करें' : 'Connect')}
-                </Button>
-              </div>
+              <PrinterConnect language={language} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
+
             </div>
           </SettingsSection>
         )}
