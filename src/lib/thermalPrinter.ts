@@ -184,6 +184,7 @@ export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: str
   if (!bt) return { ok: false, error: 'bluetooth_unsupported' };
 
   let device: any = printerRef?.device ?? await getPreviouslyGrantedDevice();
+  const usingRememberedDevice = !!device;
 
   if (!device) {
     try {
@@ -212,6 +213,31 @@ export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: str
 
     return { ok: true, name: device.name };
   } catch (e: any) {
+    if (usingRememberedDevice) {
+      try {
+        const pickedDevice = await openPrinterPicker();
+        const server = await connectGattWithRetry(pickedDevice);
+        const characteristic = await findWritableCharacteristic(server);
+
+        if (!characteristic) {
+          try { pickedDevice.gatt.disconnect(); } catch {}
+          return { ok: false, error: 'no_writable_characteristic' };
+        }
+
+        printerRef = { device: pickedDevice, characteristic };
+        rememberDevice(pickedDevice);
+
+        pickedDevice.addEventListener('gattserverdisconnected', () => {
+          console.warn('[printer] gatt disconnected');
+        });
+
+        return { ok: true, name: pickedDevice.name };
+      } catch (retryError: any) {
+        if (retryError?.message === 'cancelled') return { ok: false, error: 'cancelled' };
+        e = retryError;
+      }
+    }
+
     console.error('[printer] connect failed', e);
     const msg = String(e?.message || e?.name || '');
     if (/GATT|Network|connection/i.test(msg)) {
