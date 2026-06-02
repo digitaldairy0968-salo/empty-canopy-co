@@ -6,12 +6,17 @@
 
 // Common BLE printer services (we attempt them in order)
 const PRINTER_SERVICES: any[] = [
-  0x18f0,                                  // common ESC/POS printer service
+  0x18f0,
   0xff00,
   0xfee7,
-  '49535343-fe7d-4ae5-8fa9-9fafd205e455',  // ISSC
+  0xffe0,
+  0xfff0,
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455',
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '000018f0-0000-1000-8000-00805f9b34fb',
+  '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '0000fff0-0000-1000-8000-00805f9b34fb',
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
 ];
 
 interface PrinterRef {
@@ -72,18 +77,41 @@ async function findWritableCharacteristic(server: any): Promise<any> {
   return null;
 }
 
+async function connectGattWithRetry(device: any, attempts = 4): Promise<any> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      // small delay between attempts helps Android GATT stack
+      if (i > 0) await new Promise(r => setTimeout(r, 600 * i));
+      const server = await device.gatt.connect();
+      return server;
+    } catch (e) {
+      console.warn('[printer] gatt.connect attempt', i + 1, 'failed', e);
+      lastErr = e;
+      try { device.gatt.disconnect(); } catch {}
+    }
+  }
+  throw lastErr || new Error('gatt_connect_failed');
+}
+
 export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: string; error?: string }> {
   const bt: any = (navigator as any).bluetooth;
   if (!bt) return { ok: false, error: 'bluetooth_unsupported' };
 
+  let device: any;
   try {
-    const device = await bt.requestDevice({
+    device = await bt.requestDevice({
       acceptAllDevices: true,
       optionalServices: PRINTER_SERVICES,
     });
-    if (!device) return { ok: false, error: 'no_device' };
+  } catch (e: any) {
+    if (e?.name === 'NotFoundError') return { ok: false, error: 'cancelled' };
+    return { ok: false, error: e?.message || 'picker_failed' };
+  }
+  if (!device) return { ok: false, error: 'no_device' };
 
-    const server = await device.gatt.connect();
+  try {
+    const server = await connectGattWithRetry(device);
     const characteristic = await findWritableCharacteristic(server);
     if (!characteristic) {
       try { device.gatt.disconnect(); } catch {}
@@ -94,13 +122,17 @@ export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: str
     try { localStorage.setItem(STORAGE_KEY, device.name || 'printer'); } catch {}
 
     device.addEventListener('gattserverdisconnected', () => {
-      printerRef = null;
+      console.warn('[printer] gatt disconnected');
     });
 
     return { ok: true, name: device.name };
   } catch (e: any) {
-    if (e?.name === 'NotFoundError') return { ok: false, error: 'cancelled' };
-    return { ok: false, error: e?.message || 'connect_failed' };
+    console.error('[printer] connect failed', e);
+    const msg = String(e?.message || e?.name || '');
+    if (/GATT|Network|connection/i.test(msg)) {
+      return { ok: false, error: 'gatt_failed: ' + msg };
+    }
+    return { ok: false, error: msg || 'connect_failed' };
   }
 }
 
