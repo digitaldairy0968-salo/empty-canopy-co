@@ -6,18 +6,17 @@
 
 // Common BLE printer services (we attempt them in order)
 const PRINTER_SERVICES: any[] = [
-  0x18f0,                                  // common ESC/POS printer service
+  0x18f0,
   0xff00,
   0xfee7,
   0xffe0,
   0xfff0,
-  0xff e0, // will be filtered
-  '49535343-fe7d-4ae5-8fa9-9fafd205e455',  // ISSC
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455',
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '000018f0-0000-1000-8000-00805f9b34fb',
   '0000ffe0-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
-  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Goojprt
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
 ];
 
 interface PrinterRef {
