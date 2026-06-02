@@ -758,6 +758,14 @@ const PrinterConnect: React.FC<{
       toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या published app उपयोग करें।' : 'Use Chrome or the published app.', variant: 'destructive' });
     } else if (res.error === 'no_writable_characteristic') {
       toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस BLE थर्मल प्रिंटर नहीं है। Classic Bluetooth (SPP) प्रिंटर ब्राउज़र में नहीं दिखते।' : 'Not a BLE thermal printer. Classic Bluetooth (SPP) printers do not appear in the browser.', variant: 'destructive' });
+    } else if (res.error?.includes('gatt_connect_timeout') || res.error?.includes('gatt_failed')) {
+      toast({
+        title: language === 'hi' ? 'कनेक्शन नहीं बन पाया' : 'Could not connect',
+        description: language === 'hi'
+          ? 'Printer pair ho gaya, par BLE connection nahi bana. Printer ON rakho, phone ke paas rakho, aur agar phir bhi fail ho to yeh Classic Bluetooth printer ho sakta hai jo web app me connect nahi hota.'
+          : 'Printer paired, but BLE connection could not be established. Keep the printer on and nearby. If it still fails, it may be a Classic Bluetooth printer that web apps cannot connect to.',
+        variant: 'destructive'
+      });
     } else if (res.error !== 'cancelled') {
       toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', description: res.error, variant: 'destructive' });
     }
