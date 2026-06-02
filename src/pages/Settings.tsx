@@ -1208,37 +1208,8 @@ const Settings: React.FC = () => {
               {/* Bluetooth Fat/SNF Machine - admin feature controlled */}
               <FatMachineConnect language={language} dairyId={user?.dairyId} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
 
-              {/* Bluetooth Printer */}
-              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
-                <div className="flex items-center gap-3">
-                  <Bluetooth className="h-5 w-5 text-blue-500" />
-                  <div>
-                    <span className="font-medium">{language === 'hi' ? 'ब्लूटूथ प्रिंटर' : 'Bluetooth Printer'}</span>
-                    <p className="text-xs text-muted-foreground">{language === 'hi' ? 'थर्मल प्रिंटर से कनेक्ट करें (साइलेंट प्रिंट)' : 'Connect thermal printer (silent print)'}</p>
-                  </div>
-                </div>
-                <Button
-                  variant={ownerSettings.bluetoothPrinterConnected ? "default" : "outline"}
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={async () => {
-                    const { connectThermalPrinter } = await import('@/lib/thermalPrinter');
-                    const res = await connectThermalPrinter();
-                    if (res.ok) {
-                      updateOwnerSettings({ bluetoothPrinterConnected: true });
-                      toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!', description: res.name });
-                    } else if (res.error === 'bluetooth_unsupported') {
-                      toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या ऐप का उपयोग करें।' : 'Use Chrome browser or the app.', variant: 'destructive' });
-                    } else if (res.error === 'no_writable_characteristic') {
-                      toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस थर्मल प्रिंटर नहीं है।' : 'This device is not a thermal printer.', variant: 'destructive' });
-                    } else if (res.error !== 'cancelled') {
-                      toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', variant: 'destructive' });
-                    }
-                  }}
-                >
-                  {ownerSettings.bluetoothPrinterConnected ? (language === 'hi' ? 'कनेक्टेड' : 'Connected') : (language === 'hi' ? 'कनेक्ट करें' : 'Connect')}
-                </Button>
-              </div>
+              <PrinterConnect language={language} ownerSettings={ownerSettings} updateOwnerSettings={updateOwnerSettings} toast={toast} />
+
             </div>
           </SettingsSection>
         )}
