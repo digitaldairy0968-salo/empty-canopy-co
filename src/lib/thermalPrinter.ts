@@ -27,6 +27,8 @@ interface PrinterRef {
 let printerRef: PrinterRef | null = null;
 
 const STORAGE_KEY = 'thermal_printer_device_name';
+const DEVICE_ID_KEY = 'thermal_printer_device_id';
+const CONNECT_TIMEOUT_MS = 12000;
 
 const enc = new TextEncoder();
 
@@ -77,13 +79,81 @@ async function findWritableCharacteristic(server: any): Promise<any> {
   return null;
 }
 
+async function wait(ms: number): Promise<void> {
+  await new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function rememberDevice(device: any) {
+  try {
+    localStorage.setItem(STORAGE_KEY, device.name || 'printer');
+    if (device?.id) localStorage.setItem(DEVICE_ID_KEY, device.id);
+  } catch {}
+}
+
+function getStoredDeviceId(): string | null {
+  try {
+    return localStorage.getItem(DEVICE_ID_KEY);
+  } catch {
+    return null;
+  }
+}
+
+async function getPreviouslyGrantedDevice(): Promise<any | null> {
+  const bt: any = (navigator as any).bluetooth;
+  if (!bt?.getDevices) return null;
+
+  try {
+    const devices = await bt.getDevices();
+    if (!Array.isArray(devices) || devices.length === 0) return null;
+
+    const storedId = getStoredDeviceId();
+    if (storedId) {
+      const exact = devices.find((device: any) => device?.id === storedId);
+      if (exact) return exact;
+    }
+
+    const storedName = getStoredPrinterName();
+    if (storedName) {
+      const byName = devices.find((device: any) => device?.name === storedName);
+      if (byName) return byName;
+    }
+
+    return devices[0] ?? null;
+  } catch (e) {
+    console.warn('[printer] getDevices failed', e);
+    return null;
+  }
+}
+
 async function connectGattWithRetry(device: any, attempts = 4): Promise<any> {
   let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
-      // small delay between attempts helps Android GATT stack
-      if (i > 0) await new Promise(r => setTimeout(r, 600 * i));
-      const server = await device.gatt.connect();
+      // Android BLE printers often need a brief settle time after picker/pair.
+      await wait(i === 0 ? 900 : 900 + 700 * i);
+      try {
+        if (device.gatt?.connected) device.gatt.disconnect();
+      } catch {}
+
+      const server = await withTimeout(
+        device.gatt.connect(),
+        CONNECT_TIMEOUT_MS,
+        'gatt_connect_timeout'
+      );
       return server;
     } catch (e) {
       console.warn('[printer] gatt.connect attempt', i + 1, 'failed', e);
@@ -94,20 +164,35 @@ async function connectGattWithRetry(device: any, attempts = 4): Promise<any> {
   throw lastErr || new Error('gatt_connect_failed');
 }
 
-export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: string; error?: string }> {
+async function openPrinterPicker(): Promise<any> {
   const bt: any = (navigator as any).bluetooth;
-  if (!bt) return { ok: false, error: 'bluetooth_unsupported' };
+  if (!bt) throw new Error('bluetooth_unsupported');
 
-  let device: any;
   try {
-    device = await bt.requestDevice({
+    return await bt.requestDevice({
       acceptAllDevices: true,
       optionalServices: PRINTER_SERVICES,
     });
   } catch (e: any) {
-    if (e?.name === 'NotFoundError') return { ok: false, error: 'cancelled' };
-    return { ok: false, error: e?.message || 'picker_failed' };
+    if (e?.name === 'NotFoundError') throw new Error('cancelled');
+    throw new Error(e?.message || 'picker_failed');
   }
+}
+
+export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: string; error?: string }> {
+  const bt: any = (navigator as any).bluetooth;
+  if (!bt) return { ok: false, error: 'bluetooth_unsupported' };
+
+  let device: any = printerRef?.device ?? await getPreviouslyGrantedDevice();
+
+  if (!device) {
+    try {
+      device = await openPrinterPicker();
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'picker_failed' };
+    }
+  }
+
   if (!device) return { ok: false, error: 'no_device' };
 
   try {
@@ -119,7 +204,7 @@ export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: str
     }
 
     printerRef = { device, characteristic };
-    try { localStorage.setItem(STORAGE_KEY, device.name || 'printer'); } catch {}
+    rememberDevice(device);
 
     device.addEventListener('gattserverdisconnected', () => {
       console.warn('[printer] gatt disconnected');
@@ -140,7 +225,7 @@ async function ensureConnected(): Promise<boolean> {
   if (!printerRef) return false;
   try {
     if (!printerRef.device.gatt.connected) {
-      const server = await printerRef.device.gatt.connect();
+      const server = await connectGattWithRetry(printerRef.device, 2);
       printerRef.characteristic = await findWritableCharacteristic(server);
     }
     return !!printerRef.characteristic;
@@ -270,5 +355,8 @@ export function forgetPrinter() {
     if (printerRef?.device?.gatt?.connected) printerRef.device.gatt.disconnect();
   } catch {}
   printerRef = null;
-  try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(DEVICE_ID_KEY);
+  } catch {}
 }
