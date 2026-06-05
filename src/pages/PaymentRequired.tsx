@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Copy, MessageCircle, Check, ArrowLeft, QrCode, Phone, Download, Play, Crown, Sparkles, Shield, Zap, Star } from 'lucide-react';
+import { CreditCard, Copy, MessageCircle, Check, ArrowLeft, QrCode, Phone, Download, Play, Crown, Sparkles, Shield, Zap, Star, CheckCircle2, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,8 @@ const PaymentRequired: React.FC = () => {
   const [activatingDemo, setActivatingDemo] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<{ plan: any; variety: any } | null>(null);
+  const paymentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -46,6 +48,19 @@ const PaymentRequired: React.FC = () => {
 
   const demoDays = (settings as any)?.demo_days || 9;
 
+  const handlePickPlan = (plan: any, variety: any) => {
+    setSelectedPlan({ plan, variety });
+    setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  };
+
+  const buildOrderMsg = () => {
+    if (!selectedPlan) return '';
+    const { plan, variety } = selectedPlan;
+    return language === 'hi'
+      ? `नमस्ते 🙏\nमैं डेयरी "${user?.dairyName || ''}" से हूँ।\nमैंने यह प्लान चुना है:\n• वैरायटी: ${variety.name}\n• प्लान: ${plan.name} (${plan.validity_days} दिन)\n• कीमत: ₹${plan.price}\n\nमैंने भुगतान कर दिया है। पेमेंट स्क्रीनशॉट भेज रहा हूँ। कृपया एक्टिवेशन कोड भेजें।`
+      : `Hello 🙏\nI am from dairy "${user?.dairyName || ''}".\nI have selected this plan:\n• Variety: ${variety.name}\n• Plan: ${plan.name} (${plan.validity_days} days)\n• Price: ₹${plan.price}\n\nI have made the payment. Sending screenshot. Please send activation code.`;
+  };
+
   const copyUPI = async () => {
     if (!settings?.upi_id) return;
     try { await navigator.clipboard.writeText(settings.upi_id); } catch {
@@ -57,12 +72,20 @@ const PaymentRequired: React.FC = () => {
   };
 
   const openWhatsApp = () => {
-    if (settings?.admin_phone) {
-      const msg = language === 'hi'
-        ? 'नमस्ते, मैंने भुगतान किया है। कृपया एक्टिवेशन कोड भेजें।'
-        : 'Hello, I have made payment. Please send activation code.';
-      window.open(`https://wa.me/${settings.admin_phone}?text=${encodeURIComponent(msg)}`, '_blank');
-    }
+    if (!settings?.admin_phone) return;
+    const msg = selectedPlan ? buildOrderMsg() : (language === 'hi'
+      ? 'नमस्ते, मैंने भुगतान किया है। कृपया एक्टिवेशन कोड भेजें।'
+      : 'Hello, I have made payment. Please send activation code.');
+    window.open(`https://wa.me/${settings.admin_phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const payWithUPIApp = () => {
+    if (!settings?.upi_id || !selectedPlan) return;
+    const { plan, variety } = selectedPlan;
+    const payeeName = settings?.payee_name || settings?.admin_name || 'Dairy';
+    const note = `${variety.name} - ${plan.name}`;
+    const url = `upi://pay?pa=${encodeURIComponent(settings.upi_id)}&pn=${encodeURIComponent(payeeName)}&am=${encodeURIComponent(plan.price)}&cu=INR&tn=${encodeURIComponent(note)}`;
+    window.location.href = url;
   };
 
   const downloadQR = async () => {
@@ -122,7 +145,7 @@ const PaymentRequired: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Premium Header - same style as SubscriptionRenewal */}
+      {/* Premium Header */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/90 to-accent/80" />
         <div className="absolute top-4 right-4 w-32 h-32 bg-primary-foreground/5 rounded-full blur-2xl" />
@@ -187,6 +210,11 @@ const PaymentRequired: React.FC = () => {
           </Button>
         </div>
 
+        {/* Step 1 */}
+        <div className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center">
+          {language === 'hi' ? 'चरण 1: वैरायटी और प्लान चुनें' : 'Step 1: Choose a Variety & Plan'}
+        </div>
+
         {/* Variety Cards with Plans */}
         {varieties.map((v: any) => {
           const vp = varPlans.filter((p: any) => p.variety_id === v.id);
@@ -220,103 +248,165 @@ const PaymentRequired: React.FC = () => {
                 </div>
               )}
 
-
               {vp.length > 0 && (
                 <div className="p-4 pt-0 space-y-2">
-                  {vp.map((plan: any) => (
-                    <div key={plan.id} className="p-3 bg-gradient-to-r from-muted/50 to-muted/30 rounded-2xl border border-border/30">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-semibold text-sm text-foreground">{plan.name}</p>
-                          <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                  {vp.map((plan: any) => {
+                    const isSelected = selectedPlan?.plan?.id === plan.id;
+                    return (
+                      <button
+                        key={plan.id}
+                        onClick={() => handlePickPlan(plan, v)}
+                        className={cn(
+                          "w-full p-3 rounded-2xl border text-left transition-all",
+                          isSelected
+                            ? "bg-primary/10 border-primary border-2 shadow-md"
+                            : "bg-gradient-to-r from-muted/50 to-muted/30 border-border/30 hover:border-primary/40"
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-sm text-foreground flex items-center gap-2">
+                              {plan.name}
+                              {isSelected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                          </div>
+                          <p className="text-2xl font-black text-primary">₹{plan.price}</p>
                         </div>
-                        <p className="text-2xl font-black text-primary">₹{plan.price}</p>
-                      </div>
-                    </div>
-                  ))}
+                        <p className={cn(
+                          "mt-2 text-xs font-semibold",
+                          isSelected ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {isSelected
+                            ? (language === 'hi' ? '✓ चुना गया — नीचे भुगतान करें' : '✓ Selected — pay below')
+                            : (language === 'hi' ? 'इस प्लान को चुनने के लिए टैप करें' : 'Tap to select this plan')}
+                        </p>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
           );
         })}
 
-        {/* Payment Section */}
-        <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              {language === 'hi' ? 'भुगतान करें' : 'Make Payment'}
-            </h3>
-          </div>
-
-          <div className="p-4 space-y-4">
-            {settings?.upi_id && (
-              <div>
-                <p className="font-medium text-sm mb-2 text-muted-foreground">{language === 'hi' ? '💳 UPI से भुगतान करें' : '💳 Pay via UPI'}</p>
-                <div className="flex items-center gap-2">
-                  <code className="bg-muted px-4 py-3 rounded-xl text-sm flex-1 truncate font-semibold">{settings.upi_id}</code>
-                  <Button variant="outline" size="icon" onClick={copyUPI} className="rounded-xl h-11 w-11">
-                    {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {settings?.qr_code_url && (
-              <div className="text-center">
-                <p className="font-medium text-sm mb-3 text-muted-foreground">{language === 'hi' ? '📱 QR कोड स्कैन करें' : '📱 Scan QR Code'}</p>
-                <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
-                  <img src={settings.qr_code_url} alt="QR" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} />
-                </div>
-                <div className="flex gap-2 mt-3 justify-center">
-                  <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
-                  <Button variant="outline" size="sm" onClick={downloadQR} className="gap-1 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
-                </div>
-              </div>
-            )}
-
-            {settings?.admin_phone && (
-              <Button variant="outline" onClick={openWhatsApp} className="w-full gap-2 h-12 rounded-xl border-2 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20">
-                <MessageCircle className="h-5 w-5 text-green-600" /><Phone className="h-4 w-4 text-green-600" />
-                <span className="font-semibold">{settings.admin_phone}</span>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Activation Code */}
-        <div className="bg-card rounded-3xl shadow-xl border-2 border-primary/20 overflow-hidden">
-          <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              🔑 {language === 'hi' ? 'एक्टिवेशन कोड' : 'Activation Code'}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              {language === 'hi' ? 'एडमिन से मिला कोड यहाँ दर्ज करें' : 'Enter the code received from admin'}
+        {!selectedPlan && (
+          <div className="bg-muted/40 rounded-2xl border border-dashed border-border p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {language === 'hi'
+                ? '👆 ऊपर से एक प्लान चुनें ताकि भुगतान विकल्प दिखाई दें'
+                : '👆 Select a plan above to see payment options'}
             </p>
           </div>
-          <div className="p-4 space-y-3">
-            <Input
-              placeholder={language === 'hi' ? 'कोड दर्ज करें' : 'Enter code'}
-              value={activationCode}
-              onChange={e => setActivationCode(e.target.value.toUpperCase())}
-              className="h-12 text-center text-lg font-bold tracking-widest rounded-xl"
-            />
-            <Button onClick={activateCode} disabled={activating || !activationCode.trim()} className="w-full h-12 rounded-xl">
-              {activating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : (language === 'hi' ? '✅ कोड सक्रिय करें' : '✅ Activate Code')}
-            </Button>
-          </div>
-        </div>
+        )}
 
-        {/* Final CTA */}
-        <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-3xl border-2 border-primary/20 text-center py-8 px-4">
-          <div className="text-4xl mb-3">💰</div>
-          <p className="text-xl font-black text-primary mb-2">
-            {language === 'hi' ? 'पेमेंट कर दें!' : 'Make the payment!'}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {language === 'hi' ? 'एडमिन आपको कोड देगा, कोड दर्ज करें 🚀' : 'Admin will give you a code, enter it above 🚀'}
-          </p>
-        </div>
+        {/* Step 2: Payment Section */}
+        {selectedPlan && (
+          <>
+            <div ref={paymentRef} className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center mt-6">
+              {language === 'hi' ? 'चरण 2: भुगतान करें' : 'Step 2: Make Payment'}
+            </div>
+
+            <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl border-2 border-primary/30 p-4">
+              <p className="text-xs text-muted-foreground mb-1">{language === 'hi' ? 'आपका चुना हुआ प्लान' : 'Your Selected Plan'}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-foreground">{selectedPlan.variety.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedPlan.plan.name} • {selectedPlan.plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                </div>
+                <p className="text-3xl font-black text-primary">₹{selectedPlan.plan.price}</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4">
+              <p className="font-bold text-amber-800 dark:text-amber-300 mb-2 text-sm">
+                {language === 'hi' ? '📋 निर्देश:' : '📋 Instructions:'}
+              </p>
+              <ol className="space-y-1.5 text-sm text-amber-900 dark:text-amber-200 list-decimal list-inside">
+                <li>{language === 'hi' ? 'नीचे "पेमेंट करें" बटन या QR/UPI से भुगतान करें' : 'Pay using the "Pay Now" button below, or QR/UPI'}</li>
+                <li>{language === 'hi' ? 'पेमेंट का स्क्रीनशॉट लें' : 'Take a screenshot of the payment'}</li>
+                <li>{language === 'hi' ? 'WhatsApp बटन से एडमिन को स्क्रीनशॉट भेजें' : 'Send screenshot to admin via WhatsApp button'}</li>
+                <li>{language === 'hi' ? 'एडमिन से कोड मिलने पर नीचे कोड डालें' : 'Enter the code from admin below'}</li>
+              </ol>
+            </div>
+
+            <div className="bg-card rounded-3xl shadow-xl border border-border/50 overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  {language === 'hi' ? 'भुगतान करें' : 'Make Payment'}
+                </h3>
+              </div>
+
+              <div className="p-4 space-y-4">
+                {settings?.upi_id && (
+                  <div>
+                    <p className="font-medium text-sm mb-2 text-muted-foreground">{language === 'hi' ? '💳 UPI से भुगतान करें' : '💳 Pay via UPI'}</p>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted px-4 py-3 rounded-xl text-sm flex-1 truncate font-semibold">{settings.upi_id}</code>
+                      <Button variant="outline" size="icon" onClick={copyUPI} className="rounded-xl h-11 w-11">
+                        {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {settings?.qr_code_url && (
+                  <div className="text-center">
+                    <p className="font-medium text-sm mb-3 text-muted-foreground">{language === 'hi' ? '📱 QR कोड स्कैन करें' : '📱 Scan QR Code'}</p>
+                    <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
+                      <img src={settings.qr_code_url} alt="QR" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} />
+                    </div>
+                    <div className="flex gap-2 mt-3 justify-center">
+                      <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
+                      <Button variant="outline" size="sm" onClick={downloadQR} className="gap-1 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
+                    </div>
+                  </div>
+                )}
+
+                {settings?.upi_id && (
+                  <Button
+                    onClick={payWithUPIApp}
+                    className="w-full gap-2 h-14 rounded-2xl text-lg font-bold bg-gradient-to-r from-primary to-accent shadow-glow"
+                  >
+                    <Wallet className="h-5 w-5" />
+                    {language === 'hi' ? `पेमेंट करें ₹${selectedPlan.plan.price}` : `Pay Now ₹${selectedPlan.plan.price}`}
+                  </Button>
+                )}
+
+                {settings?.admin_phone && (
+                  <Button variant="outline" onClick={openWhatsApp} className="w-full gap-2 h-12 rounded-xl border-2 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20">
+                    <MessageCircle className="h-5 w-5 text-green-600" /><Phone className="h-4 w-4 text-green-600" />
+                    <span className="font-semibold">{language === 'hi' ? 'WhatsApp पर स्क्रीनशॉट भेजें' : 'Send Screenshot on WhatsApp'}</span>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Activation Code */}
+            <div className="bg-card rounded-3xl shadow-xl border-2 border-primary/20 overflow-hidden">
+              <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  🔑 {language === 'hi' ? 'एक्टिवेशन कोड' : 'Activation Code'}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === 'hi' ? 'एडमिन से मिला कोड यहाँ दर्ज करें' : 'Enter the code received from admin'}
+                </p>
+              </div>
+              <div className="p-4 space-y-3">
+                <Input
+                  placeholder={language === 'hi' ? 'कोड दर्ज करें' : 'Enter code'}
+                  value={activationCode}
+                  onChange={e => setActivationCode(e.target.value.toUpperCase())}
+                  className="h-12 text-center text-lg font-bold tracking-widest rounded-xl"
+                />
+                <Button onClick={activateCode} disabled={activating || !activationCode.trim()} className="w-full h-12 rounded-xl">
+                  {activating ? <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : (language === 'hi' ? '✅ कोड सक्रिय करें' : '✅ Activate Code')}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       <Dialog open={showQR} onOpenChange={setShowQR}>

@@ -586,24 +586,23 @@ const MilkEntry: React.FC = () => {
       // Silent thermal print if printer is connected
       if (ownerSettings.bluetoothPrinterConnected) {
         try {
-          const { printMilkReceipt, isPrinterReady, isPrinterPaired } = await import('@/lib/thermalPrinter');
-          if (!isPrinterPaired()) {
-            toast({
-              title: language === 'hi' ? 'प्रिंटर रीकनेक्ट करें' : 'Reconnect Printer',
-              description: language === 'hi'
-                ? 'पेज रिफ्रेश के कारण कनेक्शन टूट गया। Settings > Bluetooth Printer > Connect दबाएँ।'
-                : 'Connection lost on refresh. Open Settings > Bluetooth Printer > Connect.',
-              variant: 'destructive',
-            });
-          } else if (!isPrinterReady()) {
-            toast({
-              title: language === 'hi' ? 'प्रिंटर ऑफ़लाइन' : 'Printer Offline',
-              description: language === 'hi'
-                ? 'प्रिंटर चालू है? Settings में जाकर दोबारा Connect करें।'
-                : 'Is the printer ON? Reconnect from Settings.',
-              variant: 'destructive',
-            });
-          } else {
+          const { printMilkReceipt, isPrinterReady, isPrinterPaired, connectThermalPrinter } = await import('@/lib/thermalPrinter');
+
+          // Auto-reconnect if not ready (page reload or BLE link dropped)
+          if (!isPrinterReady()) {
+            const r = await connectThermalPrinter();
+            if (!r.ok) {
+              toast({
+                title: language === 'hi' ? 'प्रिंटर कनेक्ट नहीं' : 'Printer Not Connected',
+                description: language === 'hi'
+                  ? 'प्रिंटर ON रखें और Settings में जाकर दोबारा Connect करें।'
+                  : 'Turn the printer ON and reconnect from Settings.',
+                variant: 'destructive',
+              });
+            }
+          }
+
+          if (isPrinterReady()) {
             const sup = selectedSupplier;
             const amount = (fatValue ? parseFloat(fatValue) : 0) * parseFloat(milkQty) * rate;
             const res = await printMilkReceipt({
