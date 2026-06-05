@@ -752,27 +752,52 @@ const PrinterConnect: React.FC<{
       : (language === 'hi' ? 'कनेक्ट करें' : 'Connect');
 
   const handleConnect = async () => {
+    setConnecting(true);
     const { connectThermalPrinter } = await import('@/lib/thermalPrinter');
     const res = await connectThermalPrinter();
+    setConnecting(false);
+
     if (res.ok) {
       updateOwnerSettings({ bluetoothPrinterConnected: true });
-      toast({ title: language === 'hi' ? 'कनेक्ट हो गया!' : 'Connected!', description: res.name });
-      refresh();
-    } else if (res.error === 'bluetooth_unsupported') {
-      toast({ title: language === 'hi' ? 'सपोर्ट नहीं है' : 'Not Supported', description: language === 'hi' ? 'Chrome ब्राउज़र या published app उपयोग करें।' : 'Use Chrome or the published app.', variant: 'destructive' });
-    } else if (res.error === 'no_writable_characteristic') {
-      toast({ title: language === 'hi' ? 'प्रिंटर असंगत' : 'Incompatible Printer', description: language === 'hi' ? 'यह डिवाइस BLE थर्मल प्रिंटर नहीं है। Classic Bluetooth (SPP) प्रिंटर ब्राउज़र में नहीं दिखते।' : 'Not a BLE thermal printer. Classic Bluetooth (SPP) printers do not appear in the browser.', variant: 'destructive' });
-    } else if (res.error?.includes('gatt_connect_timeout') || res.error?.includes('gatt_failed')) {
-      toast({
-        title: language === 'hi' ? 'कनेक्शन नहीं बन पाया' : 'Could not connect',
-        description: language === 'hi'
-          ? 'Printer pair ho gaya, par BLE connection nahi bana. Printer ON rakho, phone ke paas rakho, aur agar phir bhi fail ho to yeh Classic Bluetooth printer ho sakta hai jo web app me connect nahi hota.'
-          : 'Printer paired, but BLE connection could not be established. Keep the printer on and nearby. If it still fails, it may be a Classic Bluetooth printer that web apps cannot connect to.',
-        variant: 'destructive'
+      setResultDialog({
+        open: true,
+        success: true,
+        title: language === 'hi' ? '✓ कनेक्ट हो गया' : '✓ Connected',
+        message: language === 'hi'
+          ? `प्रिंटर "${res.name || 'Printer'}" सफलतापूर्वक कनेक्ट हो गया है। अब आप रसीद प्रिंट कर सकते हैं।`
+          : `Printer "${res.name || 'Printer'}" connected successfully. You can now print receipts.`,
       });
-    } else if (res.error !== 'cancelled') {
-      toast({ title: language === 'hi' ? 'कनेक्ट नहीं हुआ' : 'Connection Failed', description: res.error, variant: 'destructive' });
+      refresh();
+      return;
     }
+
+    if (res.error === 'cancelled') return;
+
+    let message = '';
+    if (res.error === 'bluetooth_unsupported') {
+      message = language === 'hi'
+        ? 'इस ब्राउज़र में Bluetooth सपोर्ट नहीं है। Chrome ब्राउज़र या published app का उपयोग करें।'
+        : 'Bluetooth not supported in this browser. Use Chrome or the published app.';
+    } else if (res.error === 'no_writable_characteristic') {
+      message = language === 'hi'
+        ? 'यह डिवाइस BLE थर्मल प्रिंटर नहीं है। Classic Bluetooth (SPP) प्रिंटर ब्राउज़र में कनेक्ट नहीं हो सकते।'
+        : 'This is not a BLE thermal printer. Classic Bluetooth (SPP) printers cannot connect via browser.';
+    } else if (res.error?.includes('gatt_connect_timeout') || res.error?.includes('gatt_failed')) {
+      message = language === 'hi'
+        ? 'प्रिंटर pair हो गया, पर connection नहीं बना। प्रिंटर ON रखें और पास रखें। अगर फिर भी fail हो तो यह Classic Bluetooth printer हो सकता है जो web app में कनेक्ट नहीं होता।'
+        : 'Printer paired but connection failed. Keep the printer on and nearby. If it still fails, it may be a Classic Bluetooth printer that web apps cannot connect to.';
+    } else {
+      message = language === 'hi'
+        ? `कनेक्शन विफल: ${res.error || 'अज्ञात त्रुटि'}`
+        : `Connection failed: ${res.error || 'unknown error'}`;
+    }
+
+    setResultDialog({
+      open: true,
+      success: false,
+      title: language === 'hi' ? '✗ कनेक्ट नहीं हुआ' : '✗ Not Connected',
+      message,
+    });
   };
 
   const handleDisconnect = async () => {
@@ -784,6 +809,7 @@ const PrinterConnect: React.FC<{
   };
 
   return (
+    <>
     <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
       <div className="flex items-center gap-3 min-w-0">
         <Bluetooth className={cn("h-5 w-5", live.ready ? "text-green-500" : "text-blue-500")} />
@@ -800,7 +826,7 @@ const PrinterConnect: React.FC<{
       </div>
       <div className="flex gap-2 shrink-0">
         {(live.paired || live.ready) && (
-          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleDisconnect}>
+          <Button variant="outline" size="sm" className="rounded-xl" onClick={handleDisconnect} disabled={connecting}>
             {language === 'hi' ? 'भूलें' : 'Forget'}
           </Button>
         )}
@@ -809,11 +835,31 @@ const PrinterConnect: React.FC<{
           size="sm"
           className="rounded-xl"
           onClick={handleConnect}
+          disabled={connecting}
         >
-          {status}
+          {connecting ? (language === 'hi' ? 'कनेक्ट हो रहा...' : 'Connecting...') : status}
         </Button>
       </div>
     </div>
+
+    <Dialog open={resultDialog.open} onOpenChange={(o) => setResultDialog(s => ({ ...s, open: o }))}>
+      <DialogContent className="max-w-sm rounded-2xl">
+        <DialogHeader>
+          <DialogTitle className={resultDialog.success ? 'text-green-600' : 'text-destructive'}>
+            {resultDialog.title}
+          </DialogTitle>
+          <DialogDescription className="pt-2 text-sm leading-relaxed">
+            {resultDialog.message}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => setResultDialog(s => ({ ...s, open: false }))} className="rounded-xl w-full">
+            {language === 'hi' ? 'ठीक है' : 'OK'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
