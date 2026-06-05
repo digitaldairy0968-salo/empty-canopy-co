@@ -723,6 +723,7 @@ const PrinterConnect: React.FC<{
   const [live, setLive] = useState<{ paired: boolean; ready: boolean; name: string | null }>(
     { paired: false, ready: false, name: null }
   );
+  const [polled, setPolled] = useState(false);
   const [resultDialog, setResultDialog] = useState<{ open: boolean; success: boolean; title: string; message: string }>(
     { open: false, success: false, title: '', message: '' }
   );
@@ -731,6 +732,7 @@ const PrinterConnect: React.FC<{
   const refresh = async () => {
     const { isPrinterPaired, isPrinterReady, getStoredPrinterName } = await import('@/lib/thermalPrinter');
     setLive({ paired: isPrinterPaired(), ready: isPrinterReady(), name: getStoredPrinterName() });
+    setPolled(true);
   };
 
   useEffect(() => {
@@ -739,12 +741,13 @@ const PrinterConnect: React.FC<{
     return () => clearInterval(id);
   }, []);
 
-  // Reconcile DB flag with reality: if app says "connected" but actually disconnected, clear flag
+  // Reconcile DB flag with reality: only after we've actually polled at least once,
+  // otherwise initial state (paired:false, ready:false) wrongly clears the saved flag.
   useEffect(() => {
-    if (ownerSettings.bluetoothPrinterConnected && !live.ready && !live.paired) {
+    if (polled && ownerSettings.bluetoothPrinterConnected && !live.ready && !live.paired) {
       updateOwnerSettings({ bluetoothPrinterConnected: false });
     }
-  }, [live.ready, live.paired, ownerSettings.bluetoothPrinterConnected]);
+  }, [polled, live.ready, live.paired, ownerSettings.bluetoothPrinterConnected]);
 
   const status = live.ready
     ? (language === 'hi' ? 'कनेक्टेड' : 'Connected')
