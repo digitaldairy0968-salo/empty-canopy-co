@@ -722,6 +722,10 @@ const PrinterConnect: React.FC<{
   const [live, setLive] = useState<{ paired: boolean; ready: boolean; name: string | null }>(
     { paired: false, ready: false, name: null }
   );
+  const [resultDialog, setResultDialog] = useState<{ open: boolean; success: boolean; title: string; message: string }>(
+    { open: false, success: false, title: '', message: '' }
+  );
+  const [connecting, setConnecting] = useState(false);
 
   const refresh = async () => {
     const { isPrinterPaired, isPrinterReady, getStoredPrinterName } = await import('@/lib/thermalPrinter');
