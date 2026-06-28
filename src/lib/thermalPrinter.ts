@@ -167,11 +167,9 @@ async function connectGattWithRetry(device: any, attempts = 4): Promise<any> {
   let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
+      if (device.gatt?.connected) return device.gatt;
       // Android BLE printers often need a brief settle time after picker/pair.
       await wait(i === 0 ? 900 : 900 + 700 * i);
-      try {
-        if (device.gatt?.connected) device.gatt.disconnect();
-      } catch {}
 
       const server = await withTimeout(
         device.gatt.connect(),
@@ -223,13 +221,13 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
 
   try {
     const server = await connectGattWithRetry(device);
-    const characteristic = await findWritableCharacteristic(server);
-    if (!characteristic) {
+    const characteristics = await findWritableCharacteristics(server);
+    if (!characteristics.length) {
       try { device.gatt.disconnect(); } catch {}
       return { ok: false, error: 'no_writable_characteristic' };
     }
 
-    printerRef = { device, characteristic };
+    printerRef = { device, characteristic: characteristics[0], characteristics };
     rememberDevice(device);
 
     device.addEventListener('gattserverdisconnected', () => {
@@ -242,14 +240,14 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
       try {
         const pickedDevice = await openPrinterPicker();
         const server = await connectGattWithRetry(pickedDevice);
-        const characteristic = await findWritableCharacteristic(server);
+        const characteristics = await findWritableCharacteristics(server);
 
-        if (!characteristic) {
+        if (!characteristics.length) {
           try { pickedDevice.gatt.disconnect(); } catch {}
           return { ok: false, error: 'no_writable_characteristic' };
         }
 
-        printerRef = { device: pickedDevice, characteristic };
+        printerRef = { device: pickedDevice, characteristic: characteristics[0], characteristics };
         rememberDevice(pickedDevice);
 
         pickedDevice.addEventListener('gattserverdisconnected', () => {
@@ -277,7 +275,10 @@ async function ensureConnected(): Promise<boolean> {
   try {
     if (!printerRef.device.gatt.connected) {
       const server = await connectGattWithRetry(printerRef.device, 2);
-      printerRef.characteristic = await findWritableCharacteristic(server);
+      const characteristics = await findWritableCharacteristics(server);
+      if (!characteristics.length) return false;
+      printerRef.characteristics = characteristics;
+      printerRef.characteristic = characteristics[0];
     }
     return !!printerRef.characteristic;
   } catch (e) {
