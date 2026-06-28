@@ -11,17 +11,28 @@ const PRINTER_SERVICES: any[] = [
   0xfee7,
   0xffe0,
   0xfff0,
+  0xffe5,
+  0xae30,
+  0xae3a,
+  0xabf0,
+  0xab00,
   '49535343-fe7d-4ae5-8fa9-9fafd205e455',
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '000018f0-0000-1000-8000-00805f9b34fb',
   '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '0000ffe5-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb',
+  '0000ae3a-0000-1000-8000-00805f9b34fb',
+  '0000abf0-0000-1000-8000-00805f9b34fb',
+  '0000ab00-0000-1000-8000-00805f9b34fb',
   'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
 ];
 
 interface PrinterRef {
   device: any;
   characteristic: any;
+  characteristics: any[];
 }
 
 let printerRef: PrinterRef | null = null;
