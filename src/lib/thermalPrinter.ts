@@ -64,17 +64,32 @@ function concat(chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-async function findWritableCharacteristic(server: any): Promise<any> {
+function sortWritableCharacteristics(chars: any[]): any[] {
+  // Prefer write-with-response when available: it is slower, but Android BLE
+  // printers are more reliable because the browser waits for ACKs.
+  return chars.sort((a, b) => Number(!!b.properties.write) - Number(!!a.properties.write));
+}
+
+async function findWritableCharacteristics(server: any): Promise<any[]> {
+  const found: any[] = [];
+  const seen = new Set<string>();
+
+  const addWritable = (chars: any[]) => {
+    for (const ch of chars) {
+      if (!(ch.properties.write || ch.properties.writeWithoutResponse)) continue;
+      const id = ch.uuid || `${found.length}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      found.push(ch);
+    }
+  };
+
   // Try known services first
   for (const svc of PRINTER_SERVICES) {
     try {
       const service = await server.getPrimaryService(svc);
       const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) {
-          return ch;
-        }
-      }
+      addWritable(chars);
     } catch (_) { /* try next */ }
   }
   // Fallback: enumerate all
@@ -82,12 +97,10 @@ async function findWritableCharacteristic(server: any): Promise<any> {
     const services = await server.getPrimaryServices();
     for (const service of services) {
       const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) return ch;
-      }
+      addWritable(chars);
     }
   } catch (_) { /* ignore */ }
-  return null;
+  return sortWritableCharacteristics(found);
 }
 
 async function wait(ms: number): Promise<void> {
