@@ -236,6 +236,12 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
 
     return { ok: true, name: device.name };
   } catch (e: any) {
+    if (options.silent) {
+      console.error('[printer] silent reconnect failed', e);
+      const msg = String(e?.message || e?.name || 'connect_failed');
+      return { ok: false, error: msg };
+    }
+
     if (usingRememberedDevice) {
       try {
         const pickedDevice = await openPrinterPicker();
