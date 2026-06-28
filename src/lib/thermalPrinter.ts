@@ -292,24 +292,44 @@ export function isPrinterReady(): boolean {
 }
 
 export function isPrinterPaired(): boolean {
-  return !!printerRef;
+  return !!printerRef || !!getStoredPrinterName() || !!getStoredDeviceId();
+}
+
+async function writeBytesToCharacteristic(ch: any, data: Uint8Array): Promise<void> {
+  // 20-byte chunks are the safest BLE MTU size for low-cost printers.
+  // Larger chunks often connect but intermittently fail to print on Android.
+  const CHUNK = 20;
+  for (let i = 0; i < data.length; i += CHUNK) {
+    const slice = data.slice(i, i + CHUNK);
+    if (ch.properties.write) {
+      await ch.writeValue(slice);
+    } else if (ch.properties.writeWithoutResponse) {
+      await ch.writeValueWithoutResponse(slice);
+    } else {
+      throw new Error('characteristic_not_writable');
+    }
+    // small delay so printer buffer doesn't overflow
+    await new Promise(r => setTimeout(r, ch.properties.write ? 25 : 55));
+  }
 }
 
 async function writeBytes(data: Uint8Array): Promise<void> {
   if (!printerRef?.characteristic) throw new Error('not_connected');
-  const ch = printerRef.characteristic;
-  // Most BLE printers accept up to 100-180 bytes per write
-  const CHUNK = 100;
-  for (let i = 0; i < data.length; i += CHUNK) {
-    const slice = data.slice(i, i + CHUNK);
-    if (ch.properties.writeWithoutResponse) {
-      await ch.writeValueWithoutResponse(slice);
-    } else {
-      await ch.writeValue(slice);
+  const candidates = printerRef.characteristics?.length ? printerRef.characteristics : [printerRef.characteristic];
+  let lastErr: any;
+
+  for (const ch of candidates) {
+    try {
+      await writeBytesToCharacteristic(ch, data);
+      printerRef.characteristic = ch;
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.warn('[printer] write failed on characteristic', ch?.uuid, e);
     }
-    // small delay so printer buffer doesn't overflow
-    await new Promise(r => setTimeout(r, 20));
   }
+
+  throw lastErr || new Error('write_failed');
 }
 
 export interface ReceiptLine {
@@ -329,6 +349,17 @@ function padBetween(left: string, right: string, width = LINE_WIDTH): string {
 
 function divider(char = '-'): string {
   return char.repeat(LINE_WIDTH);
+}
+
+function escposText(value: string, fallback = ''): string {
+  const cleaned = String(value || '')
+    .replace(/₹/g, 'Rs ')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[^\x20-\x7E\n]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || fallback;
 }
 
 export interface MilkReceiptInput {
