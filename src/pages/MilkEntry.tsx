@@ -583,10 +583,13 @@ const MilkEntry: React.FC = () => {
       setLrValue('');
       setBuyerPrice('');
 
-      // Silent thermal print if printer is connected
-      if (ownerSettings.bluetoothPrinterConnected) {
+      // Silent thermal print if printer was connected/paired earlier
+      const { getStoredPrinterName } = await import('@/lib/thermalPrinter');
+      const shouldAutoPrintReceipt = ownerSettings.bluetoothPrinterConnected || !!getStoredPrinterName();
+
+      if (shouldAutoPrintReceipt) {
         try {
-          const { printMilkReceipt, isPrinterReady, isPrinterPaired, connectThermalPrinter } = await import('@/lib/thermalPrinter');
+          const { printMilkReceipt, isPrinterReady, connectThermalPrinter } = await import('@/lib/thermalPrinter');
 
           // Auto-reconnect if not ready (page reload or BLE link dropped)
           if (!isPrinterReady()) {

@@ -11,17 +11,28 @@ const PRINTER_SERVICES: any[] = [
   0xfee7,
   0xffe0,
   0xfff0,
+  0xffe5,
+  0xae30,
+  0xae3a,
+  0xabf0,
+  0xab00,
   '49535343-fe7d-4ae5-8fa9-9fafd205e455',
   '0000ff00-0000-1000-8000-00805f9b34fb',
   '000018f0-0000-1000-8000-00805f9b34fb',
   '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '0000ffe5-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
+  '0000ae30-0000-1000-8000-00805f9b34fb',
+  '0000ae3a-0000-1000-8000-00805f9b34fb',
+  '0000abf0-0000-1000-8000-00805f9b34fb',
+  '0000ab00-0000-1000-8000-00805f9b34fb',
   'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
 ];
 
 interface PrinterRef {
   device: any;
   characteristic: any;
+  characteristics: any[];
 }
 
 let printerRef: PrinterRef | null = null;
@@ -53,17 +64,32 @@ function concat(chunks: Uint8Array[]): Uint8Array {
   return out;
 }
 
-async function findWritableCharacteristic(server: any): Promise<any> {
+function sortWritableCharacteristics(chars: any[]): any[] {
+  // Prefer write-with-response when available: it is slower, but Android BLE
+  // printers are more reliable because the browser waits for ACKs.
+  return chars.sort((a, b) => Number(!!b.properties.write) - Number(!!a.properties.write));
+}
+
+async function findWritableCharacteristics(server: any): Promise<any[]> {
+  const found: any[] = [];
+  const seen = new Set<string>();
+
+  const addWritable = (chars: any[]) => {
+    for (const ch of chars) {
+      if (!(ch.properties.write || ch.properties.writeWithoutResponse)) continue;
+      const id = ch.uuid || `${found.length}`;
+      if (seen.has(id)) continue;
+      seen.add(id);
+      found.push(ch);
+    }
+  };
+
   // Try known services first
   for (const svc of PRINTER_SERVICES) {
     try {
       const service = await server.getPrimaryService(svc);
       const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) {
-          return ch;
-        }
-      }
+      addWritable(chars);
     } catch (_) { /* try next */ }
   }
   // Fallback: enumerate all
@@ -71,12 +97,10 @@ async function findWritableCharacteristic(server: any): Promise<any> {
     const services = await server.getPrimaryServices();
     for (const service of services) {
       const chars = await service.getCharacteristics();
-      for (const ch of chars) {
-        if (ch.properties.write || ch.properties.writeWithoutResponse) return ch;
-      }
+      addWritable(chars);
     }
   } catch (_) { /* ignore */ }
-  return null;
+  return sortWritableCharacteristics(found);
 }
 
 async function wait(ms: number): Promise<void> {
@@ -143,11 +167,9 @@ async function connectGattWithRetry(device: any, attempts = 4): Promise<any> {
   let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
+      if (device.gatt?.connected) return device.gatt;
       // Android BLE printers often need a brief settle time after picker/pair.
       await wait(i === 0 ? 900 : 900 + 700 * i);
-      try {
-        if (device.gatt?.connected) device.gatt.disconnect();
-      } catch {}
 
       const server = await withTimeout(
         device.gatt.connect(),
@@ -199,13 +221,14 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
 
   try {
     const server = await connectGattWithRetry(device);
-    const characteristic = await findWritableCharacteristic(server);
-    if (!characteristic) {
+    const characteristics = await findWritableCharacteristics(server);
+    if (!characteristics.length) {
       try { device.gatt.disconnect(); } catch {}
       return { ok: false, error: 'no_writable_characteristic' };
     }
 
-    printerRef = { device, characteristic };
+    printerRef = { device, characteristic: characteristics[0], characteristics };
+    await writeBytes(INIT);
     rememberDevice(device);
 
     device.addEventListener('gattserverdisconnected', () => {
@@ -214,18 +237,25 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
 
     return { ok: true, name: device.name };
   } catch (e: any) {
+    if (options.silent) {
+      console.error('[printer] silent reconnect failed', e);
+      const msg = String(e?.message || e?.name || 'connect_failed');
+      return { ok: false, error: msg };
+    }
+
     if (usingRememberedDevice) {
       try {
         const pickedDevice = await openPrinterPicker();
         const server = await connectGattWithRetry(pickedDevice);
-        const characteristic = await findWritableCharacteristic(server);
+        const characteristics = await findWritableCharacteristics(server);
 
-        if (!characteristic) {
+        if (!characteristics.length) {
           try { pickedDevice.gatt.disconnect(); } catch {}
           return { ok: false, error: 'no_writable_characteristic' };
         }
 
-        printerRef = { device: pickedDevice, characteristic };
+        printerRef = { device: pickedDevice, characteristic: characteristics[0], characteristics };
+        await writeBytes(INIT);
         rememberDevice(pickedDevice);
 
         pickedDevice.addEventListener('gattserverdisconnected', () => {
@@ -253,7 +283,10 @@ async function ensureConnected(): Promise<boolean> {
   try {
     if (!printerRef.device.gatt.connected) {
       const server = await connectGattWithRetry(printerRef.device, 2);
-      printerRef.characteristic = await findWritableCharacteristic(server);
+      const characteristics = await findWritableCharacteristics(server);
+      if (!characteristics.length) return false;
+      printerRef.characteristics = characteristics;
+      printerRef.characteristic = characteristics[0];
     }
     return !!printerRef.characteristic;
   } catch (e) {
@@ -267,24 +300,44 @@ export function isPrinterReady(): boolean {
 }
 
 export function isPrinterPaired(): boolean {
-  return !!printerRef;
+  return !!printerRef || !!getStoredPrinterName() || !!getStoredDeviceId();
+}
+
+async function writeBytesToCharacteristic(ch: any, data: Uint8Array): Promise<void> {
+  // 20-byte chunks are the safest BLE MTU size for low-cost printers.
+  // Larger chunks often connect but intermittently fail to print on Android.
+  const CHUNK = 20;
+  for (let i = 0; i < data.length; i += CHUNK) {
+    const slice = data.slice(i, i + CHUNK);
+    if (ch.properties.write) {
+      await ch.writeValue(slice);
+    } else if (ch.properties.writeWithoutResponse) {
+      await ch.writeValueWithoutResponse(slice);
+    } else {
+      throw new Error('characteristic_not_writable');
+    }
+    // small delay so printer buffer doesn't overflow
+    await new Promise(r => setTimeout(r, ch.properties.write ? 25 : 55));
+  }
 }
 
 async function writeBytes(data: Uint8Array): Promise<void> {
   if (!printerRef?.characteristic) throw new Error('not_connected');
-  const ch = printerRef.characteristic;
-  // Most BLE printers accept up to 100-180 bytes per write
-  const CHUNK = 100;
-  for (let i = 0; i < data.length; i += CHUNK) {
-    const slice = data.slice(i, i + CHUNK);
-    if (ch.properties.writeWithoutResponse) {
-      await ch.writeValueWithoutResponse(slice);
-    } else {
-      await ch.writeValue(slice);
+  const candidates = printerRef.characteristics?.length ? printerRef.characteristics : [printerRef.characteristic];
+  let lastErr: any;
+
+  for (const ch of candidates) {
+    try {
+      await writeBytesToCharacteristic(ch, data);
+      printerRef.characteristic = ch;
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.warn('[printer] write failed on characteristic', ch?.uuid, e);
     }
-    // small delay so printer buffer doesn't overflow
-    await new Promise(r => setTimeout(r, 20));
   }
+
+  throw lastErr || new Error('write_failed');
 }
 
 export interface ReceiptLine {
@@ -304,6 +357,17 @@ function padBetween(left: string, right: string, width = LINE_WIDTH): string {
 
 function divider(char = '-'): string {
   return char.repeat(LINE_WIDTH);
+}
+
+function escposText(value: string, fallback = ''): string {
+  const cleaned = String(value || '')
+    .replace(/₹/g, 'Rs ')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[^\x20-\x7E\n]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || fallback;
 }
 
 export interface MilkReceiptInput {
@@ -331,19 +395,19 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
   // Header
   chunks.push(ALIGN_CENTER);
   chunks.push(DOUBLE_ON);
-  chunks.push(enc.encode((r.dairyName || 'DAIRY') + '\n'));
+  chunks.push(enc.encode(escposText(r.dairyName || '', 'DAIRY').slice(0, 16) + '\n'));
   chunks.push(DOUBLE_OFF);
   chunks.push(enc.encode('Milk Receipt\n'));
   chunks.push(enc.encode(divider() + '\n'));
 
   // Body
   chunks.push(ALIGN_LEFT);
-  chunks.push(enc.encode(padBetween('Date', r.date) + '\n'));
-  if (r.time) chunks.push(enc.encode(padBetween('Time', r.time) + '\n'));
-  if (r.supplierCode) chunks.push(enc.encode(padBetween('Code', r.supplierCode) + '\n'));
-  chunks.push(enc.encode(padBetween('Name', (r.supplierName || '').slice(0, 22)) + '\n'));
-  chunks.push(enc.encode(padBetween('Shift', r.shift) + '\n'));
-  if (r.milkType) chunks.push(enc.encode(padBetween('Type', r.milkType) + '\n'));
+  chunks.push(enc.encode(padBetween('Date', escposText(r.date)) + '\n'));
+  if (r.time) chunks.push(enc.encode(padBetween('Time', escposText(r.time)) + '\n'));
+  if (r.supplierCode) chunks.push(enc.encode(padBetween('Code', escposText(r.supplierCode)) + '\n'));
+  chunks.push(enc.encode(padBetween('Name', escposText(r.supplierName, 'Customer').slice(0, 22)) + '\n'));
+  chunks.push(enc.encode(padBetween('Shift', escposText(r.shift)) + '\n'));
+  if (r.milkType) chunks.push(enc.encode(padBetween('Type', escposText(r.milkType)) + '\n'));
   chunks.push(enc.encode(divider() + '\n'));
 
   chunks.push(enc.encode(padBetween('Qty (L)', r.quantity.toFixed(2)) + '\n'));
@@ -366,7 +430,15 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
   chunks.push(FEED_AND_CUT);
 
   try {
-    await writeBytes(concat(chunks));
+    const payload = concat(chunks);
+    try {
+      await writeBytes(payload);
+    } catch (firstError) {
+      console.warn('[printer] first write failed, reconnecting once', firstError);
+      try { printerRef?.device?.gatt?.disconnect(); } catch {}
+      if (!(await ensureConnected())) throw firstError;
+      await writeBytes(payload);
+    }
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'write_failed' };
