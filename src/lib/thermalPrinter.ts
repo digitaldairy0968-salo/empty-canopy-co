@@ -387,19 +387,19 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
   // Header
   chunks.push(ALIGN_CENTER);
   chunks.push(DOUBLE_ON);
-  chunks.push(enc.encode((r.dairyName || 'DAIRY') + '\n'));
+  chunks.push(enc.encode(escposText(r.dairyName || '', 'DAIRY').slice(0, 16) + '\n'));
   chunks.push(DOUBLE_OFF);
   chunks.push(enc.encode('Milk Receipt\n'));
   chunks.push(enc.encode(divider() + '\n'));
 
   // Body
   chunks.push(ALIGN_LEFT);
-  chunks.push(enc.encode(padBetween('Date', r.date) + '\n'));
-  if (r.time) chunks.push(enc.encode(padBetween('Time', r.time) + '\n'));
-  if (r.supplierCode) chunks.push(enc.encode(padBetween('Code', r.supplierCode) + '\n'));
-  chunks.push(enc.encode(padBetween('Name', (r.supplierName || '').slice(0, 22)) + '\n'));
-  chunks.push(enc.encode(padBetween('Shift', r.shift) + '\n'));
-  if (r.milkType) chunks.push(enc.encode(padBetween('Type', r.milkType) + '\n'));
+  chunks.push(enc.encode(padBetween('Date', escposText(r.date)) + '\n'));
+  if (r.time) chunks.push(enc.encode(padBetween('Time', escposText(r.time)) + '\n'));
+  if (r.supplierCode) chunks.push(enc.encode(padBetween('Code', escposText(r.supplierCode)) + '\n'));
+  chunks.push(enc.encode(padBetween('Name', escposText(r.supplierName, 'Customer').slice(0, 22)) + '\n'));
+  chunks.push(enc.encode(padBetween('Shift', escposText(r.shift)) + '\n'));
+  if (r.milkType) chunks.push(enc.encode(padBetween('Type', escposText(r.milkType)) + '\n'));
   chunks.push(enc.encode(divider() + '\n'));
 
   chunks.push(enc.encode(padBetween('Qty (L)', r.quantity.toFixed(2)) + '\n'));
@@ -422,7 +422,15 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
   chunks.push(FEED_AND_CUT);
 
   try {
-    await writeBytes(concat(chunks));
+    const payload = concat(chunks);
+    try {
+      await writeBytes(payload);
+    } catch (firstError) {
+      console.warn('[printer] first write failed, reconnecting once', firstError);
+      try { printerRef?.device?.gatt?.disconnect(); } catch {}
+      if (!(await ensureConnected())) throw firstError;
+      await writeBytes(payload);
+    }
     return { ok: true };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'write_failed' };
