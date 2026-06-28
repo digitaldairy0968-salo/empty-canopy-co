@@ -179,7 +179,7 @@ async function openPrinterPicker(): Promise<any> {
   }
 }
 
-export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: string; error?: string }> {
+export async function connectThermalPrinter(options: { silent?: boolean } = {}): Promise<{ ok: boolean; name?: string; error?: string }> {
   const bt: any = (navigator as any).bluetooth;
   if (!bt) return { ok: false, error: 'bluetooth_unsupported' };
 
@@ -187,6 +187,7 @@ export async function connectThermalPrinter(): Promise<{ ok: boolean; name?: str
   const usingRememberedDevice = !!device;
 
   if (!device) {
+    if (options.silent) return { ok: false, error: 'no_remembered_device' };
     try {
       device = await openPrinterPicker();
     } catch (e: any) {
