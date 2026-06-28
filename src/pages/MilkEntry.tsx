@@ -590,7 +590,7 @@ const MilkEntry: React.FC = () => {
 
           // Auto-reconnect if not ready (page reload or BLE link dropped)
           if (!isPrinterReady()) {
-            const r = await connectThermalPrinter();
+            const r = await connectThermalPrinter({ silent: true });
             if (!r.ok) {
               toast({
                 title: language === 'hi' ? 'प्रिंटर कनेक्ट नहीं' : 'Printer Not Connected',
