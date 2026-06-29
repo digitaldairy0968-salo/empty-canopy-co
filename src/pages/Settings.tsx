@@ -907,11 +907,8 @@ const Settings: React.FC = () => {
         {/* Subscription Info - On TOP for Owners */}
         {user?.role === 'owner' && <SubscriptionInfo />}
 
-        {/* Referral Code */}
-        {user?.role === 'owner' && <ReferralCodeDisplay language={language} />}
 
-        {/* Digital Coins Balance */}
-        {user?.role === 'owner' && <CoinBalanceDisplay language={language} dairyId={user?.dairyId} />}
+
 
         {/* Dairy Customer Code */}
         {user?.role === 'owner' && <DairyCodeDisplay language={language} dairyId={user?.dairyId} />}
