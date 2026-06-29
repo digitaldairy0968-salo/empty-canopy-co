@@ -568,19 +568,6 @@ const Auth: React.FC = () => {
                   </div>
                 )}
 
-                {role === 'owner' && (
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg">🎁</span>
-                    <Input
-                      type="text"
-                      placeholder={language === 'hi' ? 'रेफरल कोड (वैकल्पिक)' : 'Referral Code (optional)'}
-                      value={referralCode}
-                      onChange={e => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 9))}
-                      className="dairy-input pl-10 h-11"
-                      maxLength={9}
-                    />
-                  </div>
-                )}
               </>
             )}
 
