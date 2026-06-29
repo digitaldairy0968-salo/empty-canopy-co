@@ -355,6 +355,8 @@ const AdminSubscriptions: React.FC = () => {
   };
 
   const deleteCode = async (id: string) => {
+    const prev = codes;
+    setCodes(prev.filter(c => c.id !== id)); // optimistic
     try {
       const { error } = await supabase
         .from('activation_codes')
@@ -363,10 +365,10 @@ const AdminSubscriptions: React.FC = () => {
 
       if (error) throw error;
       toast.success('Code deleted');
-      await refreshCodes();
     } catch (error) {
       console.error('Error deleting:', error);
       toast.error('Failed to delete');
+      setCodes(prev); // rollback
     }
   };
 
@@ -375,66 +377,70 @@ const AdminSubscriptions: React.FC = () => {
       return;
     }
 
+    const bannedExpiry = new Date('2000-01-01').toISOString();
+    const snapshot = subscriptions;
+    setSubscriptions(prev => prev.map(s => s.dairy_id === dairyId ? { ...s, status: 'banned', expires_at: bannedExpiry } : s));
     try {
       const { error } = await supabase
         .from('subscriptions')
         .update({
           status: 'banned',
-          expires_at: new Date('2000-01-01').toISOString()
+          expires_at: bannedExpiry
         })
         .eq('dairy_id', dairyId);
 
       if (error) throw error;
       toast.success(`${dairyName} has been banned permanently`);
-      await refreshSubscriptions();
     } catch (error) {
       console.error('Error banning dairy:', error);
       toast.error('Failed to ban dairy');
+      setSubscriptions(snapshot);
     }
   };
 
   const extendSubscriptionByMonths = async (dairyId: string, dairyName: string, months: number) => {
+    const sub = subscriptions.find(s => s.dairy_id === dairyId);
+    const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
+    const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
+    newExpiry.setMonth(newExpiry.getMonth() + months);
+    const iso = newExpiry.toISOString();
+    const snapshot = subscriptions;
+    setSubscriptions(prev => prev.map(s => s.dairy_id === dairyId ? { ...s, status: 'active', expires_at: iso } : s));
     try {
-      const sub = subscriptions.find(s => s.dairy_id === dairyId);
-      const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
-      const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
-      newExpiry.setMonth(newExpiry.getMonth() + months);
-
       const { error } = await supabase
         .from('subscriptions')
-        .update({
-          status: 'active',
-          expires_at: newExpiry.toISOString()
-        })
+        .update({ status: 'active', expires_at: iso })
         .eq('dairy_id', dairyId);
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${months} month(s)`);
-      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
+      setSubscriptions(snapshot);
     }
   };
 
   const extendSubscription = async (dairyId: string, dairyName: string, days: number) => {
+    const sub = subscriptions.find(s => s.dairy_id === dairyId);
+    const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
+    const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
+    newExpiry.setDate(newExpiry.getDate() + days);
+    const iso = newExpiry.toISOString();
+    const snapshot = subscriptions;
+    setSubscriptions(prev => prev.map(s => s.dairy_id === dairyId ? { ...s, status: 'active', expires_at: iso } : s));
     try {
-      const sub = subscriptions.find(s => s.dairy_id === dairyId);
-      const currentExpiry = sub?.expires_at ? new Date(sub.expires_at) : new Date();
-      const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
-      newExpiry.setDate(newExpiry.getDate() + days);
-
       const { error } = await supabase
         .from('subscriptions')
-        .update({ status: 'active', expires_at: newExpiry.toISOString() })
+        .update({ status: 'active', expires_at: iso })
         .eq('dairy_id', dairyId);
 
       if (error) throw error;
       toast.success(`${dairyName} extended by ${days} days`);
-      await refreshSubscriptions();
     } catch (error) {
       console.error('Error extending subscription:', error);
       toast.error('Failed to extend subscription');
+      setSubscriptions(snapshot);
     }
   };
 
