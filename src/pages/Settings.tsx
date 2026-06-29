@@ -318,108 +318,7 @@ const ReceiptCustomization: React.FC<{ language: string }> = ({ language }) => {
   );
 };
 
-// Referral Code Display - cache-first
-const ReferralCodeDisplay: React.FC<{ language: string }> = ({ language }) => {
-  const [referralCode, setReferralCode] = useState<string | null>(() => {
-    return localStorage.getItem('cached_referral_code') || null;
-  });
-  const [copied, setCopied] = useState(false);
-  const { user } = useAuth();
-
-  useEffect(() => {
-    const fetch = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('referral_code')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      const code = (data as any)?.referral_code || null;
-      setReferralCode(code);
-      if (code) localStorage.setItem('cached_referral_code', code);
-    };
-    fetch();
-  }, [user?.id]);
-
-  if (!referralCode) return null;
-
-  return (
-    <div className="dairy-card animate-fade-in">
-      <div className="flex items-center gap-3">
-        <div className="icon-badge-sm bg-accent/10">
-          <span className="text-lg">🎁</span>
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold">
-            {language === 'hi' ? 'रेफरल कोड' : 'Referral Code'}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {language === 'hi' ? 'दोस्तों को शेयर करें - हर रेफरल पर 100 डिजिटल कॉइन पाएं!' : 'Share with friends - earn 100 digital coins per referral!'}
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2 mt-3">
-        <code className="flex-1 bg-muted px-4 py-3 rounded-xl text-center text-lg font-bold tracking-widest">{referralCode}</code>
-        <Button variant="outline" size="icon" className="rounded-xl" onClick={async () => {
-          try { await navigator.clipboard.writeText(referralCode); } catch { /* fallback */ }
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        }}>
-          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-// Digital Coins Balance Display - cache-first
-const CoinBalanceDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
-  const [balance, setBalance] = useState<number>(() => {
-    const cached = localStorage.getItem('cached_coin_balance');
-    return cached ? parseInt(cached) || 0 : 0;
-  });
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetch = async () => {
-      if (!dairyId) return;
-      const { data } = await supabase
-        .from('digital_coins')
-        .select('balance')
-        .eq('dairy_id', dairyId)
-        .maybeSingle();
-      const b = (data as any)?.balance || 0;
-      setBalance(b);
-      localStorage.setItem('cached_coin_balance', b.toString());
-    };
-    fetch();
-  }, [dairyId]);
-
-  return (
-    <button
-      onClick={() => navigate('/subscription-renewal')}
-      className="w-full dairy-card animate-fade-in text-left hover:shadow-lg transition-shadow border-2 border-amber-200 dark:border-amber-800"
-    >
-      <div className="flex items-center gap-3">
-        <div className="icon-badge-sm bg-amber-100 dark:bg-amber-900/30">
-          <span className="text-lg">🪙</span>
-        </div>
-        <div className="flex-1">
-          <p className="font-semibold">
-            {language === 'hi' ? 'डिजिटल कॉइन' : 'Digital Coins'}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {language === 'hi' ? '1 कॉइन = ₹1 • प्लान खरीदने में उपयोग करें' : '1 coin = ₹1 • Use to buy plans'}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{balance}</p>
-          <p className="text-[10px] text-muted-foreground">{language === 'hi' ? 'कॉइन' : 'coins'}</p>
-        </div>
-      </div>
-    </button>
-  );
-};
+// (Referral & Digital Coin systems removed)
 
 // Dairy Customer Code Display (only if admin enabled) - cache-first
 const DairyCodeDisplay: React.FC<{ language: string; dairyId?: string }> = ({ language, dairyId }) => {
@@ -1008,11 +907,8 @@ const Settings: React.FC = () => {
         {/* Subscription Info - On TOP for Owners */}
         {user?.role === 'owner' && <SubscriptionInfo />}
 
-        {/* Referral Code */}
-        {user?.role === 'owner' && <ReferralCodeDisplay language={language} />}
 
-        {/* Digital Coins Balance */}
-        {user?.role === 'owner' && <CoinBalanceDisplay language={language} dairyId={user?.dairyId} />}
+
 
         {/* Dairy Customer Code */}
         {user?.role === 'owner' && <DairyCodeDisplay language={language} dairyId={user?.dairyId} />}
