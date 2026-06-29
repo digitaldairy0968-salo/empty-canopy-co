@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Copy, MessageCircle, Check, ArrowLeft, QrCode, Phone, Download, Play, Crown, Sparkles, Shield, Zap, Star, CheckCircle2, Wallet } from 'lucide-react';
+import { CreditCard, Copy, MessageCircle, Check, ArrowLeft, QrCode, Phone, Download, Play, Shield, Zap, Star, CheckCircle2, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getFeatureDef } from '@/lib/featureCatalog';
 
 
 const PaymentRequired: React.FC = () => {
@@ -37,7 +36,7 @@ const PaymentRequired: React.FC = () => {
           supabase.from('variety_plans').select('*').eq('is_active', true).order('price'),
           supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
         ]);
-        setVarieties((vRes.data || []).map((v: any) => ({ ...v, features: Array.isArray(v.features) ? v.features : [] })));
+        setVarieties(vRes.data || []);
         setVarPlans(pRes.data || []);
         setSettings(sRes.data);
       } catch (e) { console.error(e); }
@@ -48,7 +47,15 @@ const PaymentRequired: React.FC = () => {
 
   const demoDays = (settings as any)?.demo_days || 9;
 
-  const handlePickPlan = (plan: any, variety: any) => {
+  const varietyById = React.useMemo(() => {
+    const m: Record<string, any> = {};
+    for (const v of varieties) m[v.id] = v;
+    return m;
+  }, [varieties]);
+
+  const handlePickPlan = (plan: any) => {
+    const variety = varietyById[plan.variety_id];
+    if (!variety) return;
     setSelectedPlan({ plan, variety });
     setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
@@ -57,8 +64,8 @@ const PaymentRequired: React.FC = () => {
     if (!selectedPlan) return '';
     const { plan, variety } = selectedPlan;
     return language === 'hi'
-      ? `नमस्ते 🙏\nमैं डेयरी "${user?.dairyName || ''}" से हूँ।\nमैंने यह प्लान चुना है:\n• वैरायटी: ${variety.name}\n• प्लान: ${plan.name} (${plan.validity_days} दिन)\n• कीमत: ₹${plan.price}\n\nमैंने भुगतान कर दिया है। पेमेंट स्क्रीनशॉट भेज रहा हूँ। कृपया एक्टिवेशन कोड भेजें।`
-      : `Hello 🙏\nI am from dairy "${user?.dairyName || ''}".\nI have selected this plan:\n• Variety: ${variety.name}\n• Plan: ${plan.name} (${plan.validity_days} days)\n• Price: ₹${plan.price}\n\nI have made the payment. Sending screenshot. Please send activation code.`;
+      ? `नमस्ते 🙏\nमैं डेयरी "${user?.dairyName || ''}" से हूँ।\nमैंने यह प्लान चुना है:\n• प्लान: ${variety.name} - ${plan.name} (${plan.validity_days} दिन)\n• कीमत: ₹${plan.price}\n\nमैंने भुगतान कर दिया है। पेमेंट स्क्रीनशॉट भेज रहा हूँ। कृपया एक्टिवेशन कोड भेजें।`
+      : `Hello 🙏\nI am from dairy "${user?.dairyName || ''}".\nI have selected this plan:\n• Plan: ${variety.name} - ${plan.name} (${plan.validity_days} days)\n• Price: ₹${plan.price}\n\nI have made the payment. Sending screenshot. Please send activation code.`;
   };
 
   const copyUPI = async () => {
@@ -109,7 +116,6 @@ const PaymentRequired: React.FC = () => {
         if (error.message.includes('not_dairy_owner')) { toast.error(language === 'hi' ? 'डेयरी मालिक नहीं है' : 'Not dairy owner'); return; }
         throw error;
       }
-      try { await supabase.rpc('apply_referral_reward', { _referred_user_id: user?.id }); } catch {}
       toast.success(language === 'hi' ? 'सक्रियण सफल!' : 'Activation successful!');
       localStorage.removeItem('subscription_cache');
       await refreshProfile();
@@ -142,6 +148,8 @@ const PaymentRequired: React.FC = () => {
       </div>
     );
   }
+
+  const visiblePlans = varPlans.filter((p: any) => varietyById[p.variety_id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -210,85 +218,42 @@ const PaymentRequired: React.FC = () => {
           </Button>
         </div>
 
-        {/* Step 1 */}
+        {/* Step 1: Plans only */}
         <div className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center">
-          {language === 'hi' ? 'चरण 1: वैरायटी और प्लान चुनें' : 'Step 1: Choose a Variety & Plan'}
+          {language === 'hi' ? 'चरण 1: प्लान चुनें' : 'Step 1: Choose a Plan'}
         </div>
 
-        {/* Variety Cards with Plans */}
-        {varieties.map((v: any) => {
-          const vp = varPlans.filter((p: any) => p.variety_id === v.id);
-          const features = Array.isArray(v.features) ? v.features : [];
-          return (
-            <div key={v.id} className="bg-card rounded-3xl shadow-xl border-2 border-primary/10 overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg text-foreground">{v.name}</h3>
+        <div className="space-y-2">
+          {visiblePlans.map((plan: any) => {
+            const variety = varietyById[plan.variety_id];
+            const isSelected = selectedPlan?.plan?.id === plan.id;
+            return (
+              <button
+                key={plan.id}
+                onClick={() => handlePickPlan(plan)}
+                className={cn(
+                  "w-full p-4 rounded-2xl border text-left transition-all bg-card",
+                  isSelected
+                    ? "border-primary border-2 shadow-md bg-primary/5"
+                    : "border-border/40 hover:border-primary/40 shadow-sm"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="font-bold text-base text-foreground flex items-center gap-2">
+                      {plan.name}
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {variety.name} • {plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-black text-primary ml-3">₹{plan.price}</p>
                 </div>
-                {v.description && <p className="text-sm text-muted-foreground mt-1">{v.description}</p>}
-              </div>
-
-              {features.length > 0 && (
-                <div className="px-4 py-3 grid grid-cols-2 gap-2">
-                  {features.map((f: string, i: number) => {
-                    const def = getFeatureDef(f);
-                    const Icon = def?.icon ?? Sparkles;
-                    const label = def ? (language === 'hi' ? def.labelHi : def.labelEn) : f;
-                    const grad = def?.color ?? 'from-primary to-primary/70';
-                    return (
-                      <div key={i} className="relative overflow-hidden rounded-xl border border-border/40 bg-card p-2.5 flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
-                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                          <Icon className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-xs font-semibold text-foreground leading-tight">{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {vp.length > 0 && (
-                <div className="p-4 pt-0 space-y-2">
-                  {vp.map((plan: any) => {
-                    const isSelected = selectedPlan?.plan?.id === plan.id;
-                    return (
-                      <button
-                        key={plan.id}
-                        onClick={() => handlePickPlan(plan, v)}
-                        className={cn(
-                          "w-full p-3 rounded-2xl border text-left transition-all",
-                          isSelected
-                            ? "bg-primary/10 border-primary border-2 shadow-md"
-                            : "bg-gradient-to-r from-muted/50 to-muted/30 border-border/30 hover:border-primary/40"
-                        )}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-sm text-foreground flex items-center gap-2">
-                              {plan.name}
-                              {isSelected && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
-                          </div>
-                          <p className="text-2xl font-black text-primary">₹{plan.price}</p>
-                        </div>
-                        <p className={cn(
-                          "mt-2 text-xs font-semibold",
-                          isSelected ? "text-primary" : "text-muted-foreground"
-                        )}>
-                          {isSelected
-                            ? (language === 'hi' ? '✓ चुना गया — नीचे भुगतान करें' : '✓ Selected — pay below')
-                            : (language === 'hi' ? 'इस प्लान को चुनने के लिए टैप करें' : 'Tap to select this plan')}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
 
         {!selectedPlan && (
           <div className="bg-muted/40 rounded-2xl border border-dashed border-border p-6 text-center">
@@ -311,8 +276,8 @@ const PaymentRequired: React.FC = () => {
               <p className="text-xs text-muted-foreground mb-1">{language === 'hi' ? 'आपका चुना हुआ प्लान' : 'Your Selected Plan'}</p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-foreground">{selectedPlan.variety.name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedPlan.plan.name} • {selectedPlan.plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                  <p className="font-bold text-foreground">{selectedPlan.plan.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedPlan.variety.name} • {selectedPlan.plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
                 </div>
                 <p className="text-3xl font-black text-primary">₹{selectedPlan.plan.price}</p>
               </div>
