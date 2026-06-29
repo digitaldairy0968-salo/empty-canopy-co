@@ -191,7 +191,7 @@ const Auth: React.FC = () => {
           });
         }
       } else {
-        const result = await signup(email.trim(), password, name.trim(), phone.trim(), role, referralCode.trim() || undefined);
+        const result = await signup(email.trim(), password, name.trim(), phone.trim(), role);
         if (result.success) {
           toast({ 
             title: t('success'), 
