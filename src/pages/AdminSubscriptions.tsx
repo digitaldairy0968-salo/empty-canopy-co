@@ -291,13 +291,17 @@ const AdminSubscriptions: React.FC = () => {
         });
       }
 
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from('activation_codes')
-        .insert(newCodes);
+        .insert(newCodes)
+        .select('*');
 
       if (error) throw error;
       toast.success(`${count} code${count > 1 ? 's' : ''} generated (${validity} days each)`);
-      await refreshCodes();
+      // Optimistic: prepend without refetch to avoid page blink
+      if (inserted && inserted.length) {
+        setCodes(prev => [...(inserted as any), ...prev]);
+      }
     } catch (error) {
       console.error('Error generating codes:', error);
       toast.error('Failed to generate codes');
