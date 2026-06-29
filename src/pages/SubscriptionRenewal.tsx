@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Copy, Check, QrCode, Phone, MessageCircle, Download, Crown, Sparkles, Shield, Zap, Star, CheckCircle2, Wallet } from 'lucide-react';
+import { ArrowLeft, CreditCard, Copy, Check, QrCode, Phone, MessageCircle, Download, Shield, Zap, Star, CheckCircle2, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { getCachedQRCode, fetchAndCacheQRCode } from '@/utils/qrCodeCache';
-import { getFeatureDef } from '@/lib/featureCatalog';
 
 
 const SubscriptionRenewal: React.FC = () => {
@@ -22,25 +21,21 @@ const SubscriptionRenewal: React.FC = () => {
   const [showQR, setShowQR] = useState(false);
   const [varieties, setVarieties] = useState<any[]>([]);
   const [varPlans, setVarPlans] = useState<any[]>([]);
-  const [coinBalance, setCoinBalance] = useState(0);
-  const [buyingWithCoins, setBuyingWithCoins] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<{ plan: any; variety: any } | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetch = async () => {
-      const [sRes, subRes, vRes, pRes, coinRes] = await Promise.all([
+      const [sRes, subRes, vRes, pRes] = await Promise.all([
         supabase.from('subscription_settings').select('*').limit(1).maybeSingle(),
         user?.dairyId ? supabase.from('subscriptions').select('expires_at').eq('dairy_id', user.dairyId).eq('status', 'active').maybeSingle() : Promise.resolve({ data: null }),
         supabase.from('subscription_varieties').select('*').eq('is_active', true).order('created_at'),
         supabase.from('variety_plans').select('*').eq('is_active', true).order('price'),
-        user?.dairyId ? supabase.from('digital_coins').select('balance').eq('dairy_id', user.dairyId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
       setSettings(sRes.data);
       setVarieties(vRes.data || []);
       setVarPlans(pRes.data || []);
-      setCoinBalance((coinRes.data as any)?.balance || 0);
       if (subRes.data?.expires_at) {
         setDaysLeft(Math.max(0, Math.ceil((new Date(subRes.data.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
       }
@@ -54,7 +49,15 @@ const SubscriptionRenewal: React.FC = () => {
     fetch();
   }, [user?.dairyId]);
 
-  const handlePickPlan = (plan: any, variety: any) => {
+  const varietyById = React.useMemo(() => {
+    const m: Record<string, any> = {};
+    for (const v of varieties) m[v.id] = v;
+    return m;
+  }, [varieties]);
+
+  const handlePickPlan = (plan: any) => {
+    const variety = varietyById[plan.variety_id];
+    if (!variety) return;
     setSelectedPlan({ plan, variety });
     setTimeout(() => paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   };
@@ -63,8 +66,8 @@ const SubscriptionRenewal: React.FC = () => {
     if (!selectedPlan) return '';
     const { plan, variety } = selectedPlan;
     return language === 'hi'
-      ? `नमस्ते 🙏\nमैं डेयरी "${user?.dairyName || ''}" से हूँ।\nमैंने यह प्लान चुना है:\n• वैरायटी: ${variety.name}\n• प्लान: ${plan.name} (${plan.validity_days} दिन)\n• कीमत: ₹${plan.price}\n\nमैंने भुगतान कर दिया है। पेमेंट स्क्रीनशॉट भेज रहा हूँ। कृपया एक्टिवेशन कोड भेजें।`
-      : `Hello 🙏\nI am from dairy "${user?.dairyName || ''}".\nI have selected this plan:\n• Variety: ${variety.name}\n• Plan: ${plan.name} (${plan.validity_days} days)\n• Price: ₹${plan.price}\n\nI have made the payment. Sending screenshot. Please send activation code.`;
+      ? `नमस्ते 🙏\nमैं डेयरी "${user?.dairyName || ''}" से हूँ।\nमैंने यह प्लान चुना है:\n• प्लान: ${variety.name} - ${plan.name} (${plan.validity_days} दिन)\n• कीमत: ₹${plan.price}\n\nमैंने भुगतान कर दिया है। पेमेंट स्क्रीनशॉट भेज रहा हूँ। कृपया एक्टिवेशन कोड भेजें।`
+      : `Hello 🙏\nI am from dairy "${user?.dairyName || ''}".\nI have selected this plan:\n• Plan: ${variety.name} - ${plan.name} (${plan.validity_days} days)\n• Price: ₹${plan.price}\n\nI have made the payment. Sending screenshot. Please send activation code.`;
   };
 
   const copyUPI = async () => {
@@ -104,23 +107,8 @@ const SubscriptionRenewal: React.FC = () => {
     } catch {}
   };
 
-  const buyWithCoins = async (planId: string, planPrice: number) => {
-    if (!user?.dairyId) return;
-    if (coinBalance < planPrice) {
-      toast.error(language === 'hi' ? `पर्याप्त कॉइन नहीं हैं (${coinBalance}/${planPrice})` : `Insufficient coins (${coinBalance}/${planPrice})`);
-      return;
-    }
-    setBuyingWithCoins(planId);
-    try {
-      const { error } = await supabase.rpc('purchase_plan_with_coins', { _dairy_id: user.dairyId, _plan_id: planId });
-      if (error) {
-        if (error.message.includes('insufficient_coins')) { toast.error(language === 'hi' ? 'पर्याप्त कॉइन नहीं' : 'Insufficient coins'); return; }
-        throw error;
-      }
-      toast.success(language === 'hi' ? '✅ प्लान कॉइन से खरीदा गया!' : '✅ Plan purchased with coins!');
-      window.location.reload();
-    } catch (e: any) { toast.error(e.message || 'Failed'); } finally { setBuyingWithCoins(null); }
-  };
+  // Only plans whose variety exists & is active
+  const visiblePlans = varPlans.filter((p: any) => varietyById[p.variety_id]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
@@ -168,110 +156,42 @@ const SubscriptionRenewal: React.FC = () => {
       </div>
 
       <main className="px-4 py-6 max-w-md mx-auto space-y-4 -mt-2">
-        {/* Coin Balance */}
-        <div className="bg-card rounded-3xl shadow-xl border-2 border-amber-200 dark:border-amber-800 p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🪙</span>
-            <div className="flex-1">
-              <p className="font-semibold">{language === 'hi' ? 'डिजिटल कॉइन बैलेंस' : 'Digital Coin Balance'}</p>
-              <p className="text-xs text-muted-foreground">{language === 'hi' ? '1 कॉइन = ₹1' : '1 coin = ₹1'}</p>
-            </div>
-            <p className="text-3xl font-black text-amber-600 dark:text-amber-400">{coinBalance}</p>
-          </div>
-        </div>
-
-        {/* Step 1: Varieties + Plans */}
+        {/* Step 1: Plans only */}
         <div className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center">
-          {language === 'hi' ? 'चरण 1: वैरायटी और प्लान चुनें' : 'Step 1: Choose a Variety & Plan'}
+          {language === 'hi' ? 'चरण 1: प्लान चुनें' : 'Step 1: Choose a Plan'}
         </div>
 
-        {varieties.map((v: any) => {
-          const vp = varPlans.filter((p: any) => p.variety_id === v.id);
-          const features = Array.isArray(v.features) ? v.features : [];
-          return (
-            <div key={v.id} className="bg-card rounded-3xl shadow-xl border-2 border-primary/10 overflow-hidden">
-              <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-4 border-b border-border/50">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-primary" />
-                  <h3 className="font-bold text-lg text-foreground">{v.name}</h3>
+        <div className="space-y-2">
+          {visiblePlans.map((plan: any) => {
+            const variety = varietyById[plan.variety_id];
+            const isSelected = selectedPlan?.plan?.id === plan.id;
+            return (
+              <button
+                key={plan.id}
+                onClick={() => handlePickPlan(plan)}
+                className={cn(
+                  "w-full p-4 rounded-2xl border text-left transition-all bg-card",
+                  isSelected
+                    ? "border-primary border-2 shadow-md bg-primary/5"
+                    : "border-border/40 hover:border-primary/40 shadow-sm"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <p className="font-bold text-base text-foreground flex items-center gap-2">
+                      {plan.name}
+                      {isSelected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {variety.name} • {plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}
+                    </p>
+                  </div>
+                  <p className="text-2xl font-black text-primary ml-3">₹{plan.price}</p>
                 </div>
-                {v.description && <p className="text-sm text-muted-foreground mt-1">{v.description}</p>}
-              </div>
-
-              {features.length > 0 && (
-                <div className="px-4 py-3 grid grid-cols-2 gap-2">
-                  {features.map((f: string, i: number) => {
-                    const def = getFeatureDef(f);
-                    const Icon = def?.icon ?? Sparkles;
-                    const label = def ? (language === 'hi' ? def.labelHi : def.labelEn) : f;
-                    const grad = def?.color ?? 'from-primary to-primary/70';
-                    return (
-                      <div key={i} className="relative overflow-hidden rounded-xl border border-border/40 bg-card p-2.5 flex items-center gap-2 shadow-sm hover:shadow-md transition-all">
-                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${grad} flex items-center justify-center flex-shrink-0 shadow-sm`}>
-                          <Icon className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="text-xs font-semibold text-foreground leading-tight">{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {vp.length > 0 && (
-                <div className="p-4 pt-0 space-y-2">
-                  {vp.map((plan: any) => {
-                    const isSelected = selectedPlan?.plan?.id === plan.id;
-                    return (
-                      <div key={plan.id} className={cn(
-                        "p-3 rounded-2xl border transition-all",
-                        isSelected
-                          ? "bg-primary/10 border-primary border-2 shadow-md"
-                          : "bg-gradient-to-r from-muted/50 to-muted/30 border-border/30"
-                      )}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-semibold text-sm text-foreground">{plan.name}</p>
-                            <p className="text-xs text-muted-foreground">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-black text-primary">₹{plan.price}</p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 mt-2">
-                          <button
-                            onClick={() => handlePickPlan(plan, v)}
-                            className={cn(
-                              "py-2 px-3 rounded-xl text-sm font-semibold transition-all",
-                              isSelected
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-primary/10 text-primary hover:bg-primary/20"
-                            )}
-                          >
-                            {isSelected
-                              ? <span className="flex items-center justify-center gap-1"><CheckCircle2 className="h-4 w-4" />{language === 'hi' ? 'चुना गया' : 'Selected'}</span>
-                              : (language === 'hi' ? 'इसे चुनें' : 'Select Plan')}
-                          </button>
-                          <button
-                            onClick={() => buyWithCoins(plan.id, plan.price)}
-                            disabled={buyingWithCoins === plan.id || coinBalance < plan.price}
-                            className={cn(
-                              "py-2 px-3 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50",
-                              coinBalance >= plan.price
-                                ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50"
-                                : "bg-muted text-muted-foreground"
-                            )}
-                          >
-                            {buyingWithCoins === plan.id ? '...' : `🪙 ${language === 'hi' ? 'कॉइन से' : 'Coins'}`}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              </button>
+            );
+          })}
+        </div>
 
         {/* Step 2: Payment Section (only when plan selected) */}
         {selectedPlan && (
@@ -285,8 +205,8 @@ const SubscriptionRenewal: React.FC = () => {
               <p className="text-xs text-muted-foreground mb-1">{language === 'hi' ? 'आपका चुना हुआ प्लान' : 'Your Selected Plan'}</p>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-foreground">{selectedPlan.variety.name}</p>
-                  <p className="text-sm text-muted-foreground">{selectedPlan.plan.name} • {selectedPlan.plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                  <p className="font-bold text-foreground">{selectedPlan.plan.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedPlan.variety.name} • {selectedPlan.plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
                 </div>
                 <p className="text-3xl font-black text-primary">₹{selectedPlan.plan.price}</p>
               </div>
@@ -339,7 +259,6 @@ const SubscriptionRenewal: React.FC = () => {
                   </div>
                 )}
 
-                {/* Pay Now via UPI app */}
                 {settings?.upi_id && (
                   <Button
                     onClick={payWithUPIApp}
