@@ -471,8 +471,18 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
     const supplierName = escposText(r.supplierName, 'Customer').slice(0, 22);
     const total = `Rs ${Math.round(r.amount || 0)}`;
 
+    // Honor user-selected receipt fields from Settings
+    let fields: any = {
+      showDate: true, showTime: true, showCode: true, showName: true,
+      showMilkType: true, showQuantity: true, showFat: true, showSnf: true,
+      showLr: true, showRate: true, showAmount: true,
+    };
+    try {
+      const raw = localStorage.getItem('entryReceiptFields');
+      if (raw) fields = { ...fields, ...JSON.parse(raw) };
+    } catch {}
+
     const packets: PrintPacket[] = [
-      // Leading LF separates this receipt from any previous incomplete line.
       packet(LF, 120),
       packet(INIT, 180),
       packet(DEFAULT_LINE_SPACING, 80),
@@ -484,25 +494,27 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
       textPacket('Milk Receipt\n', 140),
       textPacket(`${divider()}\n`, 140),
       packet(ALIGN_LEFT, 80),
-      textPacket(`${row('Date', r.date)}\n`),
-      ...(r.time ? [textPacket(`${row('Time', r.time)}\n`)] : []),
-      ...(r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
-      textPacket(`${row('Name', supplierName)}\n`),
+      ...(fields.showDate ? [textPacket(`${row('Date', r.date)}\n`)] : []),
+      ...(fields.showTime && r.time ? [textPacket(`${row('Time', r.time)}\n`)] : []),
+      ...(fields.showCode && r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
+      ...(fields.showName ? [textPacket(`${row('Name', supplierName)}\n`)] : []),
       textPacket(`${row('Shift', r.shift)}\n`),
-      ...(r.milkType ? [textPacket(`${row('Type', r.milkType)}\n`)] : []),
+      ...(fields.showMilkType && r.milkType ? [textPacket(`${row('Type', r.milkType)}\n`)] : []),
       textPacket(`${divider()}\n`, 140),
-      textPacket(`${row('Qty (L)', formatReceiptNumber(r.quantity, 2))}\n`),
-      ...(r.fat != null ? [textPacket(`${row('FAT %', formatReceiptNumber(r.fat, 1))}\n`)] : []),
-      ...(r.snf != null ? [textPacket(`${row('SNF %', formatReceiptNumber(r.snf, 1))}\n`)] : []),
-      ...(r.lr != null ? [textPacket(`${row('LR', formatReceiptNumber(r.lr, 1))}\n`)] : []),
-      textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`),
+      ...(fields.showQuantity ? [textPacket(`${row('Qty (L)', formatReceiptNumber(r.quantity, 2))}\n`)] : []),
+      ...(fields.showFat && r.fat != null ? [textPacket(`${row('FAT %', formatReceiptNumber(r.fat, 1))}\n`)] : []),
+      ...(fields.showSnf && r.snf != null ? [textPacket(`${row('SNF %', formatReceiptNumber(r.snf, 1))}\n`)] : []),
+      ...(fields.showLr && r.lr != null ? [textPacket(`${row('LR', formatReceiptNumber(r.lr, 1))}\n`)] : []),
+      ...(fields.showRate ? [textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`)] : []),
       textPacket(`${divider('=')}\n`, 150),
-      packet(BOLD_ON, 80),
-      packet(DOUBLE_ON, 80),
-      textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
-      packet(DOUBLE_OFF, 80),
-      packet(BOLD_OFF, 80),
-      textPacket(`${divider()}\n`, 150),
+      ...(fields.showAmount ? [
+        packet(BOLD_ON, 80),
+        packet(DOUBLE_ON, 80),
+        textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
+        packet(DOUBLE_OFF, 80),
+        packet(BOLD_OFF, 80),
+        textPacket(`${divider()}\n`, 150),
+      ] : []),
       packet(ALIGN_CENTER, 80),
       textPacket('Thank you!\n', 180),
       packet(ALIGN_LEFT, 80),
