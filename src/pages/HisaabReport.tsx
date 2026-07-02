@@ -249,17 +249,51 @@ const HisaabReport: React.FC = () => {
         description: language === 'hi' ? `₹${amountToAdd.toFixed(0)} हिस्ट्री में जोड़ा गया` : `₹${amountToAdd.toFixed(0)} added to history`,
       });
       
-      // Show receipt if enabled
-      if (reportReceiptEnabled) {
-        if (ownerSettings.bluetoothPrinterConnected) {
-          // Printer connected: directly print without showing dialog
-          setReceiptData({ supplier: reportSupplier, stats: reportStats });
-          setShouldAutoPrint(true);
-        } else {
-          // No printer: show preview dialog
-          setReceiptData({ supplier: reportSupplier, stats: reportStats });
-          setShowReportReceiptDialog(true);
+      // Bhugtan output: honor owner setting (print / pdf / nothing)
+      const outputType = ownerSettings.bhugtanOutputType;
+      if (outputType === 'nothing') {
+        // Skip receipt entirely
+      } else if (outputType === 'print') {
+        // Direct thermal print (no dialog / no A4 preview)
+        try {
+          const { printReportReceipt, isPrinterReady, connectThermalPrinter, getStoredPrinterName } = await import('@/lib/thermalPrinter');
+          if (!isPrinterReady() && getStoredPrinterName()) {
+            await connectThermalPrinter({ silent: true });
+          }
+          if (isPrinterReady()) {
+            const res = await printReportReceipt({
+              dairyName: user?.dairyName,
+              supplierCode: reportSupplier.code || '',
+              supplierName: reportSupplier.name,
+              startDate: format(reportStartDate, 'dd/MM/yyyy'),
+              endDate: format(reportEndDate, 'dd/MM/yyyy'),
+              totalMilk: reportStats.totalMilk,
+              avgFat: reportStats.avgFat,
+              totalFat: reportStats.totalFat,
+              totalAmount: reportStats.totalAmount,
+              rate: reportRate,
+            });
+            if (!res.ok) {
+              toast({
+                title: language === 'hi' ? 'प्रिंट विफल' : 'Print Failed',
+                description: res.error || '',
+                variant: 'destructive',
+              });
+            }
+          } else {
+            toast({
+              title: language === 'hi' ? 'प्रिंटर कनेक्ट नहीं' : 'Printer Not Connected',
+              description: language === 'hi' ? 'Settings में जाकर प्रिंटर कनेक्ट करें।' : 'Please connect printer from Settings.',
+              variant: 'destructive',
+            });
+          }
+        } catch (e: any) {
+          console.error('report print error', e);
         }
+      } else if (outputType === 'pdf') {
+        // Trigger PDF download via ReportReceipt hidden component (outputType='pdf' auto-downloads)
+        setReceiptData({ supplier: reportSupplier, stats: reportStats });
+        setShowReportReceiptDialog(true);
       }
       
       // Move to next supplier
