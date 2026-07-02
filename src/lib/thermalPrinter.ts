@@ -226,6 +226,36 @@ async function openPrinterPicker(): Promise<any> {
     throw new Error(e?.message || 'picker_failed');
   }
 }
+const attachedDevices = new WeakSet<any>();
+let reconnectingSilently = false;
+
+function attachAutoReconnect(device: any) {
+  if (!device || attachedDevices.has(device)) return;
+  attachedDevices.add(device);
+  device.addEventListener('gattserverdisconnected', () => {
+    console.warn('[printer] gatt disconnected, will try silent reconnect');
+    if (reconnectingSilently) return;
+    reconnectingSilently = true;
+    setTimeout(async () => {
+      try {
+        if (printerRef?.device === device && !device.gatt?.connected) {
+          const server = await connectGattWithRetry(device, 3);
+          const chars = await findWritableCharacteristics(server);
+          if (chars.length && printerRef) {
+            printerRef.characteristics = chars;
+            printerRef.characteristic = chars[0];
+            try { await writeBytes(INIT); } catch {}
+            console.log('[printer] silent reconnect ok');
+          }
+        }
+      } catch (e) {
+        console.warn('[printer] silent reconnect failed', e);
+      } finally {
+        reconnectingSilently = false;
+      }
+    }, 1500);
+  });
+}
 
 export async function connectThermalPrinter(options: { silent?: boolean } = {}): Promise<{ ok: boolean; name?: string; error?: string }> {
   const bt: any = (navigator as any).bluetooth;
@@ -256,10 +286,7 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
     printerRef = { device, characteristic: characteristics[0], characteristics };
     await writeBytes(INIT);
     rememberDevice(device);
-
-    device.addEventListener('gattserverdisconnected', () => {
-      console.warn('[printer] gatt disconnected');
-    });
+    attachAutoReconnect(device);
 
     return { ok: true, name: device.name };
   } catch (e: any) {
@@ -283,10 +310,7 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
         printerRef = { device: pickedDevice, characteristic: characteristics[0], characteristics };
         await writeBytes(INIT);
         rememberDevice(pickedDevice);
-
-        pickedDevice.addEventListener('gattserverdisconnected', () => {
-          console.warn('[printer] gatt disconnected');
-        });
+        attachAutoReconnect(pickedDevice);
 
         return { ok: true, name: pickedDevice.name };
       } catch (retryError: any) {
@@ -447,8 +471,18 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
     const supplierName = escposText(r.supplierName, 'Customer').slice(0, 22);
     const total = `Rs ${Math.round(r.amount || 0)}`;
 
+    // Honor user-selected receipt fields from Settings
+    let fields: any = {
+      showDate: true, showTime: true, showCode: true, showName: true,
+      showMilkType: true, showQuantity: true, showFat: true, showSnf: true,
+      showLr: true, showRate: true, showAmount: true,
+    };
+    try {
+      const raw = localStorage.getItem('entryReceiptFields');
+      if (raw) fields = { ...fields, ...JSON.parse(raw) };
+    } catch {}
+
     const packets: PrintPacket[] = [
-      // Leading LF separates this receipt from any previous incomplete line.
       packet(LF, 120),
       packet(INIT, 180),
       packet(DEFAULT_LINE_SPACING, 80),
@@ -460,25 +494,27 @@ export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boole
       textPacket('Milk Receipt\n', 140),
       textPacket(`${divider()}\n`, 140),
       packet(ALIGN_LEFT, 80),
-      textPacket(`${row('Date', r.date)}\n`),
-      ...(r.time ? [textPacket(`${row('Time', r.time)}\n`)] : []),
-      ...(r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
-      textPacket(`${row('Name', supplierName)}\n`),
+      ...(fields.showDate ? [textPacket(`${row('Date', r.date)}\n`)] : []),
+      ...(fields.showTime && r.time ? [textPacket(`${row('Time', r.time)}\n`)] : []),
+      ...(fields.showCode && r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
+      ...(fields.showName ? [textPacket(`${row('Name', supplierName)}\n`)] : []),
       textPacket(`${row('Shift', r.shift)}\n`),
-      ...(r.milkType ? [textPacket(`${row('Type', r.milkType)}\n`)] : []),
+      ...(fields.showMilkType && r.milkType ? [textPacket(`${row('Type', r.milkType)}\n`)] : []),
       textPacket(`${divider()}\n`, 140),
-      textPacket(`${row('Qty (L)', formatReceiptNumber(r.quantity, 2))}\n`),
-      ...(r.fat != null ? [textPacket(`${row('FAT %', formatReceiptNumber(r.fat, 1))}\n`)] : []),
-      ...(r.snf != null ? [textPacket(`${row('SNF %', formatReceiptNumber(r.snf, 1))}\n`)] : []),
-      ...(r.lr != null ? [textPacket(`${row('LR', formatReceiptNumber(r.lr, 1))}\n`)] : []),
-      textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`),
+      ...(fields.showQuantity ? [textPacket(`${row('Qty (L)', formatReceiptNumber(r.quantity, 2))}\n`)] : []),
+      ...(fields.showFat && r.fat != null ? [textPacket(`${row('FAT %', formatReceiptNumber(r.fat, 1))}\n`)] : []),
+      ...(fields.showSnf && r.snf != null ? [textPacket(`${row('SNF %', formatReceiptNumber(r.snf, 1))}\n`)] : []),
+      ...(fields.showLr && r.lr != null ? [textPacket(`${row('LR', formatReceiptNumber(r.lr, 1))}\n`)] : []),
+      ...(fields.showRate ? [textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`)] : []),
       textPacket(`${divider('=')}\n`, 150),
-      packet(BOLD_ON, 80),
-      packet(DOUBLE_ON, 80),
-      textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
-      packet(DOUBLE_OFF, 80),
-      packet(BOLD_OFF, 80),
-      textPacket(`${divider()}\n`, 150),
+      ...(fields.showAmount ? [
+        packet(BOLD_ON, 80),
+        packet(DOUBLE_ON, 80),
+        textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
+        packet(DOUBLE_OFF, 80),
+        packet(BOLD_OFF, 80),
+        textPacket(`${divider()}\n`, 150),
+      ] : []),
       packet(ALIGN_CENTER, 80),
       textPacket('Thank you!\n', 180),
       packet(ALIGN_LEFT, 80),
@@ -524,3 +560,91 @@ export function forgetPrinter() {
     localStorage.removeItem(DEVICE_ID_KEY);
   } catch {}
 }
+
+export interface ReportReceiptInput {
+  dairyName?: string;
+  supplierCode?: string;
+  supplierName: string;
+  startDate: string;
+  endDate: string;
+  totalMilk: number;
+  avgFat: number;
+  totalFat: number;
+  totalAmount: number;
+  rate: number;
+}
+
+export async function printReportReceipt(r: ReportReceiptInput): Promise<{ ok: boolean; error?: string }> {
+  return enqueuePrint(async () => {
+    if (!(await ensureConnected())) return { ok: false, error: 'not_connected' };
+
+    let fields: any = {
+      showCode: true, showName: true, showDates: true,
+      showTotalMilk: true, showTotalFat: true, showAvgFat: true,
+      showRate: true, showAmount: true, showRakam: true,
+    };
+    try {
+      const raw = localStorage.getItem('bhugtanReceiptFields');
+      if (raw) fields = { ...fields, ...JSON.parse(raw) };
+    } catch {}
+
+    const dairyName = escposText(r.dairyName || '', 'DAIRY').slice(0, 20);
+    const supplierName = escposText(r.supplierName, 'Customer').slice(0, 22);
+    const total = `Rs ${Math.round(r.totalAmount || 0)}`;
+
+    const packets: PrintPacket[] = [
+      packet(LF, 120),
+      packet(INIT, 180),
+      packet(DEFAULT_LINE_SPACING, 80),
+      packet(CODEPAGE_USA, 80),
+      packet(ALIGN_CENTER, 80),
+      packet(DOUBLE_ON, 80),
+      textPacket(`${dairyName}\n`, 180),
+      packet(DOUBLE_OFF, 80),
+      textPacket('Payment Report\n', 140),
+      textPacket(`${divider()}\n`, 140),
+      packet(ALIGN_LEFT, 80),
+      ...(fields.showCode && r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
+      ...(fields.showName ? [textPacket(`${row('Name', supplierName)}\n`)] : []),
+      ...(fields.showDates ? [
+        textPacket(`${row('From', r.startDate)}\n`),
+        textPacket(`${row('To', r.endDate)}\n`),
+      ] : []),
+      textPacket(`${divider()}\n`, 140),
+      ...(fields.showTotalMilk ? [textPacket(`${row('Total Milk', formatReceiptNumber(r.totalMilk, 2) + ' L')}\n`)] : []),
+      ...(fields.showTotalFat ? [textPacket(`${row('Total FAT', formatReceiptNumber(r.totalFat, 2))}\n`)] : []),
+      ...(fields.showAvgFat ? [textPacket(`${row('Avg FAT', formatReceiptNumber(r.avgFat, 2))}\n`)] : []),
+      ...(fields.showRate ? [textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`)] : []),
+      textPacket(`${divider('=')}\n`, 150),
+      ...(fields.showAmount || fields.showRakam ? [
+        packet(BOLD_ON, 80),
+        packet(DOUBLE_ON, 80),
+        textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
+        packet(DOUBLE_OFF, 80),
+        packet(BOLD_OFF, 80),
+        textPacket(`${divider()}\n`, 150),
+      ] : []),
+      packet(ALIGN_CENTER, 80),
+      textPacket('Thank you!\n', 180),
+      packet(ALIGN_LEFT, 80),
+      packet(FEED_END, 500),
+    ];
+
+    try {
+      try { await writeBytes(INIT); }
+      catch (preflightError) {
+        try { printerRef?.device?.gatt?.disconnect(); } catch {}
+        if (!(await ensureConnected())) throw preflightError;
+        await writeBytes(INIT);
+      }
+      for (const p of packets) {
+        await writeBytesStrict(p.data);
+        await wait(p.delay);
+      }
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'write_failed' };
+    }
+  });
+}
+
