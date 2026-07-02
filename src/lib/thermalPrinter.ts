@@ -280,10 +280,7 @@ export async function connectThermalPrinter(options: { silent?: boolean } = {}):
         printerRef = { device: pickedDevice, characteristic: characteristics[0], characteristics };
         await writeBytes(INIT);
         rememberDevice(pickedDevice);
-
-        pickedDevice.addEventListener('gattserverdisconnected', () => {
-          console.warn('[printer] gatt disconnected');
-        });
+        attachAutoReconnect(pickedDevice);
 
         return { ok: true, name: pickedDevice.name };
       } catch (retryError: any) {
