@@ -230,53 +230,67 @@ const PaymentRequired: React.FC = () => {
           {language === 'hi' ? 'चरण 1: प्लान चुनें' : 'Step 1: Choose a Plan'}
         </div>
 
-        <div className="space-y-2">
-          {visiblePlans.map((plan: any) => {
-            const variety = varietyById[plan.variety_id];
-            const isSelected = selectedPlan?.plan?.id === plan.id;
-            return (
-              <button
-                key={plan.id}
-                onClick={() => handlePickPlan(plan)}
-                className={cn(
-                  "w-full p-4 rounded-2xl border text-left transition-all bg-card",
-                  isSelected
-                    ? "border-primary border-2 shadow-md bg-primary/5"
-                    : "border-border/40 hover:border-primary/40 shadow-sm"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="font-bold text-base text-foreground flex items-center gap-2">
-                      {plan.name}
-                      {isSelected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {variety.name} • {plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}
-                    </p>
-                  </div>
-                  <p className="text-2xl font-black text-primary ml-3">₹{plan.price}</p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {(() => {
+          const durMap = new Map<number, string>();
+          visiblePlans.forEach((p: any) => { if (!durMap.has(p.validity_days)) durMap.set(p.validity_days, p.name); });
+          const durations = Array.from(durMap.entries()).sort((a, b) => a[0] - b[0]);
+          return (
+            <div className="space-y-2">
+              {durations.map(([days, label]) => {
+                const isSel = selectedDays === days;
+                return (
+                  <button key={days} onClick={() => pickDuration(days)}
+                    className={cn("w-full p-4 rounded-2xl border text-left transition-all bg-card flex items-center justify-between",
+                      isSel ? "border-primary border-2 shadow-md bg-primary/5" : "border-border/40 hover:border-primary/40 shadow-sm")}>
+                    <div>
+                      <p className="font-bold text-base text-foreground flex items-center gap-2">
+                        {label}
+                        {isSel && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{days} {language === 'hi' ? 'दिन की वैधता' : 'days validity'}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
-        {!selectedPlan && (
-          <div className="bg-muted/40 rounded-2xl border border-dashed border-border p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              {language === 'hi'
-                ? '👆 ऊपर से एक प्लान चुनें ताकि भुगतान विकल्प दिखाई दें'
-                : '👆 Select a plan above to see payment options'}
-            </p>
-          </div>
+        {selectedDays != null && (
+          <>
+            <div ref={varietyRef} className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center mt-6">
+              {language === 'hi' ? 'चरण 2: वैरायटी चुनें' : 'Step 2: Choose Variety'}
+            </div>
+            <div className="space-y-2">
+              {visiblePlans.filter((p: any) => p.validity_days === selectedDays).map((plan: any) => {
+                const variety = varietyById[plan.variety_id];
+                const isSelected = selectedPlan?.plan?.id === plan.id;
+                return (
+                  <button key={plan.id} onClick={() => handlePickPlan(plan)}
+                    className={cn("w-full p-4 rounded-2xl border text-left transition-all bg-card",
+                      isSelected ? "border-primary border-2 shadow-md bg-primary/5" : "border-border/40 hover:border-primary/40 shadow-sm")}>
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="font-bold text-base text-foreground flex items-center gap-2">
+                          {variety.name}
+                          {isSelected && <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{plan.validity_days} {language === 'hi' ? 'दिन' : 'days'}</p>
+                      </div>
+                      <p className="text-2xl font-black text-primary ml-3">₹{plan.price}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
         )}
 
-        {/* Step 2: Payment Section */}
+        {/* Step 3: Payment Section */}
         {selectedPlan && (
           <>
             <div ref={paymentRef} className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center mt-6">
-              {language === 'hi' ? 'चरण 2: भुगतान करें' : 'Step 2: Make Payment'}
+              {language === 'hi' ? 'चरण 3: भुगतान करें' : 'Step 3: Make Payment'}
             </div>
 
             <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl border-2 border-primary/30 p-4">
