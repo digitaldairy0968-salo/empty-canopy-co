@@ -325,30 +325,7 @@ const PaymentRequired: React.FC = () => {
               </div>
 
               <div className="p-4 space-y-4">
-                {settings?.upi_id && (
-                  <div>
-                    <p className="font-medium text-sm mb-2 text-muted-foreground">{language === 'hi' ? '💳 UPI से भुगतान करें' : '💳 Pay via UPI'}</p>
-                    <div className="flex items-center gap-2">
-                      <code className="bg-muted px-4 py-3 rounded-xl text-sm flex-1 truncate font-semibold">{settings.upi_id}</code>
-                      <Button variant="outline" size="icon" onClick={copyUPI} className="rounded-xl h-11 w-11">
-                        {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
-                {settings?.qr_code_url && (
-                  <div className="text-center">
-                    <p className="font-medium text-sm mb-3 text-muted-foreground">{language === 'hi' ? '📱 QR कोड स्कैन करें' : '📱 Scan QR Code'}</p>
-                    <div className="inline-block p-3 bg-card rounded-2xl shadow-lg border-2 border-primary/10">
-                      <img src={settings.qr_code_url} alt="QR" className="w-52 h-52 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowQR(true)} />
-                    </div>
-                    <div className="flex gap-2 mt-3 justify-center">
-                      <Button variant="outline" size="sm" onClick={() => setShowQR(true)} className="gap-1 rounded-xl"><QrCode className="h-4 w-4" />{language === 'hi' ? 'बड़ा देखें' : 'Full'}</Button>
-                      <Button variant="outline" size="sm" onClick={downloadQR} className="gap-1 rounded-xl"><Download className="h-4 w-4" />{language === 'hi' ? 'डाउनलोड' : 'Download'}</Button>
-                    </div>
-                  </div>
-                )}
 
                 {settings?.upi_id && (
                   <Button
