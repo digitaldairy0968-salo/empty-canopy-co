@@ -25,8 +25,10 @@ const PaymentRequired: React.FC = () => {
   const [activatingDemo, setActivatingDemo] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<{ plan: any; variety: any } | null>(null);
   const paymentRef = useRef<HTMLDivElement>(null);
+  const varietyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchAll = async () => {
