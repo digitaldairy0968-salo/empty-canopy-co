@@ -544,6 +544,24 @@ const MilkEntry: React.FC = () => {
 
       const parsedMilk = milkQty ? parseFloat(milkQty) : null;
       const parsedPrice = buyerPrice ? parseFloat(buyerPrice) : null;
+      const printMilk = parsedMilk ?? 0;
+      const printFat = fatValue ? parseFloat(fatValue) : null;
+      const printSnf = snfValue ? parseFloat(snfValue) : null;
+      const printLr = lrValue ? parseFloat(lrValue) : null;
+      const useFatSnfReceipt = fatSnfSettings.isEnabled && !isBuyerSupplier && printFat != null && printSnf != null && printMilk > 0;
+      const fatSnfReceipt = useFatSnfReceipt
+        ? calculateFatSnfEntry(fatSnfSettings, printMilk, printFat, printSnf)
+        : null;
+      const receiptRate = isBuyerSupplier
+        ? (rateSettings.literRate || 50)
+        : fatSnfReceipt
+          ? fatSnfReceipt.ratePerLiter
+          : rate;
+      const receiptAmount = isBuyerSupplier
+        ? (parsedPrice && parsedPrice > 0 ? parsedPrice : printMilk * (rateSettings.literRate || 50))
+        : fatSnfReceipt
+          ? fatSnfReceipt.totalAmount
+          : (printFat || 0) * printMilk * rate;
       
       const newEntry: MilkEntryType = {
         date: today,
@@ -565,10 +583,10 @@ const MilkEntry: React.FC = () => {
       setSavedEntryData({
         date: today,
         timeOfDay: shift,
-        quantity: parseFloat(milkQty),
-        fat: fatValue ? parseFloat(fatValue) : null,
-        snf: snfValue ? parseFloat(snfValue) : null,
-        lr: lrValue ? parseFloat(lrValue) : null,
+        quantity: printMilk,
+        fat: printFat,
+        snf: printSnf,
+        lr: printLr,
         supplierId: selectedSupplier.id,
         supplierName: selectedSupplier.name,
       });
@@ -607,7 +625,6 @@ const MilkEntry: React.FC = () => {
 
           if (isPrinterReady()) {
             const sup = selectedSupplier;
-            const amount = (fatValue ? parseFloat(fatValue) : 0) * parseFloat(milkQty) * rate;
             const res = await printMilkReceipt({
               dairyName: user?.dairyName,
               date: today,
@@ -616,12 +633,12 @@ const MilkEntry: React.FC = () => {
               supplierName: sup.name,
               milkType: sup.animalType,
               shift,
-              quantity: parseFloat(milkQty),
-              fat: fatValue ? parseFloat(fatValue) : null,
-              snf: snfValue ? parseFloat(snfValue) : null,
-              lr: lrValue ? parseFloat(lrValue) : null,
-              rate,
-              amount,
+              quantity: printMilk,
+              fat: printFat,
+              snf: printSnf,
+              lr: printLr,
+              rate: receiptRate,
+              amount: receiptAmount,
             });
             if (!res.ok) {
               console.error('[printer] print failed', res.error);
