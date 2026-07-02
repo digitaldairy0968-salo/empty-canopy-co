@@ -583,16 +583,38 @@ const HisaabReport: React.FC = () => {
             >
               <History className="h-4 w-4" />
             </Button>
-            {/* Print-only receipt button - only for printer users */}
-            {ownerSettings.bluetoothPrinterConnected && reportSupplier && reportStats && (
+            {/* Print-only button - uses thermal printer directly */}
+            {reportSupplier && reportStats && (
               <Button
                 variant="outline"
-                onClick={() => {
-                  setReceiptData({ supplier: reportSupplier, stats: reportStats });
-                  setShouldAutoPrint(true);
+                onClick={async () => {
+                  try {
+                    const { printReportReceipt, isPrinterReady, connectThermalPrinter, getStoredPrinterName } = await import('@/lib/thermalPrinter');
+                    if (!isPrinterReady() && getStoredPrinterName()) {
+                      await connectThermalPrinter({ silent: true });
+                    }
+                    if (!isPrinterReady()) {
+                      toast({ title: language === 'hi' ? 'प्रिंटर कनेक्ट नहीं' : 'Printer Not Connected', variant: 'destructive' });
+                      return;
+                    }
+                    const res = await printReportReceipt({
+                      dairyName: user?.dairyName,
+                      supplierCode: reportSupplier.code || '',
+                      supplierName: reportSupplier.name,
+                      startDate: reportStartDate ? format(reportStartDate, 'dd/MM/yyyy') : '',
+                      endDate: reportEndDate ? format(reportEndDate, 'dd/MM/yyyy') : '',
+                      totalMilk: reportStats.totalMilk,
+                      avgFat: reportStats.avgFat,
+                      totalFat: reportStats.totalFat,
+                      totalAmount: reportStats.totalAmount,
+                      rate: reportRate,
+                    });
+                    if (!res.ok) toast({ title: 'Print Failed', description: res.error, variant: 'destructive' });
+                  } catch (e: any) {
+                    toast({ title: 'Print Error', description: e?.message, variant: 'destructive' });
+                  }
                 }}
                 className="h-10 rounded-lg gap-1"
-                title={language === 'hi' ? 'सिर्फ प्रिंट करें' : 'Print Only'}
               >
                 <Printer className="h-4 w-4" />
                 <span className="text-xs">{language === 'hi' ? 'प्रिंट' : 'Print'}</span>
