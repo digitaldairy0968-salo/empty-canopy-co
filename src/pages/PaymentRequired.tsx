@@ -55,6 +55,11 @@ const PaymentRequired: React.FC = () => {
     return m;
   }, [varieties]);
 
+  const pickDuration = (days: number) => {
+    setSelectedDays(days);
+    setSelectedPlan(null);
+    setTimeout(() => varietyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  };
   const handlePickPlan = (plan: any) => {
     const variety = varietyById[plan.variety_id];
     if (!variety) return;
