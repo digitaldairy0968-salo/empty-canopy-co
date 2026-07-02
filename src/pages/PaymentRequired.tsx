@@ -225,9 +225,9 @@ const PaymentRequired: React.FC = () => {
           </Button>
         </div>
 
-        {/* Step 1: Plans only */}
+        {/* Step 1: Duration */}
         <div className="rounded-2xl bg-primary/10 border border-primary/20 px-4 py-3 text-sm font-semibold text-primary text-center">
-          {language === 'hi' ? 'चरण 1: प्लान चुनें' : 'Step 1: Choose a Plan'}
+          {language === 'hi' ? 'चरण 1: अवधि चुनें' : 'Step 1: Choose Duration'}
         </div>
 
         {(() => {
