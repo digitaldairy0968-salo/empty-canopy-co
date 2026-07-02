@@ -226,6 +226,36 @@ async function openPrinterPicker(): Promise<any> {
     throw new Error(e?.message || 'picker_failed');
   }
 }
+const attachedDevices = new WeakSet<any>();
+let reconnectingSilently = false;
+
+function attachAutoReconnect(device: any) {
+  if (!device || attachedDevices.has(device)) return;
+  attachedDevices.add(device);
+  device.addEventListener('gattserverdisconnected', () => {
+    console.warn('[printer] gatt disconnected, will try silent reconnect');
+    if (reconnectingSilently) return;
+    reconnectingSilently = true;
+    setTimeout(async () => {
+      try {
+        if (printerRef?.device === device && !device.gatt?.connected) {
+          const server = await connectGattWithRetry(device, 3);
+          const chars = await findWritableCharacteristics(server);
+          if (chars.length && printerRef) {
+            printerRef.characteristics = chars;
+            printerRef.characteristic = chars[0];
+            try { await writeBytes(INIT); } catch {}
+            console.log('[printer] silent reconnect ok');
+          }
+        }
+      } catch (e) {
+        console.warn('[printer] silent reconnect failed', e);
+      } finally {
+        reconnectingSilently = false;
+      }
+    }, 1500);
+  });
+}
 
 export async function connectThermalPrinter(options: { silent?: boolean } = {}): Promise<{ ok: boolean; name?: string; error?: string }> {
   const bt: any = (navigator as any).bluetooth;
