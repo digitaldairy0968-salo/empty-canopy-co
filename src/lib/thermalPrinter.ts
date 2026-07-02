@@ -560,3 +560,91 @@ export function forgetPrinter() {
     localStorage.removeItem(DEVICE_ID_KEY);
   } catch {}
 }
+
+export interface ReportReceiptInput {
+  dairyName?: string;
+  supplierCode?: string;
+  supplierName: string;
+  startDate: string;
+  endDate: string;
+  totalMilk: number;
+  avgFat: number;
+  totalFat: number;
+  totalAmount: number;
+  rate: number;
+}
+
+export async function printReportReceipt(r: ReportReceiptInput): Promise<{ ok: boolean; error?: string }> {
+  return enqueuePrint(async () => {
+    if (!(await ensureConnected())) return { ok: false, error: 'not_connected' };
+
+    let fields: any = {
+      showCode: true, showName: true, showDates: true,
+      showTotalMilk: true, showTotalFat: true, showAvgFat: true,
+      showRate: true, showAmount: true, showRakam: true,
+    };
+    try {
+      const raw = localStorage.getItem('bhugtanReceiptFields');
+      if (raw) fields = { ...fields, ...JSON.parse(raw) };
+    } catch {}
+
+    const dairyName = escposText(r.dairyName || '', 'DAIRY').slice(0, 20);
+    const supplierName = escposText(r.supplierName, 'Customer').slice(0, 22);
+    const total = `Rs ${Math.round(r.totalAmount || 0)}`;
+
+    const packets: PrintPacket[] = [
+      packet(LF, 120),
+      packet(INIT, 180),
+      packet(DEFAULT_LINE_SPACING, 80),
+      packet(CODEPAGE_USA, 80),
+      packet(ALIGN_CENTER, 80),
+      packet(DOUBLE_ON, 80),
+      textPacket(`${dairyName}\n`, 180),
+      packet(DOUBLE_OFF, 80),
+      textPacket('Payment Report\n', 140),
+      textPacket(`${divider()}\n`, 140),
+      packet(ALIGN_LEFT, 80),
+      ...(fields.showCode && r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
+      ...(fields.showName ? [textPacket(`${row('Name', supplierName)}\n`)] : []),
+      ...(fields.showDates ? [
+        textPacket(`${row('From', r.startDate)}\n`),
+        textPacket(`${row('To', r.endDate)}\n`),
+      ] : []),
+      textPacket(`${divider()}\n`, 140),
+      ...(fields.showTotalMilk ? [textPacket(`${row('Total Milk', formatReceiptNumber(r.totalMilk, 2) + ' L')}\n`)] : []),
+      ...(fields.showTotalFat ? [textPacket(`${row('Total FAT', formatReceiptNumber(r.totalFat, 2))}\n`)] : []),
+      ...(fields.showAvgFat ? [textPacket(`${row('Avg FAT', formatReceiptNumber(r.avgFat, 2))}\n`)] : []),
+      ...(fields.showRate ? [textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`)] : []),
+      textPacket(`${divider('=')}\n`, 150),
+      ...(fields.showAmount || fields.showRakam ? [
+        packet(BOLD_ON, 80),
+        packet(DOUBLE_ON, 80),
+        textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
+        packet(DOUBLE_OFF, 80),
+        packet(BOLD_OFF, 80),
+        textPacket(`${divider()}\n`, 150),
+      ] : []),
+      packet(ALIGN_CENTER, 80),
+      textPacket('Thank you!\n', 180),
+      packet(ALIGN_LEFT, 80),
+      packet(FEED_END, 500),
+    ];
+
+    try {
+      try { await writeBytes(INIT); }
+      catch (preflightError) {
+        try { printerRef?.device?.gatt?.disconnect(); } catch {}
+        if (!(await ensureConnected())) throw preflightError;
+        await writeBytes(INIT);
+      }
+      for (const p of packets) {
+        await writeBytesStrict(p.data);
+        await wait(p.delay);
+      }
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'write_failed' };
+    }
+  });
+}
+
