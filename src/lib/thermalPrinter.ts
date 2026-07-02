@@ -48,13 +48,21 @@ const ESC = 0x1b;
 const GS = 0x1d;
 const INIT = new Uint8Array([ESC, 0x40]);
 const LF = new Uint8Array([0x0a]);
+const DEFAULT_LINE_SPACING = new Uint8Array([ESC, 0x32]);
+const CODEPAGE_USA = new Uint8Array([ESC, 0x52, 0x00, ESC, 0x74, 0x00]);
 const ALIGN_CENTER = new Uint8Array([ESC, 0x61, 0x01]);
 const ALIGN_LEFT = new Uint8Array([ESC, 0x61, 0x00]);
 const BOLD_ON = new Uint8Array([ESC, 0x45, 0x01]);
 const BOLD_OFF = new Uint8Array([ESC, 0x45, 0x00]);
 const DOUBLE_ON = new Uint8Array([GS, 0x21, 0x11]);
 const DOUBLE_OFF = new Uint8Array([GS, 0x21, 0x00]);
-const FEED_AND_CUT = new Uint8Array([0x0a, 0x0a, 0x0a, 0x0a, GS, 0x56, 0x00]);
+// Most low-cost 58mm BLE printers do not have a cutter. Sending cut commands to
+// those printers can intermittently disturb the next receipt, so feed only.
+const FEED_END = new Uint8Array([0x0a, 0x0a, 0x0a, 0x0a, 0x0a]);
+
+let printQueue: Promise<void> = Promise.resolve();
+let lastPrintFinishedAt = 0;
+const PRINT_COOLDOWN_MS = 1400;
 
 function concat(chunks: Uint8Array[]): Uint8Array {
   const total = chunks.reduce((s, c) => s + c.length, 0);
@@ -105,6 +113,24 @@ async function findWritableCharacteristics(server: any): Promise<any[]> {
 
 async function wait(ms: number): Promise<void> {
   await new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function enqueuePrint<T>(task: () => Promise<T>): Promise<T> {
+  let release!: () => void;
+  const previous = printQueue;
+  printQueue = new Promise<void>(resolve => { release = resolve; });
+
+  await previous.catch(() => undefined);
+  try {
+    const elapsed = Date.now() - lastPrintFinishedAt;
+    if (elapsed > 0 && elapsed < PRINT_COOLDOWN_MS) {
+      await wait(PRINT_COOLDOWN_MS - elapsed);
+    }
+    return await task();
+  } finally {
+    lastPrintFinishedAt = Date.now();
+    release();
+  }
 }
 
 async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
@@ -316,8 +342,9 @@ async function writeBytesToCharacteristic(ch: any, data: Uint8Array): Promise<vo
     } else {
       throw new Error('characteristic_not_writable');
     }
-    // small delay so printer buffer doesn't overflow
-    await new Promise(r => setTimeout(r, ch.properties.write ? 25 : 55));
+    // Give the tiny printer buffer enough time. Missing/half receipts usually
+    // happen when Android sends chunks faster than the printer can consume them.
+    await wait(ch.properties.write ? 55 : 105);
   }
 }
 
@@ -340,6 +367,11 @@ async function writeBytes(data: Uint8Array): Promise<void> {
   throw lastErr || new Error('write_failed');
 }
 
+async function writeBytesStrict(data: Uint8Array): Promise<void> {
+  if (!printerRef?.characteristic) throw new Error('not_connected');
+  await writeBytesToCharacteristic(printerRef.characteristic, data);
+}
+
 export interface ReceiptLine {
   text: string;
   align?: 'left' | 'center' | 'right';
@@ -351,6 +383,8 @@ export interface ReceiptLine {
 const LINE_WIDTH = 32;
 
 function padBetween(left: string, right: string, width = LINE_WIDTH): string {
+  if (left.length > width - 2) left = left.slice(0, width - 2);
+  if (right.length > width - left.length - 1) right = right.slice(0, width - left.length - 1);
   const space = Math.max(1, width - left.length - right.length);
   return left + ' '.repeat(space) + right;
 }
@@ -370,6 +404,25 @@ function escposText(value: string, fallback = ''): string {
   return cleaned || fallback;
 }
 
+function formatReceiptNumber(value: number | null | undefined, decimals = 2): string {
+  if (value == null || Number.isNaN(value)) return '-';
+  return Number(value).toFixed(decimals).replace(/\.00$/, '');
+}
+
+function row(label: string, value: string | number | null | undefined): string {
+  return padBetween(escposText(label), escposText(String(value ?? '-')));
+}
+
+type PrintPacket = { data: Uint8Array; delay: number };
+
+function packet(data: Uint8Array, delay = 90): PrintPacket {
+  return { data, delay };
+}
+
+function textPacket(text: string, delay = 120): PrintPacket {
+  return packet(enc.encode(text), delay);
+}
+
 export interface MilkReceiptInput {
   dairyName?: string;
   date: string;
@@ -387,62 +440,74 @@ export interface MilkReceiptInput {
 }
 
 export async function printMilkReceipt(r: MilkReceiptInput): Promise<{ ok: boolean; error?: string }> {
-  if (!(await ensureConnected())) return { ok: false, error: 'not_connected' };
+  return enqueuePrint(async () => {
+    if (!(await ensureConnected())) return { ok: false, error: 'not_connected' };
 
-  const chunks: Uint8Array[] = [];
-  chunks.push(INIT);
+    const dairyName = escposText(r.dairyName || '', 'DAIRY').slice(0, 16);
+    const supplierName = escposText(r.supplierName, 'Customer').slice(0, 22);
+    const total = `Rs ${Math.round(r.amount || 0)}`;
 
-  // Header
-  chunks.push(ALIGN_CENTER);
-  chunks.push(DOUBLE_ON);
-  chunks.push(enc.encode(escposText(r.dairyName || '', 'DAIRY').slice(0, 16) + '\n'));
-  chunks.push(DOUBLE_OFF);
-  chunks.push(enc.encode('Milk Receipt\n'));
-  chunks.push(enc.encode(divider() + '\n'));
+    const packets: PrintPacket[] = [
+      // Leading LF separates this receipt from any previous incomplete line.
+      packet(LF, 120),
+      packet(INIT, 180),
+      packet(DEFAULT_LINE_SPACING, 80),
+      packet(CODEPAGE_USA, 80),
+      packet(ALIGN_CENTER, 80),
+      packet(DOUBLE_ON, 80),
+      textPacket(`${dairyName}\n`, 180),
+      packet(DOUBLE_OFF, 80),
+      textPacket('Milk Receipt\n', 140),
+      textPacket(`${divider()}\n`, 140),
+      packet(ALIGN_LEFT, 80),
+      textPacket(`${row('Date', r.date)}\n`),
+      ...(r.time ? [textPacket(`${row('Time', r.time)}\n`)] : []),
+      ...(r.supplierCode ? [textPacket(`${row('Code', r.supplierCode)}\n`)] : []),
+      textPacket(`${row('Name', supplierName)}\n`),
+      textPacket(`${row('Shift', r.shift)}\n`),
+      ...(r.milkType ? [textPacket(`${row('Type', r.milkType)}\n`)] : []),
+      textPacket(`${divider()}\n`, 140),
+      textPacket(`${row('Qty (L)', formatReceiptNumber(r.quantity, 2))}\n`),
+      ...(r.fat != null ? [textPacket(`${row('FAT %', formatReceiptNumber(r.fat, 1))}\n`)] : []),
+      ...(r.snf != null ? [textPacket(`${row('SNF %', formatReceiptNumber(r.snf, 1))}\n`)] : []),
+      ...(r.lr != null ? [textPacket(`${row('LR', formatReceiptNumber(r.lr, 1))}\n`)] : []),
+      textPacket(`${row('Rate', formatReceiptNumber(r.rate, 2))}\n`),
+      textPacket(`${divider('=')}\n`, 150),
+      packet(BOLD_ON, 80),
+      packet(DOUBLE_ON, 80),
+      textPacket(`${padBetween('TOTAL', total, 16)}\n`, 220),
+      packet(DOUBLE_OFF, 80),
+      packet(BOLD_OFF, 80),
+      textPacket(`${divider()}\n`, 150),
+      packet(ALIGN_CENTER, 80),
+      textPacket('Thank you!\n', 180),
+      packet(ALIGN_LEFT, 80),
+      packet(FEED_END, 500),
+    ];
 
-  // Body
-  chunks.push(ALIGN_LEFT);
-  chunks.push(enc.encode(padBetween('Date', escposText(r.date)) + '\n'));
-  if (r.time) chunks.push(enc.encode(padBetween('Time', escposText(r.time)) + '\n'));
-  if (r.supplierCode) chunks.push(enc.encode(padBetween('Code', escposText(r.supplierCode)) + '\n'));
-  chunks.push(enc.encode(padBetween('Name', escposText(r.supplierName, 'Customer').slice(0, 22)) + '\n'));
-  chunks.push(enc.encode(padBetween('Shift', escposText(r.shift)) + '\n'));
-  if (r.milkType) chunks.push(enc.encode(padBetween('Type', escposText(r.milkType)) + '\n'));
-  chunks.push(enc.encode(divider() + '\n'));
-
-  chunks.push(enc.encode(padBetween('Qty (L)', r.quantity.toFixed(2)) + '\n'));
-  if (r.fat != null) chunks.push(enc.encode(padBetween('FAT %', String(r.fat)) + '\n'));
-  if (r.snf != null) chunks.push(enc.encode(padBetween('SNF %', String(r.snf)) + '\n'));
-  if (r.lr != null) chunks.push(enc.encode(padBetween('LR', String(r.lr)) + '\n'));
-  chunks.push(enc.encode(padBetween('Rate', String(r.rate)) + '\n'));
-  chunks.push(enc.encode(divider('=') + '\n'));
-
-  chunks.push(BOLD_ON);
-  chunks.push(DOUBLE_ON);
-  chunks.push(enc.encode(padBetween('TOTAL', 'Rs ' + Math.round(r.amount), 16) + '\n'));
-  chunks.push(DOUBLE_OFF);
-  chunks.push(BOLD_OFF);
-
-  chunks.push(enc.encode(divider() + '\n'));
-  chunks.push(ALIGN_CENTER);
-  chunks.push(enc.encode('Thank you!\n'));
-
-  chunks.push(FEED_AND_CUT);
-
-  try {
-    const payload = concat(chunks);
     try {
-      await writeBytes(payload);
-    } catch (firstError) {
-      console.warn('[printer] first write failed, reconnecting once', firstError);
-      try { printerRef?.device?.gatt?.disconnect(); } catch {}
-      if (!(await ensureConnected())) throw firstError;
-      await writeBytes(payload);
+      // Use fallback only before the receipt starts. If the real receipt write
+      // fails midway, do not resend the full receipt; that creates duplicate or
+      // half-overlapped receipts like the broken sample photo.
+      try {
+        await writeBytes(INIT);
+      } catch (preflightError) {
+        console.warn('[printer] preflight failed, reconnecting once', preflightError);
+        try { printerRef?.device?.gatt?.disconnect(); } catch {}
+        if (!(await ensureConnected())) throw preflightError;
+        await writeBytes(INIT);
+      }
+
+      for (const p of packets) {
+        await writeBytesStrict(p.data);
+        await wait(p.delay);
+      }
+
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, error: e?.message || 'write_failed' };
     }
-    return { ok: true };
-  } catch (e: any) {
-    return { ok: false, error: e?.message || 'write_failed' };
-  }
+  });
 }
 
 export function getStoredPrinterName(): string | null {
